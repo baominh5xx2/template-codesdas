@@ -322,3 +322,135 @@ PRD này thay thế thứ tự workflow-first trong [Core P0 design cũ](superpo
 Đọc thêm: [CopilotKit research và caveats](research/2026-10-05-copilotkit-chat-core.md), [code structure](code-structure.md), [API contracts hiện có](api-contracts.md), [dependency pins hiện có](dependencies.md), [docs index](README.md).
 
 Lần cập nhật này chỉ ghi PRD/docs. **Không cài SDK, không sửa product code, không tạo database/runtime/chat và không thao tác repo thi.**
+
+## 10. Roadmap brainstorming từng phần với Superpowers
+
+Yêu cầu hiện hành: xé nhỏ PRD để cùng brainstorm từng phần, giữ file này làm mục lục và nơi ghi quyết định. **Phân rã này là roadmap thiết kế, chưa phải technical spec hoặc implementation plan.** Không tạo đồng loạt nhiều plans rồi coi chúng là đã được review.
+
+Mỗi phần là một sub-project architectural: làm rõ mục đích/constraints → hỏi từng câu → so sánh 2–3 hướng → chốt thiết kế → viết spec riêng → review spec → viết plan riêng → review plan → triển khai khi được yêu cầu. Ưu tiên tái sử dụng CopilotKit; không tự xây lại agent loop, streaming protocol hoặc MCP client đã có trong SDK.
+
+### 10.1. Năm phần core — brainstorm theo thứ tự
+
+| Thứ tự | Phần | Kết quả nhìn thấy được | Phụ thuộc | Trạng thái thiết kế |
+|---|---|---|---|---|
+| C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Skeleton hiện có + configured model để chạy live | Đang mở brainstorming; chưa có spec/plan mới |
+| C02 | **Threads & Durable History** | New chat/list/switch/rename/archive/delete; restart rồi hỏi tiếp | Interfaces chat/runtime/identity chốt ở C01 | Chờ C01; chưa có spec/plan mới |
+| C03 | **Tools, Context & Inline Results** | Agent gọi một tool thật, hiển thị trạng thái/result và trả lời dựa trên result | C01 + history/execution identities của C02 | Chờ C02; chưa có spec/plan mới |
+| C04 | **Local MCP & pgEdge** | Agent dùng scoped query/read tools từ MCP local | Tool boundary C03 + starter database C02 | Chờ C03; chưa có spec/plan mới |
+| C05 | **Domain Plug-in & Artifact Bridge** | Cắm một pack mới bằng config/tools/presenter; chat giữ nguyên | C03; C04 chỉ cần khi pack sử dụng MCP | Chờ C03; chưa có spec/plan mới |
+
+C01–C03 tạo release **chat core P0**. C04–C05 tạo release **plug-and-play P1**. Thứ tự brainstorm là C01 → C02 → C03 → C04 → C05; dependency kỹ thuật của C05 không bắt buộc MCP cho mọi domain.
+
+#### C01 — Chat Foundation
+
+**Phạm vi:** workspace chat toàn màn hình, composer/transcript, runtime/BuiltInAgent/model wiring, streaming, Stop, error/retry và no-env unavailable. Định nghĩa identity mode, message/execution IDs và runtime adapter boundary để C02 tiếp nối.
+
+**Feature mapping:** CHAT-01…05, AGENT-01…05, OPS-01; phần nền identity/server-only config của OPS-02. Feature OPS-02 phải hoàn tất xuyên C01–C03, không coi boundary declaration là enforcement đã xong.
+
+**Đã chốt:** bản đầu phục vụ một người dùng local; giữ identity/scope boundary để thêm login sau. Không đưa multi-user login vào acceptance C01. Cách server xác định local operator vẫn cần thiết kế, không dùng giá trị identity do client tự khai làm quyền truy cập.
+
+**Các quyết định còn cần brainstorm:** shell/UX tối thiểu; configured model contract và trải nghiệm chưa config; transcript ownership trước khi có persistence; cancellation/error/retry semantics. Không hỏi lại mục tiêu chat kiểu ChatGPT đã được xác nhận.
+
+**Đầu ra/handoff:** một chat vertical slice có thể kiểm chứng; interfaces cho thread binding, execution status và identity; danh sách những khả năng còn unavailable. Durable history, database và domain workflow thuộc các phần sau.
+
+**Chốt được khi:** gửi text → stream → hoàn tất; Stop giữ partial response với status đúng; retry không nhân đôi user message; thiếu model config hiện unavailable rõ.
+
+#### C02 — Threads & Durable History
+
+**Phạm vi:** thread sidebar/lifecycle, Postgres Docker riêng + Drizzle, scoped repositories/BFF, persistence integration với runtime/runner, hydrate/reconcile và concurrency. Conversation context projection giữ đúng tool call/result pairs và token budget.
+
+**Feature mapping:** HIST-01…05, CTX-01, persistence/access checks của OPS-02. HIST-02 thiết kế lưu tool events từ đầu; C03 kiểm chứng bằng tool thật.
+
+**Các quyết định cần brainstorm:** custom Postgres runner integration và event/message persistence; một nguồn transcript authoritative; append/dedupe; thread title; archive/delete semantics; restart/interrupted behavior; owner/workspace resolution. Reconnect/resume execution đang chạy là HIST-07, không bắt buộc P0.
+
+**Đầu ra/handoff:** thread/execution/storage contracts và API semantics cho UI, runtime và tools; migration/service lifecycle riêng cho starter. Không sử dụng database/container của repo thi.
+
+**Chốt được khi:** hai thread độc lập; reload/restart giữ đúng history; hỏi tiếp có context; không duplicate; một thread không chạy hai executions cùng lúc; access sai scope bị từ chối.
+
+#### C03 — Tools, Context & Inline Results
+
+**Phạm vi:** typed server Tool Registry, SDK tool registration/rendering, context/shared-state bridge và một deterministic read-only tool mẫu. Render result tối thiểu trong chat; không cần xây đủ 19 generic cards.
+
+**Feature mapping:** TOOL-01…04, RESULT-01, CTX-02…03; tool authorization của OPS-02. TOOL-04/CTX-02…03 là P1: có thể tách khỏi acceptance P0 nhưng phải có scope rõ trong spec/plan.
+
+**Các quyết định cần brainstorm:** tool contract và namespacing; input/output validation; tool scope/readiness/budget; state do UI hay server sở hữu; progress/errors; lưu tool call/result qua C02. Ghi rõ extension point cho approval, không bật side-effect tools tại phần này.
+
+**Đầu ra/handoff:** domain-aware tool registration boundary, render bridge và context contract để MCP/domain packs dùng lại.
+
+**Chốt được khi:** agent gọi tool thật → hiện trạng thái/result → assistant trả lời dựa trên result; errors/cancel/scope đều kiểm chứng được; mở lại history vẫn có tool call/result hợp lệ.
+
+#### C04 — Local MCP & pgEdge
+
+**Phạm vi:** cấu hình MCP server/client server-side, lifecycle/discovery/name mapping và pgEdge Postgres MCP local use case chỉ đọc/query trong scope cho phép.
+
+**Feature mapping:** MCP-01…02. MCP Apps (MCP-03) thuộc extension, không ghép vào baseline chỉ để đủ ecosystem.
+
+**Các quyết định cần brainstorm:** per-run connection hay persistent client; auth/transport phù hợp server local; tools nào expose; database role/schema access; timeouts/cancellation/connection cleanup; service unavailable. Tool allowlist không thay thế quyền database.
+
+**Đầu ra/handoff:** một connector dùng Tool Registry của C03; service/config/run instructions riêng cho starter; không để frontend tự gọi unrestricted SQL.
+
+**Chốt được khi:** agent đọc dữ liệu local được phép; tool bị cấm không execute; server down/timeout rõ; không leak connections hoặc quyền giữa executions.
+
+#### C05 — Domain Plug-in & Artifact Bridge
+
+**Phạm vi:** pack registration/feature requirements, schema/prompt/tools/sources/rules/presenter boundary và artifact references. Chứng minh bằng một pack nhỏ; chỉ thêm business executor/workflow nếu pack này thực sự cần.
+
+**Feature mapping:** RESULT-03, boundary SRC-01; Domain Pack/Artifact/Presenter/Run contracts ở mục 6 và machinery tối thiểu trong mục 8. RESULT-02 chỉ thuộc phần này khi demo pack cần evidence; implementation đầy đủ nằm ở X02.
+
+**Các quyết định cần brainstorm:** pack lifecycle/versioning; tool filtering theo domain; input/config validation; artifact persistence/provenance; presenter → inline block; phân biệt thread/agent execution/business run. Không biến mọi chat turn thành một workflow nghiệp vụ.
+
+**Đầu ra/handoff:** integration contract bạn xây templates có thể đọc và áp dụng, cùng representative fixture/smoke flow. Bạn vẫn tự compose domain FE/BE; mình cung cấp platform interfaces.
+
+**Chốt được khi:** thêm/đổi pack không sửa transport/history; tool/result references resolve; capability thiếu báo unavailable; artifacts dùng đúng envelope hiện có.
+
+### 10.2. Extensions — chỉ mở khi core hoặc đề bài cần
+
+Đây là hàng chờ brainstorming, chưa có technical specs/plans mới. Mỗi dòng mở thành một phần riêng khi tới lượt; không gom toàn bộ thành một lần brainstorm lớn.
+
+| ID | Phần mở riêng | Mapping / nội dung | Điều kiện mở |
+|---|---|---|---|
+| X01 | Upload & Ingestion | FILE-01…02; attachment storage + parsers từng format | Sau C02–C03; chọn formats theo đề |
+| X02 | Sources, Research & Evidence | SRC-01, RESULT-02; search/crawl/clean/dedupe/rank, claim/source/locator | Sau C03/C05; có source/provider cụ thể |
+| X03 | Retrieval / RAG | RAG-01; chunk/index/retrieve, optional pgvector | Sau X01 hoặc X02, tùy input Knowledge Assistant |
+| X04 | Dataset Analytics & Chart Specs | Stats/trends/outliers + chart spec typed | Sau X01 và artifact bridge C05 |
+| X05 | Extraction, Analysis & Risk | Structured extraction, analysis, scoring rules | Sau input/evidence boundary cần cho domain; tách extraction/analysis/scoring thành specs con khi scope lớn |
+| X06 | Recommendation & Planner | Filter/rank/explain + constraints/plan/timeline | Sau C05 và data/analysis cần cho bài; brainstorm hai engines riêng nếu độc lập |
+| X07 | Report & Generic Result UI | RESULT-03 mở rộng, cards/BlockRenderer/ReportView/export/playground | Sau C05; dựng blocks theo nhu cầu template |
+| X08 | Approval / HITL | HITL-01; durable approval/action binding/expiry | Bắt buộc trước khi bật bất kỳ side-effect tool nào |
+| X09 | History & Chat Enhancements | CHAT-06…07, HIST-06…08; suggestions/search/reconnect/export/edit/branch | Sau C01–C02; không ảnh hưởng P0 gates |
+| X10 | Memory | MEM-01; explicit local memory hoặc Intelligence có điều kiện | Sau identity/history; chọn một hướng trước khi plan |
+| X11 | Model Policy, Cost & Multi-agent | AGENT-06…10; budgets/router/failover/delegation/custom framework | Sau C01/C03; mở từng policy/agent integration riêng |
+| X12 | Voice | VOICE-01…02; STT trước, TTS/realtime nếu cần | Sau chat/attachments và provider phù hợp |
+| X13 | Verification, Geo & Privacy | Verification verdicts; geo providers; redaction | Theo domain; mỗi capability là một brainstorm riêng |
+| X14 | Operations & Submission | OPS-03…05; preflight/pre-submit/scan/smoke/debug/cost reporting | Nền readiness xây cùng từng phần; scripts tổng hợp sau core |
+| X15 | Optional Ecosystem Surfaces | MCP-03, OPS-06…08; Intelligence/Channels/A2UI/MCP Apps | Chỉ khi chọn integration có điều kiện phù hợp |
+
+Những safeguards cần cho C01–C05 như validation, scope, cancellation và readiness vẫn nằm trong acceptance của phần sở hữu, không đợi X14 mới làm. X14 chỉ tổng hợp vận hành. Các problem templates của bạn không bị đổi thành tasks platform trong bảng này.
+
+### 10.3. Cách ghi spec/plan và cập nhật tiến độ
+
+File này là **PRD + roadmap + decision log**. Technical spec/implementation plan chi tiết lưu riêng trong Superpowers và link về đây sau khi thực sự tạo file. Không tạo link tới placeholder file chưa tồn tại.
+
+Tên đề xuất cho năm cặp tài liệu, với ngày thực tế lúc viết:
+
+| Phần | Spec dưới `docs/superpowers/specs/` | Plan dưới `docs/superpowers/plans/` |
+|---|---|---|
+| C01 | `YYYY-MM-DD-chat-foundation-design.md` | `YYYY-MM-DD-chat-foundation-implementation-plan.md` |
+| C02 | `YYYY-MM-DD-chat-history-design.md` | `YYYY-MM-DD-chat-history-implementation-plan.md` |
+| C03 | `YYYY-MM-DD-chat-tools-context-design.md` | `YYYY-MM-DD-chat-tools-context-implementation-plan.md` |
+| C04 | `YYYY-MM-DD-local-mcp-pgedge-design.md` | `YYYY-MM-DD-local-mcp-pgedge-implementation-plan.md` |
+| C05 | `YYYY-MM-DD-domain-artifact-bridge-design.md` | `YYYY-MM-DD-domain-artifact-bridge-implementation-plan.md` |
+
+Tiến độ mỗi phần: `Chưa mở → Brainstorming → Spec đã viết → Spec đã review → Plan đã viết → Plan đã review → Đang triển khai → Đã nghiệm thu`. Spec/plan tồn tại không đồng nghĩa đã review hoặc đã implement.
+
+Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do + acceptance bị ảnh hưởng + link spec/plan nếu có**. Nếu thay đổi boundary dùng chung, cập nhật PRD và phần phụ thuộc; tránh để spec/plan mâu thuẫn nhau.
+
+### 10.4. Decision log và điểm bắt đầu
+
+| Ngày | Phần | Nội dung | Trạng thái |
+|---|---|---|---|
+| 2026-10-05 | Tổng thể | Chia core thành C01–C05; chat/history đi trước workflow; extensions mở theo nhu cầu | Roadmap đề xuất đã ghi theo yêu cầu, chưa là technical design đã review |
+| 2026-10-05 | C01 | Đã có mục tiêu app chat kiểu ChatGPT, dùng CopilotKit và repo starter riêng | Constraint đã được user xác nhận trong hội thoại |
+| 2026-10-05 | C01 | User chọn một người local trước, giữ boundary để thêm login sau. Lý do: thu hẹp bản đầu; acceptance C01 không yêu cầu multi-user login, vẫn cần server-owned scope | Đã được user xác nhận; chưa chọn auth/session implementation |
+
+Phiên tiếp theo bắt đầu tại **C01 — Chat Foundation**. Chỉ brainstorm phần đó, giữ các phần sau trong hàng chờ. Lần cập nhật roadmap này không tạo technical spec/plan mới hoặc triển khai product code.
