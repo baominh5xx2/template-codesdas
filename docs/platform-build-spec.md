@@ -348,7 +348,7 @@ Mỗi phần là một sub-project architectural: làm rõ mục đích/constrai
 
 | Thứ tự | Phần | Kết quả nhìn thấy được | Phụ thuộc | Trạng thái thiết kế |
 |---|---|---|---|---|
-| C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Skeleton hiện có + configured model để chạy live | [Spec đã viết](superpowers/specs/2026-10-05-chat-foundation-design.md), chờ user review; chưa có plan mới |
+| C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Skeleton hiện có + configured model để chạy live | [Spec](superpowers/specs/2026-10-05-chat-foundation-design.md) đã được cho chuyển sang [plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md); plan đã viết, chưa execute |
 | C02 | **Threads & Durable History** | New chat/list/switch/rename/archive/delete; restart rồi hỏi tiếp | Interfaces chat/runtime/identity chốt ở C01 | Chờ C01; chưa có spec/plan mới |
 | C03 | **Tools, Context & Inline Results** | Agent gọi một tool thật, hiển thị trạng thái/result và trả lời dựa trên result | C01 + history/execution identities của C02 | Chờ C02; chưa có spec/plan mới |
 | C04 | **Local MCP & pgEdge** | Agent dùng scoped query/read tools từ MCP local | Tool boundary C03 + starter database C02 | Chờ C03; chưa có spec/plan mới |
@@ -476,5 +476,6 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-05 | C01 / xuyên core | User xác nhận chưa cần multi-tenant; mọi technical error/unavailable trên khung chat fallback về notice chính xác `Chưa kết nối`, không in lỗi lung tung. Nội bộ giữ cause/status để debug; không demo assistant fallback | Đã chốt; đưa vào C01 và gates C02–C04, chưa triển khai UI/error handling |
 | 2026-10-05 | C04 | User yêu cầu official modelcontextprotocol/typescript-sdk; ưu tiên stable v2 client, giữ pgEdge local server và CopilotKit agent loop. C04 acceptance bổ sung kiểm chứng SDK-to-tool bridge | SDK choice đã xác nhận; transport/lifecycle/bridge và exact versions chưa chốt; chưa cài SDK |
 | 2026-10-05 | C01 | Đã viết [Chat Foundation technical spec](superpowers/specs/2026-10-05-chat-foundation-design.md): runtime/UI/model/config/state/error/acceptance và handoff C02–C03. Layout/adapter/limits là đề xuất kỹ thuật để review | Spec đã self-review, chờ user review; chưa có implementation plan hoặc product code |
+| 2026-10-05 | C01 | User yêu cầu viết plan ngay; đã tạo [implementation plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md) gồm 5 tasks với files/interfaces/TDD checks và SDK evidence | Spec được cho chuyển sang planning; plan đã self-review, chưa execute, chưa có product code |
 
-Điểm hiện tại là **review spec C01 — Chat Foundation**, sau đó viết plan C01. Các phần C02–C05 giữ trong hàng chờ. Technical spec C01 đã tồn tại; chưa có plan C01 hoặc product implementation.
+Điểm hiện tại là **plan C01 — Chat Foundation đã viết, chưa execute**. Các phần C02–C05 giữ trong hàng chờ. Spec và plan C01 đều đã tồn tại; product implementation chưa có.

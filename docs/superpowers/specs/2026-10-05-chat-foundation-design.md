@@ -1,8 +1,8 @@
 # C01 — Chat Foundation Design Spec
 
-Ngày: **2026-10-05**. Trạng thái: **spec đã viết và self-review; chờ user review; chưa triển khai**.
+Ngày: **2026-10-05**. Trạng thái: **user đã cho chuyển sang writing-plans; plan C01 đã viết; chưa triển khai**.
 
-PRD: [AI-native Chat Core](../../platform-build-spec.md), phần C01 và notice/error policy ở mục 4. Đây là technical spec cho **C01**, không thay thế specs của C02–C05. Các quyết định kỹ thuật dưới đây là đề xuất cụ thể để review, không được ghi là user đã duyệt toàn bộ.
+PRD: [AI-native Chat Core](../../platform-build-spec.md), phần C01 và notice/error policy ở mục 4. Đây là technical spec cho **C01**, không thay thế specs của C02–C05. User đã yêu cầu viết plan từ spec này; [implementation plan C01](../plans/2026-10-05-chat-foundation-implementation-plan.md) ghi chi tiết task/interfaces/checks, chưa execute.
 
 ## 1. Ý định và kết quả
 
@@ -171,6 +171,6 @@ Handoff C02: stable message/thread/execution IDs, one active execution policy, r
 
 ## 10. Trạng thái và bước sau
 
-C01 spec hiện đã có nội dung cụ thể về architecture, UX, config, state, errors, boundaries và acceptance. User đã chốt product scope/local/error policy; các kỹ thuật đề xuất trong file cần review trước khi chuyển sang writing-plans.
+C01 spec hiện đã có nội dung cụ thể về architecture, UX, config, state, errors, boundaries và acceptance. User đã chốt product scope/local/error policy và yêu cầu chuyển sang writing-plans ngày 2026-10-05.
 
-Chưa viết implementation plan C01, chưa cài SDK, chưa code UI/runtime/model adapter. C02–C05 vẫn trong hàng chờ riêng; plan workflow-first cũ không được dùng làm plan thực thi C01.
+[Implementation plan C01](../plans/2026-10-05-chat-foundation-implementation-plan.md) đã viết. Chưa cài SDK hoặc code UI/runtime/model adapter. C02–C05 vẫn trong hàng chờ riêng; plan workflow-first cũ không được dùng làm plan thực thi C01.
