@@ -1,5 +1,7 @@
 # Bàn giao frontend
 
+Phân công hiện hành: owner platform xây generic UI blocks trong `src/ui`; bạn xây FE composition và BE workflow của problem templates. Đọc [build-ownership.md](build-ownership.md) rồi [problem-templates.md](problem-templates.md) trước. File này mô tả shared rendering contracts cho cả hai owner, không còn giao toàn bộ generic UI cho template owner.
+
 Frontend có thể bắt đầu từ `/playground`, `GET /api/domains` và các fixture tại `GET /api/demo/:domainId`. Mỗi bundle chứa `view`, `snapshot`, `sources`, `evidence`, `claims`, và `datasets`; đây là các dữ liệu chung cho renderer, nguồn trích dẫn và phân trang. Đọc trực tiếp schema tại `src/contracts/ui/blocks.ts`, không khai báo lại props trong UI.
 
 Bốn archetype hiện chia sẻ cùng một bộ dữ liệu sales synthetic và gallery fixture gồm 19 block để kiểm tra các hợp đồng renderer. Đây không phải các phân tích đại diện cho từng domain. Fixture riêng, đại diện hơn có thể được bổ sung khi hành vi nghiệp vụ thực tế được xây dựng.
@@ -49,4 +51,6 @@ Action allowlist hiện tại là `export.markdown`, `export.json`, `retry-run`,
 
 ## Phạm vi sở hữu và tích hợp
 
-Frontend sở hữu `src/ui/{primitives,blocks,registry,renderers,agent,forms,shells,hooks,playground}` và có thể bổ sung client routes/components theo quy ước `.client.ts[x]`. Giữ `src/contracts` framework-free. Thay đổi schema cần trao đổi với owner contracts, cập nhật fixture/API và kiểm tra compatibility trước khi merge. Engine, adapter, persistence và capability thuộc phần tích hợp backend riêng; frontend không cần phụ thuộc trực tiếp vào chúng.
+Platform sở hữu `src/ui/{primitives,blocks,registry,renderers,agent,forms,shells,hooks,playground}`. Template owner compose các component đó, viết form/layout riêng trong proposed `src/problem-templates/<id>/ui` và thêm template pages theo quy ước `.client.ts[x]`. Thư mục problem templates chưa được scaffold; chưa có generic component implementations để import hôm nay.
+
+Giữ `src/contracts` framework-free. Thay đổi shared schema cần phối hợp, cập nhật Zod/types/fixtures/API consumers cùng lúc. Template owner cũng viết input/artifact schemas riêng, workflow bindings và pure presenter; capability implementation, runner, adapters và infra thuộc platform. Không fetch/gọi model/ghi DB trong presenter hoặc generic card.
