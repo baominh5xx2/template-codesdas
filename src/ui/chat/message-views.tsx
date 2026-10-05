@@ -7,10 +7,14 @@ import { CopyAction } from "./copy-action";
 
 function EmptyToolbar(): null { return null; }
 
+function WhiteMarkdownRenderer(props: ComponentProps<typeof CopilotChatAssistantMessage.MarkdownRenderer>): ReactElement {
+  return <CopilotChatAssistantMessage.MarkdownRenderer {...props} controls={false} />;
+}
+
 export function WhiteAssistantMessage(props: ComponentProps<typeof CopilotChatAssistantMessage>): ReactElement {
   const controller = useChatControllerRef();
   return <article className="chat-assistant-message">
-    <CopilotChatAssistantMessage {...props} toolbarVisible={false} />
+    <CopilotChatAssistantMessage {...props} toolbarVisible={false} markdownRenderer={WhiteMarkdownRenderer} />
     <CopyAction content={props.message.content ?? ""} onFailure={controller.fail} />
   </article>;
 }

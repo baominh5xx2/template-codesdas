@@ -10,16 +10,28 @@ import { createControlledChatPort } from "../helpers/chat-client";
 
 // Isolated SDK boundary: the real v2 entrypoint imports CSS unsupported by the
 // Node runner. Task 5 exercises Streamdown and SDK UI in the browser.
-vi.mock("@copilotkit/react-core/v2", () => ({
-  CopilotChatAssistantMessage: ({ message, toolbarVisible }: { message: { content?: string }; toolbarVisible?: boolean }) => <div>
-    <div>{message.content}</div>
-    {toolbarVisible !== false && <div data-testid="copilot-assistant-toolbar"><button>Regenerate</button><button>Inspector</button><button>Thumbs up</button><button>Read aloud</button></div>}
-  </div>,
+vi.mock("@copilotkit/react-core/v2", () => {
+  function MarkdownRenderer({ content, controls = true }: { content: string; controls?: boolean }) {
+    return <div>{content}{controls && (content.includes("```") || content.includes("|")) && <button>Download content</button>}</div>;
+  }
+  function AssistantMessage({ message, toolbarVisible, markdownRenderer: Renderer = MarkdownRenderer }: {
+    message: { content?: string };
+    toolbarVisible?: boolean;
+    markdownRenderer?: React.ComponentType<{ content: string }>;
+  }) {
+    return <div>
+      <Renderer content={message.content ?? ""} />
+      {toolbarVisible !== false && <div data-testid="copilot-assistant-toolbar"><button>Regenerate</button><button>Inspector</button><button>Thumbs up</button><button>Read aloud</button></div>}
+    </div>;
+  }
+  return {
+  CopilotChatAssistantMessage: Object.assign(AssistantMessage, { MarkdownRenderer }),
   CopilotChatUserMessage: ({ message, toolbar: Toolbar }: { message: { content: string }; toolbar?: React.ComponentType }) => <div>
     <div>{message.content}</div>
     {Toolbar ? <Toolbar /> : <div data-testid="copilot-user-toolbar"><button>Edit</button></div>}
   </div>,
-}));
+};
+});
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -41,6 +53,15 @@ function Transcript({ controller }: { controller: ChatController }) {
 }
 
 describe("Controller transcript presentation", () => {
+  it.each(["```ts\nconst n = 1;\n```", "| Name | Value |\n| --- | --- |\n| n | 1 |"])("keeps code/table actions inside the owned Copy action: %s", (content) => {
+    const { controller } = setup();
+    render(<ChatControllerProvider controller={controller}>
+      <WhiteAssistantMessage message={{ id: "assistant", role: "assistant", content }} />
+    </ChatControllerProvider>);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Sao chép" })).toBeInTheDocument();
+  });
+
   it("requires a provider with an app-owned boundary error", () => {
     expect(() => renderHook(() => useChatControllerRef())).toThrow("Chat controller provider is missing");
   });

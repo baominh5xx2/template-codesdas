@@ -83,6 +83,45 @@
   color: var(--chat-text);
 }
 
+.chat-assistant-message [class~="cpk:prose"] {
+  --tw-prose-body: var(--chat-text);
+  --tw-prose-headings: var(--chat-text);
+  --tw-prose-links: var(--chat-text);
+  --tw-prose-bold: var(--chat-text);
+  --tw-prose-quotes: var(--chat-text);
+  --tw-prose-code: var(--chat-text);
+  --tw-prose-pre-code: var(--chat-text);
+  --tw-prose-pre-bg: var(--chat-surface);
+  --tw-prose-lead: var(--chat-muted);
+  --tw-prose-counters: var(--chat-muted);
+  --tw-prose-bullets: var(--chat-muted);
+  --tw-prose-captions: var(--chat-muted);
+  --tw-prose-hr: var(--chat-border);
+  --tw-prose-quote-borders: var(--chat-border);
+  --tw-prose-th-borders: var(--chat-border);
+  --tw-prose-td-borders: var(--chat-border);
+  --tw-prose-invert-body: var(--chat-text);
+  --tw-prose-invert-headings: var(--chat-text);
+  --tw-prose-invert-links: var(--chat-text);
+  --tw-prose-invert-bold: var(--chat-text);
+  --tw-prose-invert-quotes: var(--chat-text);
+  --tw-prose-invert-code: var(--chat-text);
+  --tw-prose-invert-pre-code: var(--chat-text);
+  --tw-prose-invert-pre-bg: var(--chat-surface);
+  --tw-prose-invert-lead: var(--chat-muted);
+  --tw-prose-invert-counters: var(--chat-muted);
+  --tw-prose-invert-bullets: var(--chat-muted);
+  --tw-prose-invert-captions: var(--chat-muted);
+  --tw-prose-invert-hr: var(--chat-border);
+  --tw-prose-invert-quote-borders: var(--chat-border);
+  --tw-prose-invert-th-borders: var(--chat-border);
+  --tw-prose-invert-td-borders: var(--chat-border);
+  color: var(--chat-text);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
 .chat-user-message {
   display: flex;
   flex-direction: column;
