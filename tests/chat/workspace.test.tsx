@@ -138,10 +138,38 @@ describe("ChatWorkspace", () => {
     await act(async () => sdk.port!.finish("failed"));
     expect(screen.getAllByRole("status").filter((node) => node.textContent === "Chưa kết nối")).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "Thử lại" })).toHaveLength(1);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Bản nháp tiếp theo" } });
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     expect(sdk.port!.requests).toHaveLength(2);
     expect(sdk.port!.requests[1].messages).toEqual(sdk.port!.requests[0].messages);
+    expect(screen.getByRole("textbox")).toHaveValue("Bản nháp tiếp theo");
+    expect(sdk.controller!.getSnapshot().pending).toBe(true);
     await act(async () => sdk.port!.finish());
+    expect(screen.queryByText("Chưa kết nối")).not.toBeInTheDocument();
+  });
+
+  it("resubmits the restored draft when pre-start failure has no retry checkpoint", async () => {
+    vi.stubGlobal("fetch", () => readiness(true)); render(<ChatWorkspace />);
+    await waitFor(() => expect(sdk.controller?.getSnapshot().available).toBe(true));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Xin chào" } });
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+    const firstRequest = sdk.port!.requests[0];
+    await act(async () => sdk.port!.finish("failed"));
+    expect(sdk.controller!.getSnapshot().messages).toHaveLength(0);
+    expect(screen.getByRole("textbox")).toHaveValue("Xin chào");
+    expect(screen.getByRole("button", { name: "Gửi tin nhắn" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(sdk.port!.requests).toHaveLength(2);
+    expect(sdk.port!.requests[1].threadId).toBe(firstRequest.threadId);
+    expect(sdk.port!.requests[1].runId).not.toBe(firstRequest.runId);
+    expect(sdk.port!.requests[1].messages).toHaveLength(1);
+    expect(sdk.port!.requests[1].messages[0].content).toBe("Xin chào");
+    expect(sdk.controller!.getSnapshot().pending).toBe(true);
+    expect(sdk.controller!.getSnapshot().messages).toHaveLength(1);
+    expect(screen.getByRole("textbox")).toHaveValue("");
+    await act(async () => { sdk.port!.emitStarted(); sdk.port!.finish(); });
+    expect(sdk.controller!.getSnapshot().pending).toBe(false);
+    expect(sdk.controller!.getSnapshot().status).toBe("completed");
     expect(screen.queryByText("Chưa kết nối")).not.toBeInTheDocument();
   });
 

@@ -74,6 +74,9 @@ export function ChatWorkspace(): ReactElement {
     // Provider/chat errors set the controller's failure fence; clear it before checkpoint retry.
     controller.setAvailable(true);
     void controller.retry();
+    // A pre-start failure restores draft without a checkpoint; retry acquires pending synchronously when it has one.
+    const afterRetry = controller.getSnapshot();
+    if (!afterRetry.pending && afterRetry.draft.trim()) void controller.send();
   };
   const newChat = async () => {
     if (resetting.current) return;
