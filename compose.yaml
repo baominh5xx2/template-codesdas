@@ -1,0 +1,100 @@
+name: hackathon-starter-core
+
+services:
+  db:
+    image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    environment:
+      POSTGRES_DB: starter
+      POSTGRES_USER: starter_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run bun run docker:setup first}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Run bun run docker:setup first}
+      MCP_DB_PASSWORD: ${MCP_DB_PASSWORD:?Run bun run docker:setup first}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./infra/postgres/init/001-bootstrap.sh:/docker-entrypoint-initdb.d/001-bootstrap.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
+  mcp:
+    image: ghcr.io/pgedge/postgres-mcp@sha256:38c1c7b7c1ec5b1b64a1da4a2f24be3efef2ac235503bd2e6ff129954e471efd
+    environment:
+      PGEDGE_HTTP_ENABLED: "true"
+      PGEDGE_HTTP_ADDRESS: ":8080"
+      PGEDGE_AUTH_ENABLED: "true"
+      PGEDGE_DB_HOST: db
+      PGEDGE_DB_PORT: "5432"
+      PGEDGE_DB_NAME: starter
+      PGEDGE_DB_USER: starter_mcp
+      PGEDGE_DB_PASSWORD: ${MCP_DB_PASSWORD:?Run bun run docker:setup first}
+      PGEDGE_DB_SSLMODE: disable
+      PGEDGE_DB_ALLOW_WRITES: "false"
+      PGEDGE_DATA_DIR: /app/data
+      INIT_TOKENS: ${MCP_AUTH_TOKEN:?Run bun run docker:setup first}
+      PGEDGE_LLM_ENABLED: "false"
+      PGEDGE_EMBEDDING_ENABLED: "false"
+      PGEDGE_KB_ENABLED: "false"
+      PGEDGE_BUILTIN_TOOL_SIMILARITY_SEARCH: "false"
+      PGEDGE_BUILTIN_TOOL_GENERATE_EMBEDDING: "false"
+      PGEDGE_BUILTIN_TOOL_SEARCH_KNOWLEDGEBASE: "false"
+      PGEDGE_BUILTIN_TOOL_LLM_CONNECTION_SELECTION: "false"
+      PGEDGE_BUILTIN_PROMPT_SETUP_SEMANTIC_SEARCH: "false"
+      PGEDGE_BUILTIN_PROMPT_DESIGN_SCHEMA: "false"
+      PGEDGE_DB_LOG_LEVEL: none
+      PGEDGE_LLM_LOG_LEVEL: none
+    ports:
+      - "127.0.0.1:${MCP_PORT:-18080}:8080"
+    volumes:
+      - mcp-data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--max-time", "3", "http://127.0.0.1:8080/health"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hackathon-starter-app:local
+    environment:
+      NODE_ENV: production
+      APP_MODE: skeleton
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgres://starter_app:${APP_DB_PASSWORD:?Run bun run docker:setup first}@db:5432/starter
+      SESSION_SECRET: ${SESSION_SECRET:?Run bun run docker:setup first}
+      MCP_SERVER_URL: http://mcp:8080/mcp/v1
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?Run bun run docker:setup first}
+      CHAT_MODEL_BASE_URL: ${CHAT_MODEL_BASE_URL:-}
+      CHAT_MODEL_ID: ${CHAT_MODEL_ID:-}
+      CHAT_MODEL_API_KEY: ${CHAT_MODEL_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${APP_PORT:-3100}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(async r=>{if(!r.ok||(await r.json()).status!=='ok')process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 15s
+    init: true
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  mcp-data:

@@ -1,5 +1,5 @@
 import "server-only";
-import { createRequire } from "node:module";
+import { RunAgentInputSchema } from "@ag-ui/core/schemas";
 import { createCopilotRuntimeHandler } from "@copilotkit/runtime/v2";
 import { CHAT_LIMITS } from "@/contracts/chat";
 import type { ChatConfigResult } from "./config";
@@ -11,9 +11,6 @@ import {
 import type { RunAgentInput } from "@ag-ui/client";
 import { createChatModel } from "@/adapters/llm/chat-model";
 import { createChatRuntime } from "@/adapters/agents/chat-runtime";
-
-const runtimeRequire = createRequire(import.meta.resolve("@copilotkit/runtime/v2"));
-const { RunAgentInputSchema } = runtimeRequire("@ag-ui/core/schemas");
 
 export function createChatRequestHandler(
   config: ChatConfigResult,

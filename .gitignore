@@ -24,3 +24,6 @@ worktrees/
 .DS_Store
 Thumbs.db
 
+!.env.docker.example
+playwright-report/
+test-results/

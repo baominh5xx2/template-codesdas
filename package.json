@@ -12,7 +12,13 @@
     "test": "vitest run",
     "domain:validate": "tsx scripts/validate-domains.ts",
     "build": "next build",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "docker:setup": "node scripts/setup-docker.mjs",
+    "docker:up": "node scripts/docker.mjs up -d --build --wait --wait-timeout 180",
+    "docker:infra": "node scripts/docker.mjs up -d --wait --wait-timeout 120 db mcp",
+    "docker:down": "node scripts/docker.mjs down",
+    "docker:status": "node scripts/docker.mjs ps",
+    "docker:check": "node scripts/check-docker.mjs"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +35,7 @@
   "type": "module",
   "dependencies": {
     "@ag-ui/client": "1.0.1",
+    "@ag-ui/core": "1.0.1",
     "@ai-sdk/openai": "3.0.124",
     "@copilotkit/react-core": "1.77.0",
     "@copilotkit/runtime": "1.77.0",

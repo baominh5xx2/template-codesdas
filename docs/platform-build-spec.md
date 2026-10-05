@@ -484,3 +484,8 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-06 | C01 UI | Đã viết [UI implementation plan](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md): theme/shell → navigation → messages/Copy → composer/integration → acceptance. Tasks UI chi tiết hóa C01 Task 4–5, không execute hai backlog song song | Spec được user cho chuyển sang plan; docs only, user tự handle code |
 
 Điểm hiện tại là **plan C01 — Chat Foundation đã viết, chưa execute**. Các phần C02–C05 giữ trong hàng chờ. Spec và plan C01 đều đã tồn tại; product implementation chưa có.
+
+
+### Docker local setup — 2026-10-06
+
+Đã có [Compose app + PostgreSQL + pgEdge MCP](docker-local.md): project riêng, Bun frozen install, Node production standalone image, localhost ports, credentials tự sinh và DB roles riêng. Image build, healthchecks, MCP negotiation/query và quyền đọc/ghi đã kiểm tra bằng services thật. Đây là infrastructure đã chạy; durable chat history (C02) và MCP SDK/tool registration trong chat (C04) vẫn là integrations cần triển khai.
