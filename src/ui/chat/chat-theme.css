@@ -119,6 +119,10 @@
   overflow-y: auto;
 }
 
+.chat-sidebar[hidden] {
+  display: none;
+}
+
 .chat-sidebar-header {
   display: flex;
   align-items: center;
@@ -189,7 +193,6 @@
   min-height: 0;
   min-width: 0;
   position: relative;
-  overflow-y: auto;
 }
 
 .chat-column {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createChatController } from "@/ui/chat/controller";
 import { ChatComposer } from "@/ui/chat/composer";
@@ -86,5 +86,38 @@ describe("ChatComposer", () => {
 
     fireEvent.click(stopBtn);
     expect(controlled.stopCount).toBe(1);
+  });
+
+  it("renders Thử lại button and calls controller.retry() when status is interrupted and notice is false", async () => {
+    const { controller, controlled } = setup(true);
+    const retrySpy = vi.spyOn(controller, "retry");
+
+    render(<ChatComposer controller={controller} />);
+    const textarea = screen.getByRole("textbox", { name: "Tin nhắn" });
+
+    // Send a message
+    fireEvent.change(textarea, { target: { value: "Tin nhắn bị dừng" } });
+    const sendPromise = controller.send();
+    expect(controlled.requests).toHaveLength(1);
+
+    // Controlled port signals started and then finishes as interrupted
+    controlled.emitStarted();
+    controlled.finish("interrupted");
+    await sendPromise;
+
+    await waitFor(() => {
+      expect(controller.getSnapshot().status).toBe("interrupted");
+      expect(controller.getSnapshot().pending).toBe(false);
+    });
+    expect(controller.getSnapshot().notice).toBe(false);
+
+    // "Thử lại" button should now be visible in composer
+    const retryBtn = screen.getByRole("button", { name: "Thử lại" });
+    expect(retryBtn).toBeInTheDocument();
+
+    // Clicking "Thử lại" triggers controller.retry()
+    fireEvent.click(retryBtn);
+    expect(retrySpy).toHaveBeenCalledTimes(1);
+    expect(controlled.requests).toHaveLength(2);
   });
 });

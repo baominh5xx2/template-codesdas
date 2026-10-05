@@ -38,7 +38,8 @@ export function ChatComposer({
     !snapshot.pending &&
     snapshot.draft.trim().length > 0;
 
-  const showInterruptedRetry = snapshot.status === "interrupted" && !notice;
+  const showInterruptedRetry =
+    snapshot.status === "interrupted" && !snapshot.notice;
 
   return (
     <div className="chat-composer-wrapper">

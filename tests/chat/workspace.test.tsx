@@ -95,4 +95,17 @@ describe("ChatWorkspace", () => {
     // Thread remains safe and no error thrown
     expect(screen.getByRole("textbox", { name: "Tin nhắn" })).toBeInTheDocument();
   });
+
+  it("does not render notice banner when readiness is true and no errors", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ available: true, agentId: "default" }),
+    });
+
+    render(<ChatWorkspace />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Chưa kết nối")).not.toBeInTheDocument();
+    });
+  });
 });

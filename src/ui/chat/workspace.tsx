@@ -141,9 +141,9 @@ export function ChatWorkspace(): ReactElement {
   }, [controller]);
 
   const hasNotice = snapshot.notice || !readiness.available;
-  const noticeNode = (
-    <ConnectionNotice visible={hasNotice} onRetry={handleNoticeRetry} />
-  );
+  const noticeNode = hasNotice ? (
+    <ConnectionNotice visible={true} onRetry={handleNoticeRetry} />
+  ) : null;
 
   const connectedChat = (
     <CopilotKit

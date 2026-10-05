@@ -191,6 +191,9 @@ export function createChatController(options: {
         retryCheckpoint = null;
       } else if (termStatus === "interrupted") {
         notice = false;
+        if (accepted) {
+          retryCheckpoint = { preTurnMessages, userMessage };
+        }
       }
       notify();
     }
