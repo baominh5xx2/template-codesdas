@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import { answer, observe, openChat, scenario, send } from "../helpers/chat-browser";
 
 for (const value of ["reject", "partial-fail"] as const) {
@@ -68,6 +69,7 @@ test("clipboard failure stays masked", async ({ page, request }) => {
 
 test("renderer exception displays the safe fallback and Retry remounts", async ({ page, request }) => {
   await scenario(request, "success");
+  const observed = observe(page);
   await page.addInitScript(() => {
     const original = document.createElement.bind(document);
     document.createElement = ((...args: Parameters<typeof document.createElement>) => {
@@ -82,8 +84,34 @@ test("renderer exception displays the safe fallback and Retry remounts", async (
   await send(page, "Render failure");
   await expect(page.locator(".chat-error-boundary-view")).toBeVisible();
   await expect(page.getByRole("status")).toHaveText("Chưa kết nối");
+  await expect(page.getByRole("status")).toHaveCount(1);
+  await expect(page.locator(".chat-shell").getByText("controlled_renderer_failure", { exact: false })).toHaveCount(0);
+  await observed.assertMasked();
+  await observed.assertResponsesExclude("controlled_renderer_failure");
+  // React/Next development caught-error diagnostics belong to the framework;
+  // retain their source as evidence, rather than hiding/filtering observations.
+  const frameworkDiagnostics = observed.consoleEvents.filter((event) => event.text.includes("controlled_renderer_failure"));
+  for (const message of observed.consoleMessages.filter((text) => text.includes("controlled_renderer_failure"))) {
+    expect(frameworkDiagnostics.some((event) => event.text === message &&
+      event.source.includes("/_next/static/chunks/node_modules_next_dist_") &&
+      event.text.includes("The above error occurred in the <article> component. It was handled by the <ChatErrorBoundary> error boundary."))).toBe(true);
+  }
+  const diagnosticsPath = test.info().outputPath("renderer-framework-diagnostics.json");
+  await writeFile(diagnosticsPath, JSON.stringify(frameworkDiagnostics, null, 2));
+  await test.info().attach("renderer-framework-diagnostics", { path: diagnosticsPath, contentType: "application/json" });
   await page.evaluate(() => document.documentElement.removeAttribute("data-test-render-failure"));
   await page.getByRole("button", { name: "Thử lại" }).click();
-  await expect(page.getByRole("textbox", { name: "Tin nhắn" })).toBeVisible();
-  await expect(page.getByText("RAW_SECRET_ERROR")).toHaveCount(0);
+  await expect(page.locator(".chat-error-boundary-view")).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await expect(page.locator("[data-copilotkit]").first()).toBeAttached();
+  await page.getByRole("textbox", { name: "Tin nhắn" }).fill("Renderer recovered");
+  await expect(page.getByRole("button", { name: "Gửi", exact: true })).toBeEnabled();
+  await send(page, "Renderer recovered");
+  await expect(page.locator(".chat-assistant-message").last()).toContainText(answer);
+  await expect(page.getByRole("button", { name: "Dừng", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveCount(0);
+  expect(observed.runs.at(-1)?.messages.at(-1)?.content).toBe("Renderer recovered");
+  await expect(page.locator(".chat-shell").getByText("controlled_renderer_failure", { exact: false })).toHaveCount(0);
+  await observed.assertResponsesExclude("controlled_renderer_failure");
+  await observed.assertMasked();
 });

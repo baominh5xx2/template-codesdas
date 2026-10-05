@@ -22,12 +22,18 @@ export async function captureRequests(request: APIRequestContext): Promise<{ bod
 export function observe(page: Page) {
   const runs: { messages: { id: string; role: string; content: string }[]; threadId: string }[] = [];
   const consoleMessages: string[] = [];
+  const consoleEvents: { text: string; source: string }[] = [];
   const streams: Promise<string>[] = [];
   page.on("request", (req) => { if (req.url().endsWith("/agent/default/run")) runs.push(req.postDataJSON()); });
-  page.on("console", (event) => consoleMessages.push(event.text()));
+  page.on("console", (event) => {
+    consoleMessages.push(event.text());
+    consoleEvents.push({ text: event.text(), source: event.location().url });
+  });
   page.on("pageerror", (error) => consoleMessages.push(error.message));
   page.on("response", (res) => { if (res.url().includes("/api/copilotkit")) streams.push(res.text().catch(() => "transport_aborted")); });
-  return { runs, consoleMessages, async assertMasked() {
+  return { runs, consoleMessages, consoleEvents, async assertResponsesExclude(marker: string) {
+    expect((await Promise.all(streams)).join("\n")).not.toContain(marker);
+  }, async assertMasked() {
     await expect(page.getByText("RAW_SECRET_ERROR", { exact: false })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Show Details", exact: true })).toHaveCount(0);
     await expect(page.locator(".chat-shell").getByText("Failed to fetch", { exact: true })).toHaveCount(0);
