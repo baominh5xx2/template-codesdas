@@ -1,0 +1,2 @@
+import type { DomainManifest } from "@/contracts/domains";
+export const manifest: DomainManifest = { id: "dataset-analysis", version: 1, title: "Dataset Analysis", description: "Synthetic tabular analysis fixture with linked charts and rows.", branding: { name: "Dataset Analysis", accent: "#0f766e" }, surface: "workspace", inputFields: [{ name: "request", label: "Request", kind: "textarea", required: true }], examples: [{ label: "Quarterly sales", input: { request: "Summarize quarterly sales" } }], toolNames: [] };

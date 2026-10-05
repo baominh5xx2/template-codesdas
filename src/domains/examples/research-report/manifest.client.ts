@@ -1,0 +1,2 @@
+import type { DomainManifest } from "@/contracts/domains";
+export const manifest: DomainManifest = { id: "research-report", version: 1, title: "Research Report", description: "Synthetic cited research report fixture.", branding: { name: "Research Report", accent: "#7c3aed" }, surface: "workspace", inputFields: [{ name: "request", label: "Request", kind: "textarea", required: true }], examples: [{ label: "Market overview", input: { request: "Summarize the sample market sources" } }], toolNames: [] };

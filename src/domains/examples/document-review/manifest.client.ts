@@ -1,0 +1,2 @@
+import type { DomainManifest } from "@/contracts/domains";
+export const manifest: DomainManifest = { id: "document-review", version: 1, title: "Document Review", description: "Synthetic review fixture for uploaded document workflows.", branding: { name: "Document Review", accent: "#2563eb" }, surface: "workspace", inputFields: [{ name: "request", label: "Request", kind: "textarea", required: true }], examples: [{ label: "Sample agreement", input: { request: "Review this sample agreement" } }], toolNames: [] };

@@ -1,0 +1,2 @@
+import type { DomainManifest } from "@/contracts/domains";
+export const manifest: DomainManifest = { id: "risk-analyzer", version: 1, title: "Risk Analyzer", description: "Synthetic explainable risk assessment fixture.", branding: { name: "Risk Analyzer", accent: "#b45309" }, surface: "workspace", inputFields: [{ name: "request", label: "Request", kind: "textarea", required: true }], examples: [{ label: "Sample risk", input: { request: "Assess the sample signals" } }], toolNames: [] };

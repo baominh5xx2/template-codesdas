@@ -1,5 +1,5 @@
 export interface ErrorEnvelope {
-  code: "internal_error" | "feature_unavailable";
+  code: "internal_error" | "feature_unavailable" | "invalid_request" | "not_found";
   message: string;
   retryable: boolean;
   traceId: string;

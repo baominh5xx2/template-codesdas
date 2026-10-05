@@ -9,6 +9,7 @@
     "dev": "next dev --hostname 127.0.0.1",
     "check": "next typegen && tsc --noEmit && eslint .",
     "test": "vitest run",
+    "domain:validate": "tsx scripts/validate-domains.ts",
     "build": "next build",
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
