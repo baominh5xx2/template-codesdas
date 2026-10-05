@@ -354,8 +354,8 @@ Mỗi phần là một sub-project architectural: làm rõ mục đích/constrai
 | Thứ tự | Phần | Kết quả nhìn thấy được | Phụ thuộc | Trạng thái thiết kế |
 |---|---|---|---|---|
 | C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Skeleton hiện có + configured model để chạy live | [Spec](superpowers/specs/2026-10-05-chat-foundation-design.md) và [plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md) đã có; UI/runtime đã có implementation. Docker no-config smoke pass; live model acceptance cần cấu hình model |
-| C02 | **Threads & Durable History** | New chat/list/switch/rename/archive/delete; restart rồi hỏi tiếp | Interfaces chat/runtime/identity chốt ở C01 | Chờ C01; chưa có spec/plan mới |
-| C03 | **MCP Tools, Context & Inline Results** | Agent gọi custom business MCP tool → progress/result → trả lời; contract lưu call/result vào history | C01 cho live demo; C02 cho durable replay | [Spec đã viết, chờ review](superpowers/specs/2026-10-06-chat-tools-context-design.md); chưa có implementation plan/code C03 |
+| C02 | **Threads & Durable History** | New chat/list/switch/rename/archive/delete; restart rồi hỏi tiếp | Interfaces chat/runtime/identity chốt ở C01 | User xác nhận đã handle riêng; không mở lại như phần mới cần planning. Tài liệu/code chưa đồng bộ vào checkout này không là bằng chứng phần này chưa được xử lý |
+| C03 | **MCP Tools, Context & Inline Results** | Agent gọi custom business MCP tool → progress/result → trả lời; contract lưu call/result vào history | C01 cho live demo; C02 cho durable replay | [Spec](superpowers/specs/2026-10-06-chat-tools-context-design.md) đã có; đã bàn giao worktree `chat-tools-mcp`. Task “Triển khai C03 Business MCP” đang viết implementation plan riêng; không lập backlog trùng ở chat này |
 | C04 cũ | **Local MCP & pgEdge — ID đã nghỉ** | Business MCP client/bridge thuộc C03; pgEdge thuộc coding-agent dev tooling | Không còn là một phase app sau C03 | Giữ ID để đọc tài liệu cũ; không tạo backlog/spec/plan C04 riêng |
 | C05 | **Domain Plug-in & Artifact Bridge** | Cắm một pack mới bằng config/tools/presenter; chat giữ nguyên | C03; DB access qua app repositories khi pack cần | Chờ C03; chưa có spec/plan mới |
 
@@ -381,7 +381,7 @@ C01–C03 tạo release **chat core P0**, gồm custom business MCP tools ở C0
 
 **Feature mapping:** HIST-01…05, CTX-01, persistence/access checks của OPS-02. HIST-02 thiết kế lưu tool events từ đầu; C03 kiểm chứng bằng tool thật.
 
-**Các quyết định cần brainstorm:** custom Postgres runner integration và event/message persistence; một nguồn transcript authoritative; append/dedupe; thread title; archive/delete semantics; restart/interrupted behavior; local identity mapping. Không đưa multi-tenant auth vào C02. Reconnect/resume execution đang chạy là HIST-07, không bắt buộc P0.
+**Các điểm cần đối chiếu với phần C02 đang được handle riêng:** custom Postgres runner integration và event/message persistence; một nguồn transcript authoritative; append/dedupe; thread title; archive/delete semantics; restart/interrupted behavior; local identity mapping. Không mở lại C02 như một phần mới cần brainstorm chỉ vì checkout này chưa nhận tài liệu/code. Không đưa multi-tenant auth vào C02. Reconnect/resume execution đang chạy là HIST-07, không bắt buộc P0.
 
 **Đầu ra/handoff:** thread/execution/storage contracts và API semantics cho UI, runtime và tools; migration/service lifecycle riêng cho starter. Không sử dụng database/container của repo thi.
 
@@ -393,7 +393,7 @@ C01–C03 tạo release **chat core P0**, gồm custom business MCP tools ở C0
 
 **User đã chốt ngày 2026-10-06:** thêm business MCP servers qua config backend (URL/token + allowlist), chưa cần màn hình Settings. Tools C03 là logic team tự custom cho từng bài toán. Host business MCP server cùng app Next.js tại `/api/mcp/business`, module riêng để tách service sau. **pgEdge MCP chỉ cho coding agent dùng khi phát triển**, không thuộc app agent/bridge/config/domain packs. Business MCP token tách khỏi token pgEdge. Nếu business handler cần dữ liệu PostgreSQL, gọi app service/repository qua Drizzle.
 
-**Technical design đã viết:** [C03 Business MCP Tools spec](superpowers/specs/2026-10-06-chat-tools-context-design.md) đề xuất typed tool catalog/handler, official SDK HTTP server, per-run client/provider bridge sang BuiltInAgent, tool protocol preservation, status/result renderer và C02 handoff. Tool mẫu `calculate_budget` chạy deterministic logic không cần DB/API ngoài. Các lựa chọn này đang chờ user review; chưa có implementation plan hoặc code C03.
+**Technical design đã viết:** [C03 Business MCP Tools spec](superpowers/specs/2026-10-06-chat-tools-context-design.md) đề xuất typed tool catalog/handler, official SDK HTTP server, per-run client/provider bridge sang BuiltInAgent, tool protocol preservation, status/result renderer và C02 handoff. Tool mẫu `calculate_budget` chạy deterministic logic không cần DB/API ngoài. Phần planning/implementation đã bàn giao worktree `chat-tools-mcp`; task “Triển khai C03 Business MCP” đang viết plan riêng. Không tạo plan trùng ở checkout gốc; cập nhật link khi tài liệu thực sự được đồng bộ.
 
 **Feature mapping:** TOOL-01…04, MCP-01, RESULT-01, CTX-02…03; tool authorization của OPS-02. MCP-02 thuộc coding-agent dev tooling, nằm ngoài scope app. TOOL-04/CTX-02…03 là P1: có thể tách khỏi acceptance P0 nhưng phải có scope rõ trong spec/plan. MCP Apps (MCP-03) vẫn là X15.
 
@@ -489,8 +489,9 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-06 | C03 | User chọn host business MCP cùng Next.js tại `/api/mcp/business`, module riêng để tách service sau | Hosting đã chốt; lifecycle/bridge đang brainstorm |
 | 2026-10-06 | C03 / dev tooling | User làm rõ pgEdge MCP chỉ dành cho coding agent, không đưa vào app. App-to-pgEdge bridge, tool registration, domain requirements và credential forwarding trong thiết kế cũ bị hủy; app DB access dùng Drizzle/repositories | Scope hiện hành đã sửa trong docs; Compose hiện vẫn truyền hai biến pgEdge chưa dùng vào app, cần bỏ khi chỉnh infra; chưa đổi code/config runtime trong phiên planning này |
 | 2026-10-06 | C03 | Đã viết [Business MCP Tools spec](superpowers/specs/2026-10-06-chat-tools-context-design.md): server module/handler contract, budget tool mẫu, config, per-run SDK client/provider, lifecycle/status/errors, transcript và C02 handoff | Spec đã self-review, chờ user review; chưa viết implementation plan hoặc code C03 |
+| 2026-10-06 | Planning / coordination | User xác nhận C02 và C03 đã được handle; không liệt kê chúng như phần mới còn thiếu planning. C03 có worktree riêng và task “Triển khai C03 Business MCP” đang viết plan. Phần core mới tiếp theo ở chat này là C05 | Không suy tiến độ toàn dự án từ việc thiếu file ở checkout gốc; trạng thái đã handle không đồng nghĩa đã nghiệm thu implementation |
 
-Điểm hiện tại: **C01 có spec/plan và implementation; Compose app/Postgres/pgEdge đã chạy; C03 đã có spec để review, chưa có plan/code**. C02 và C05 chưa có spec/plan riêng theo roadmap chat-first; C04 cũ không còn là phase riêng. C03 có thể demo trên chat hiện có; durable history/replay vẫn cần C02, tiếp đó là C05 domain/artifact bridge. pgEdge chỉ dành cho coding agent.
+Điểm hiện tại: **C01 có spec/plan và implementation; C02/C03 đã được handle riêng; phần core mới tiếp theo cần planning ở chat này là C05 — Domain Plug-in & Artifact Bridge**. C03 có spec và worktree/task riêng; không tạo backlog/plan trùng vì checkout gốc chưa nhận tài liệu/code. Nghiệm thu durable history/replay vẫn đối chiếu kết quả C02 và C03 khi tích hợp. C04 cũ không còn là phase riêng; pgEdge chỉ dành cho coding agent. Extensions X01–X15 mở theo nhu cầu sau core, không mặc định tất cả là việc cần plan ngay.
 
 
 ### Docker local setup — 2026-10-06
