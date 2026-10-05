@@ -2,6 +2,8 @@
 
 Đọc [ownership](build-ownership.md) để phân biệt platform với problem templates. File này là **backlog và acceptance contract**, không phải danh sách tính năng đã triển khai. Đợt cập nhật hiện tại chỉ thay đổi docs.
 
+Slice triển khai kế tiếp được đề xuất là **Core P0**, chi tiết ở [spec](superpowers/specs/2026-10-05-core-p0-design.md) và [plan](superpowers/plans/2026-10-05-core-p0-implementation-plan.md). User đã ưu tiên core trước; các mục UI/capability dưới đây vẫn là backlog platform tổng thể. Core P0 chưa triển khai ingestion/analytics/model engines; demo deterministic chỉ chứng minh runner và persistence.
+
 ## Nhóm 1 — Generic UI / frontend blocks
 
 Platform xây các component dưới `src/ui`. Bạn xây template sẽ compose chúng bằng props/context/callbacks, không phải tự dựng lại card.

@@ -2,6 +2,8 @@
 
 Phân công hiện hành là **platform dùng chung do mình xây; problem templates có FE và backend composition do bạn xây**. Những hướng dẫn cũ giao toàn bộ generic UI cho bạn được thay thế bởi bản chia việc này.
 
+**Đọc trước cho lượt xây core:** [Core P0 spec](superpowers/specs/2026-10-05-core-p0-design.md) → [Core P0 implementation plan](superpowers/plans/2026-10-05-core-p0-implementation-plan.md). Hai tài liệu mới là đề xuất để review; chưa triển khai. P0 tập trung vào registry, executor, workflow, run/artifact persistence, services và BFF; không cần API key. Đã cài CopilotKit skills mới để thiết kế boundary, chưa cài SDK vào app.
+
 | Đọc | Để làm gì |
 |---|---|
 | 1. [Build ownership](build-ownership.md) | Ai xây gì, thư mục nào thuộc ai, cách ghép |
@@ -13,4 +15,4 @@ Phân công hiện hành là **platform dùng chung do mình xây; problem templ
 | [Code structure](code-structure.md) | Map current skeleton sang planned modules |
 | [Dependencies](dependencies.md) | Pins và compatibility của toolchain hiện có |
 
-Đợt cập nhật này chỉ là docs; chưa xây UI blocks, engines hay sáu problem templates. Bốn domain seeds và sales fixtures hiện có chỉ giúp kiểm tra shared contracts. Implementation plans cũ ở `superpowers/` là tài liệu lịch sử/tham khảo; không coi chúng là backlog đã được triển khai.
+Đợt cập nhật này chỉ là docs; chưa xây UI blocks, engines hay sáu problem templates. Bốn domain seeds và sales fixtures hiện có chỉ giúp kiểm tra shared contracts. Các master/skeleton implementation plans trước Core P0 ở `superpowers/` là tài liệu lịch sử/tham khảo; không coi chúng là backlog đã được triển khai.
