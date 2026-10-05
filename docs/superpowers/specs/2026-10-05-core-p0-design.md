@@ -2,6 +2,8 @@
 
 Ngày: 2026-10-05. Trạng thái: **đề xuất để review, chưa triển khai**.
 
+**Ưu tiên đã thay đổi:** user muốn chat AI + durable chat history làm core trước. Bản này giữ làm reference business-run machinery, không còn là slice đầu tiên. Đọc [CopilotKit research](../../research/2026-10-05-copilotkit-chat-core.md); SDK/runtime integration cần đưa lên trước workflow machinery.
+
 Repo duy nhất: `E:/thucchienai/hackathon-starter-kit`, origin `baominh5xx2/template-codesdas`. Không thao tác repo thi đấu `aitc2026-team-939-triplepeek`.
 
 ## 1. Kết quả cần đạt

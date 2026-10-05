@@ -1,5 +1,7 @@
 # Core P0 Implementation Plan
 
+**Chưa execute — ưu tiên đã thay đổi:** user muốn core chat AI + durable history theo CopilotKit. Không bắt đầu plan workflow-first này; dùng làm reference cho business execution sau chat. Xem [CopilotKit research](../../research/2026-10-05-copilotkit-chat-core.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Hoàn thiện shared core tạo/execute/cancel/read run, persist artifacts và present generic UI blocks bằng một demo không cần API key.

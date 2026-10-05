@@ -2,7 +2,9 @@
 
 Phân công hiện hành là **platform dùng chung do mình xây; problem templates có FE và backend composition do bạn xây**. Những hướng dẫn cũ giao toàn bộ generic UI cho bạn được thay thế bởi bản chia việc này.
 
-**Đọc trước cho lượt xây core:** [Core P0 spec](superpowers/specs/2026-10-05-core-p0-design.md) → [Core P0 implementation plan](superpowers/plans/2026-10-05-core-p0-implementation-plan.md). Hai tài liệu mới là đề xuất để review; chưa triển khai. P0 tập trung vào registry, executor, workflow, run/artifact persistence, services và BFF; không cần API key. Đã cài CopilotKit skills mới để thiết kế boundary, chưa cài SDK vào app.
+**Ưu tiên mới: core là app chat AI có lịch sử hội thoại.** Đọc [CopilotKit ecosystem research](research/2026-10-05-copilotkit-chat-core.md) trước: runtime/agent/chat/tools/MCP dùng nền CopilotKit, phần app tập trung vào history integration và domain capabilities. SDK chưa được cài vào app.
+
+[Core P0 spec](superpowers/specs/2026-10-05-core-p0-design.md) và [plan](superpowers/plans/2026-10-05-core-p0-implementation-plan.md) trước đó **chưa triển khai và cần sắp lại theo ưu tiên chat**. Không execute plan workflow-first này như backlog hiện hành. [Agent plan 03](superpowers/plans/2026-10-05-03-agent-playground.md) có phần runtime/chat dùng để tham khảo nhưng cũng cần cập nhật durable history.
 
 | Đọc | Để làm gì |
 |---|---|
