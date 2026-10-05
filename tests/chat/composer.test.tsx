@@ -58,6 +58,27 @@ describe("ChatComposer", () => {
     expect(port.requests).toHaveLength(0);
   });
 
+  it("disables Send after controller failure while preserving editable draft until recovery", async () => {
+    const { controller, input, port } = setup();
+    fireEvent.change(input, { target: { value: "Bản nháp" } });
+    expect(screen.getByRole("button", { name: "Gửi tin nhắn" })).toBeEnabled();
+    act(() => controller.fail());
+    expect(controller.getSnapshot().available).toBe(true);
+    expect(screen.getByRole("button", { name: "Gửi tin nhắn" })).toBeDisabled();
+    fireEvent.change(input, { target: { value: "Bản nháp tiếp theo" } });
+    expect(input).toHaveValue("Bản nháp tiếp theo");
+    expect(input).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Gửi tin nhắn" }));
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(port.requests).toHaveLength(0);
+    act(() => controller.setAvailable(true));
+    expect(screen.getByRole("button", { name: "Gửi tin nhắn" })).toBeEnabled();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(port.requests).toHaveLength(1);
+    expect(port.requests[0].messages[0].content).toBe("Bản nháp tiếp theo");
+    await act(async () => port.finish());
+  });
+
   it("keeps textarea focus and the next draft while Stop waits for teardown", async () => {
     const { input, controller, port } = setup();
     input.focus();

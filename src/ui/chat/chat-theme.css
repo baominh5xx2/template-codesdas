@@ -314,6 +314,13 @@
   cursor: default;
 }
 
+.chat-scroll-bottom-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .chat-send-button:focus-visible,
 .chat-retry-button:focus-visible {
   outline: 2px solid var(--chat-focus);

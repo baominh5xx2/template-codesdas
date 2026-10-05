@@ -63,6 +63,9 @@ vi.mock("@copilotkit/react-core/v2", async () => {
     if (sdk.crash) throw new Error("RAW_PROVIDER_ERROR");
     return children;
   }
+  function ScrollView({ children, scrollToBottomButton }: ComponentProps<typeof SDKChatView.ScrollView>) {
+    return <div>{children}{typeof scrollToBottomButton === "object" && <button type="button" {...scrollToBottomButton} />}</div>;
+  }
   return {
     // Installed 1.77.0 compatibility export only calls public onError with a public key.
     CopilotKit: ({ children }: { children: ReactNode }) => <Provider onError={() => {}}>{children}</Provider>,
@@ -73,7 +76,7 @@ vi.mock("@copilotkit/react-core/v2", async () => {
       sdk.chatError = onError;
       return <ChatView onSubmitMessage={() => { throw new Error("Internal SDK submit must be overridden"); }} />;
     },
-    CopilotChatView: Object.assign(View, { ScrollView: ({ children }: { children: ReactNode }) => <div>{children}</div> }),
+    CopilotChatView: Object.assign(View, { ScrollView }),
     CopilotChatUserMessage: ({ message, toolbar: Toolbar }: { message: { content: string }; toolbar: React.ComponentType }) => <div>{message.content}<Toolbar /></div>,
     CopilotChatAssistantMessage: Object.assign(({ message, toolbar: Toolbar }: { message: { content: string }; toolbar: React.ComponentType }) => <div>{message.content}<Toolbar /></div>, {
       MarkdownRenderer: ({ content }: { content: string }) => <div>{content}</div>,
@@ -153,6 +156,14 @@ describe("ChatWorkspace", () => {
     expect(sdk.port!.requests).toHaveLength(0);
   });
 
+  it("passes an owned 44px minimum touch target to the SDK scroll action", async () => {
+    vi.stubGlobal("fetch", () => readiness(true)); render(<ChatWorkspace />);
+    await waitFor(() => expect(sdk.controller?.getSnapshot().available).toBe(true));
+    const button = screen.getByRole("button", { name: "Về cuối cuộc trò chuyện" });
+    expect(button).toHaveClass("chat-scroll-bottom-button");
+    expect(button).toHaveStyle({ minWidth: "44px", minHeight: "44px" });
+  });
+
   it("New chat aborts then waits before resetting, and fences repeated clicks", async () => {
     vi.stubGlobal("fetch", () => readiness(true)); render(<ChatWorkspace />);
     await waitFor(() => expect(sdk.controller?.getSnapshot().available).toBe(true));
@@ -211,5 +222,35 @@ describe("ChatWorkspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     await waitFor(() => expect(sdk.controller!.getSnapshot().available).toBe(true));
     expect(screen.getByRole("textbox")).toHaveValue("Bản nháp");
+  });
+
+  it("stops the attached active run on boundary failure and gates recovery until teardown", async () => {
+    const fetch = vi.fn().mockImplementation(() => readiness(true));
+    vi.stubGlobal("fetch", fetch);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const view = render(<ChatWorkspace />);
+    await waitFor(() => expect(sdk.controller?.getSnapshot().available).toBe(true));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Xin chào" } });
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+    act(() => sdk.port!.emitStarted());
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Bản nháp tiếp theo" } });
+    sdk.crash = true;
+    view.rerender(<ChatWorkspace />);
+    expect(sdk.port!.stopCount).toBe(1);
+    expect(sdk.controller!.getSnapshot().pending).toBe(true);
+    expect(sdk.controller!.getSnapshot().available).toBe(false);
+    expect(screen.getByRole("textbox")).toHaveValue("Bản nháp tiếp theo");
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(sdk.port!.requests).toHaveLength(1);
+    await act(async () => sdk.port!.finish());
+    expect(sdk.controller!.getSnapshot().pending).toBe(false);
+    expect(sdk.controller!.getSnapshot().status).toBe("interrupted");
+    sdk.crash = false;
+    fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    await waitFor(() => expect(sdk.controller!.getSnapshot().available).toBe(true));
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "Gửi tin nhắn" })).toBeEnabled();
+    expect(screen.getByRole("textbox")).toHaveValue("Bản nháp tiếp theo");
   });
 });

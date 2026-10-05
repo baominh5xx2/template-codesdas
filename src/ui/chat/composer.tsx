@@ -11,7 +11,7 @@ export function ChatComposer({ controller, notice }: { controller: ChatControlle
   const composing = useRef(false);
   const stopping = useRef(false);
   const [stopPending, setStopPending] = useState(false);
-  const disabled = !snapshot.available || snapshot.pending || !snapshot.draft.trim() || snapshot.draft.length > CHAT_LIMITS.inputChars;
+  const disabled = !snapshot.available || snapshot.pending || snapshot.notice || !snapshot.draft.trim() || snapshot.draft.length > CHAT_LIMITS.inputChars;
 
   useLayoutEffect(() => {
     const input = textarea.current;
@@ -39,7 +39,7 @@ export function ChatComposer({ controller, notice }: { controller: ChatControlle
         onKeyDown={(event) => {
           if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing || composing.current) return;
           event.preventDefault();
-          void controller.send();
+          if (!disabled) void controller.send();
         }} />
       {snapshot.pending ? <button type="button" className="chat-send-button" aria-label="Dừng trả lời"
         disabled={stopPending} onClick={() => { void stop(); }}>

@@ -24,7 +24,8 @@ export function WhiteChatView(props: ComponentProps<typeof CopilotChatView>): Re
     messageView={{ assistantMessage: AssistantMessageSlot, userMessage: UserMessageSlot }}>
     {({ messageView }) => <ConversationLayout
       transcript={<CopilotChatView.ScrollView data-chat-scroll autoScroll="pin-to-bottom" inputContainerHeight={0}
-        scrollToBottomButton={{ "aria-label": "Về cuối cuộc trò chuyện" }}>
+        scrollToBottomButton={{ "aria-label": "Về cuối cuộc trò chuyện", className: "chat-scroll-bottom-button",
+          style: { minWidth: 44, minHeight: 44 } }}>
         <div className="chat-column">
           {snapshot.messages.length === 0 ? <h2 className="chat-welcome">Bạn muốn hỏi gì?</h2> : messageView}
         </div>

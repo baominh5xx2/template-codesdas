@@ -17,7 +17,12 @@ export function ChatPanel({ controller }: { controller: ChatController }): React
     if (!binding || !isReady) return;
     const detach = binding.attach(createCopilotChatClient({ agent, copilotkit }));
     controller.setAvailable(true);
-    return () => { controller.setAvailable(false); detach(); };
+    return () => {
+      controller.setAvailable(false);
+      // Keep the active port reachable until C01 has requested abort and settled teardown.
+      if (controller.getSnapshot().pending) void controller.stop().finally(detach);
+      else detach();
+    };
   }, [agent, binding, controller, copilotkit, isReady]);
   return <CopilotChat agentId="default" chatView={WhiteChatView} inspectorTools={false}
     onError={() => controller.fail()} />;
