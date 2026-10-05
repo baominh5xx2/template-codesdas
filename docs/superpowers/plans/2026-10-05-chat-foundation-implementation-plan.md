@@ -6,7 +6,7 @@
 
 **Architecture:** Next.js BFF chạy TypeScript CopilotRuntime/BuiltInAgent, model instance từ endpoint cấu hình riêng và InMemoryAgentRunner cho C01. Client dùng CopilotChat với app-owned view/controller/error projection. History durable và domain/tools/MCP thuộc C02–C05.
 
-**Tech Stack:** Existing Node 24 LTS/pnpm 11.25.0/Next 16.3.8/React 19.3.0/TypeScript 6.0.3/Zod 4.6.5; thêm stable CopilotKit 1.77.0 với imports v2, AI SDK 6.0.300, OpenAI adapter 3.0.124, AG-UI client 1.0.1 và RxJS 7.8.1.
+**Tech Stack:** Existing Node 24 LTS/Bun 1.4.2/Next 16.3.8/React 19.3.0/TypeScript 6.0.3/Zod 4.6.5; thêm stable CopilotKit 1.77.0 với imports v2, AI SDK 6.0.300, OpenAI adapter 3.0.124, AG-UI client 1.0.1 và RxJS 7.8.1.
 
 **Spec:** [C01 Chat Foundation](../specs/2026-10-05-chat-foundation-design.md). User đã cho chuyển sang writing-plans ngày 2026-10-05; chưa yêu cầu execute plan này. Đọc cả spec và plan khi triển khai.
 
@@ -103,7 +103,7 @@ expect(await chatFailureResponse(503).json()).toEqual({ code: "chat_unavailable"
 
 Thêm assertions: whitespace model/key, malformed URL/userinfo trong URL, no credential in readiness, diagnostic sink nhận đúng allowlisted fields và không nhận arbitrary raw error object. `GET` không gọi fetch/model; headers `Cache-Control: no-store`.
 
-- [ ] **Step 2: Run failing tests.** `pnpm test -- tests/chat/config.test.ts tests/chat/errors.test.ts tests/integration/chat-readiness.test.ts`; expected missing modules/exports, không sửa test thành skip.
+- [ ] **Step 2: Run failing tests.** `bun run test -- tests/chat/config.test.ts tests/chat/errors.test.ts tests/integration/chat-readiness.test.ts`; expected missing modules/exports, không sửa test thành skip.
 - [ ] **Step 3: Implement config/policy/readiness.** Zod safeParse riêng cho chat settings; trim values, HTTP(S), model nonempty, no URL userinfo; optional blank key thành absent. Missing pair → missing_config; malformed provided values → invalid_config. Giữ parsing riêng với existing `loadServerEnv`.
 
 ```ts
@@ -121,13 +121,13 @@ export function resolveLocalChatIdentity(): Scope {
 
 `emitChatDiagnostic` reconstructs allowlisted fields; không spread unknown objects. Readiness `GET()` gọi own config loader và Response.json safe DTO; không `process.env` trong client/shared contracts, không đổi `APP_MODE` hoặc global feature flags.
 
-- [ ] **Step 4: Run tests và baseline env test.** Commands trên + `pnpm test -- tests/contracts/env-errors.test.ts tests/integration/health.test.ts`; expected PASS khi execute.
+- [ ] **Step 4: Run tests và baseline env test.** Commands trên + `bun run test -- tests/contracts/env-errors.test.ts tests/integration/health.test.ts`; expected PASS khi execute.
 - [ ] **Step 5: Commit exact Task 1 files.** `git commit -m "feat: add isolated chat readiness and failure policy"`; stage chỉ create/test paths của task.
 
 ## Task 2: Configured model + SDK runtime có execution policy
 
 **Files:**
-- Modify: `package.json`, `pnpm-lock.yaml`, `docs/dependencies.md`, `.env.example` (thêm three chat vars nếu file đã có; tạo nếu chưa có).
+- Modify: `package.json`, `bun.lock`, `docs/dependencies.md`, `.env.example` (thêm three chat vars nếu file đã có; tạo nếu chưa có).
 - Create: `src/adapters/llm/chat-model.ts`, `src/adapters/agents/chat-runtime.ts`, `src/adapters/agents/chat-policy.ts`, `src/server/chat/http.ts`, `src/app/api/copilotkit/[[...slug]]/route.ts`.
 - Test/helpers: `tests/chat/model.test.ts`, `tests/chat/runtime-policy.test.ts`, `tests/integration/chat-runtime.test.ts`, `tests/helpers/chat-provider.ts`.
 
@@ -169,10 +169,10 @@ Actual SDK integration request body `RunAgentInput`: UUID thread/run IDs, state 
 - [ ] **Step 2: Run RED rồi install exact compatible SDKs cho implementation task.** Tests đầu tiên phải fail missing exports; sau đó:
 
 ```powershell
-pnpm add --save-exact @copilotkit/react-core@1.77.0 @copilotkit/runtime@1.77.0 ai@6.0.300 @ai-sdk/openai@3.0.124 @ag-ui/client@1.0.1 rxjs@7.8.1
+bun add --exact @copilotkit/react-core@1.77.0 @copilotkit/runtime@1.77.0 ai@6.0.300 @ai-sdk/openai@3.0.124 @ag-ui/client@1.0.1 rxjs@7.8.1
 ```
 
-Không thêm optional framework/Intelligence/MCP packages thủ công. Đối chiếu peer/export evidence bằng installed types và `pnpm list --depth 0`; lockfile generated bình thường, không force. `.env.example` chỉ placeholders cho chat own settings; không chép secret hoặc private endpoint.
+Không thêm optional framework/Intelligence/MCP packages thủ công. Đối chiếu peer/export evidence bằng installed types và `bun pm ls`; lockfile generated bình thường, không force. `.env.example` chỉ placeholders cho chat own settings; không chép secret hoặc private endpoint.
 
 - [ ] **Step 3: Implement model adapter với explicit credentials/no-auth.** Dùng `createOpenAI` từ pinned provider và `.chat(config.modelId)`; no-auth truyền literal placeholder để SDK không đọc ambient env, wrapper xóa Authorization trước actual fetch. Placeholder không là credential gửi lên server.
 
@@ -217,7 +217,7 @@ export const runtime = "nodejs";
 
 Route exports GET/POST/PATCH/DELETE trỏ same wrapper singleton. Wrapper responses errors status 400/403/409/413/500/503 giữ cùng public copy; normal protocol unsupported endpoints không expose raw bodies. `onError` hook mask HTTP; middleware ở Step 4 mask streamed errors. Request replay sau bounded read dùng reconstructed Request với original signal.
 
-- [ ] **Step 6: Verify.** `pnpm test -- tests/chat/model.test.ts tests/chat/runtime-policy.test.ts tests/integration/chat-runtime.test.ts`; `pnpm check`; expected actual SDK stream/provider tests PASS, no mismatched exports. No-env readiness test vẫn không instantiate runtime/model.
+- [ ] **Step 6: Verify.** `bun run test -- tests/chat/model.test.ts tests/chat/runtime-policy.test.ts tests/integration/chat-runtime.test.ts`; `bun run check`; expected actual SDK stream/provider tests PASS, no mismatched exports. No-env readiness test vẫn không instantiate runtime/model.
 - [ ] **Step 7: Commit Task 2 exact files.** `git commit -m "feat: wire local chat model and guarded CopilotKit runtime"`.
 
 ## Task 3: Client controller và SDK lifecycle bridge
@@ -272,7 +272,7 @@ await retry;
 
 Thêm assertions: unavailable/blank/>8_000 chars không dispatch và giữ draft; Stop giữ partial/interrupted/no notice; late sink sau terminal/reset ignored; New chat chờ stop-finalization rồi đổi thread; old retry invalidated khi gửi/newChat; rejection trước started rollback optimistic user message/restore draft, failure sau started giữ accepted user ID cho Retry; dispose unsubscribe/abort. Bridge tests verify setMessages full prefix, explicit runId, no addMessage second time, stopAgent call, binding attach/detach/unattached failure, finalized subscription cleanup và safe handling onRunFailed/onRunErrorEvent.
 
-- [ ] **Step 2: RED.** `pnpm test -- tests/chat/controller.test.ts tests/chat/client-bridge.test.ts`; expected missing exports.
+- [ ] **Step 2: RED.** `bun run test -- tests/chat/controller.test.ts tests/chat/client-bridge.test.ts`; expected missing exports.
 - [ ] **Step 3: Implement controller state/race policy.** Synchronous pending fence trước await; giữ accepted user message ID và pre-turn checkpoint cho retry; sink closure bound generation/run; terminal chỉ một lần. Use immutable snapshots cho `useSyncExternalStore`; pending bao gồm stopping/resetting, status chỉ spec statuses. Stop flag phân biệt explicit user cancel với failed timeout. Run promise settle là teardown gate, không chỉ `agent.isRunning=false` tức thời.
 
 ```ts
@@ -298,7 +298,7 @@ void result;
 
 Không dùng direct low-level agent.runAgent làm agent loop thay thế. Mỗi run sink nhận safe text projections và app statuses; no errors object stored in controller. Retry context chỉ checkpoint + original user message.
 
-- [ ] **Step 5: Verify GREEN + types.** Commands RED trên + `pnpm check`; tất cả race/duplicate assertions PASS.
+- [ ] **Step 5: Verify GREEN + types.** Commands RED trên + `bun run check`; tất cả race/duplicate assertions PASS.
 - [ ] **Step 6: Commit Task 3 files.** `git commit -m "feat: add race-safe chat send stop and retry controller"`.
 
 ## Task 4: Workspace UI và SDK view/error customization
@@ -339,14 +339,14 @@ Responsive tests viewport 390×844, 768×1024, 1440×900 và 1920×1080: sidebar
 - [ ] **Step 2: Define harness/scripts.** Add `chat:smoke: tsx scripts/chat-smoke.ts`; script dùng explicit `CHAT_SMOKE_URL` default `http://127.0.0.1:3100`, check health/readiness; if readiness unavailable verify runtime 503/copy and no crash, if available perform UUID text run and verify successful stream terminal or mask failure. Không auto boot provider hoặc đọc unrelated env/secrets. Controlled provider command:
 
 ```powershell
-pnpm exec tsx tests/helpers/chat-provider-server.ts
+bun run tsx tests/helpers/chat-provider-server.ts
 ```
 
 Command trên dùng khi inspect fixture độc lập; stop process mình vừa chạy trước Playwright. Automated harness tự launch fixture, không launch thêm một server thủ công cùng port.
 
-`playwright.config.ts` webServer array bổ sung provider và hai chat app servers; commands `pnpm dev --port 3100`/`pnpm dev --port 3101`, project baseURLs tương ứng. `chat-no-env` match no-env spec; `chat-live` match live/failures specs; baseline match duy nhất baseline spec. Startup health `/api/health`/fixture health, timeout 60_000. Các dev servers dùng `distDir` riêng (`.next-e2e-baseline`, `.next-e2e-no-env`, `.next-e2e-live`) qua server-only `NEXT_TEST_DIST_DIR` trong `next.config.ts`, default vẫn `.next`; thêm paths vào `.gitignore`. Điều này tránh nhiều `next dev` tranh lock hoặc ghi đè production build. Vì env vars inherited, overwrite all three chat vars cho no-env/baseline. Không set test mode trong production app để đổi agent/provider. Occupied ports làm harness fail rõ, không kill server/container không thuộc test run.
+`playwright.config.ts` webServer array bổ sung provider và hai chat app servers; commands `bun run dev --port 3100`/`bun run dev --port 3101`, project baseURLs tương ứng. `chat-no-env` match no-env spec; `chat-live` match live/failures specs; baseline match duy nhất baseline spec. Startup health `/api/health`/fixture health, timeout 60_000. Các dev servers dùng `distDir` riêng (`.next-e2e-baseline`, `.next-e2e-no-env`, `.next-e2e-live`) qua server-only `NEXT_TEST_DIST_DIR` trong `next.config.ts`, default vẫn `.next`; thêm paths vào `.gitignore`. Điều này tránh nhiều `next dev` tranh lock hoặc ghi đè production build. Vì env vars inherited, overwrite all three chat vars cho no-env/baseline. Không set test mode trong production app để đổi agent/provider. Occupied ports làm harness fail rõ, không kill server/container không thuộc test run.
 
-Tạo `chat-production` project port **3102**, match `chat-production.spec.ts`; server command `pnpm exec next start --hostname 127.0.0.1 --port 3102`, dùng `.next` từ `pnpm build`, `NEXT_TEST_DIST_DIR` empty và three chat vars empty. Browser spec xác nhận notice/disabled Send; HTTP assertions readiness false, runtime info 503 với copy đúng, `/api/demo/document-review` 503 và `/api/runs` POST 501. Dùng cùng spec để kiểm tra production gating thật thay vì chỉ đổi NODE_ENV trong unit test.
+Tạo `chat-production` project port **3102**, match `chat-production.spec.ts`; server command `bun run next start --hostname 127.0.0.1 --port 3102`, dùng `.next` từ `bun run build`, `NEXT_TEST_DIST_DIR` empty và three chat vars empty. Browser spec xác nhận notice/disabled Send; HTTP assertions readiness false, runtime info 503 với copy đúng, `/api/demo/document-review` 503 và `/api/runs` POST 501. Dùng cùng spec để kiểm tra production gating thật thay vì chỉ đổi NODE_ENV trong unit test.
 
 - [ ] **Step 3: Implement acceptance fixes và production-safe docs.** Chỉ sửa failures trong Task 1–4 boundaries; không weaken assertions để pass. API docs thêm readiness/runtime và mask policy; code structure/handoff ghi C01 ephemeral limitation, C02 swap runner, no tools/MCP yet. Existing fixtures giữ dev/test only; provider fixture dưới tests không vào production registry.
 
@@ -364,16 +364,16 @@ if (!readiness.available) {
 - [ ] **Step 4: Run required gates once; rerun chỉ khi sửa/failure.**
 
 ```powershell
-pnpm check
-pnpm test
-pnpm domain:validate
-pnpm build
-pnpm exec playwright test --project=chat-no-env --project=chat-live --project=chat-production
-pnpm e2e --project=baseline
+bun run check
+bun run test
+bun run domain:validate
+bun run build
+bun run playwright test --project=chat-no-env --project=chat-live --project=chat-production
+bun run e2e --project=baseline
 git diff --check
 ```
 
-Expected PASS khi execute. Production project chạy built app không chat config: chat notice/no runtime crash và fixture APIs production 503. `pnpm build` phải chạy trước Playwright vì harness có production server; nếu chạy RED trước implementation, build baseline trước và kỳ vọng fail đúng missing chat behavior. Controlled provider checks là automated integration, không claim live public model. Live own endpoint smoke optional khi được config; ghi limitation nếu chưa kiểm tra live endpoint. Build và automated checks không cần API key.
+Expected PASS khi execute. Production project chạy built app không chat config: chat notice/no runtime crash và fixture APIs production 503. `bun run build` phải chạy trước Playwright vì harness có production server; nếu chạy RED trước implementation, build baseline trước và kỳ vọng fail đúng missing chat behavior. Controlled provider checks là automated integration, không claim live public model. Live own endpoint smoke optional khi được config; ghi limitation nếu chưa kiểm tra live endpoint. Build và automated checks không cần API key.
 
 - [ ] **Step 5: Commit/handoff.** Stage exact changed C01 code/tests/docs; `git commit -m "test: verify chat streaming recovery and no-env release gates"`. Report checks/limitations, cập nhật C01 completed chỉ sau acceptance; confirm đúng origin/branch trước user-authorized push. Không push repo thi.
 

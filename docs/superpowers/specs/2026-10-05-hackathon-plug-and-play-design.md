@@ -69,7 +69,7 @@ Cây này là cấu trúc sẽ triển khai sau khi thiết kế được duyệ
 hackathon-starter-kit/
 ├── README.md
 ├── package.json
-├── pnpm-lock.yaml
+├── bun.lock
 ├── next.config.ts
 ├── drizzle.config.ts
 ├── compose.yaml

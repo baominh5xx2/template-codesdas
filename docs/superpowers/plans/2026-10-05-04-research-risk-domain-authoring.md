@@ -34,7 +34,7 @@
 
 ### Quy ước execution chung
 
-Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
+Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies từ npm registry cài bằng bun add --exact, commit bun.lock; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
 Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
@@ -87,7 +87,7 @@ it("uses seed URLs when search is unavailable and deduplicates content", async (
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/research-sources.test.ts`
+Run: `bun run vitest run tests/integration/research-sources.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -113,8 +113,8 @@ export function canonicalizeUrl(value: string): string {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/research-sources.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/integration/research-sources.test.ts`
+Additional run: `bun run check`
 Expected: Seed URL path works without search, tracks warning; duplicates removed; fetch concurrency/deadline enforced. Failed/private/oversized fetch never becomes SourceRef with fabricated body. Uploaded sources remain reusable.
 
 - [ ] **Step 5: Commit local**
@@ -158,7 +158,7 @@ it("returns unknown when half the required weight is missing", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/risk-score.test.ts`
+Run: `bun run vitest run tests/contracts/risk-score.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -194,8 +194,8 @@ export function calculateWeightedScore(
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/risk-score.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/contracts/risk-score.test.ts`
+Additional run: `bun run check`
 Expected: Golden cases cover full/partial/missing inputs, numeric range/weight rejection and both directions. Repeated runs on same signals/rules identical; no model numeric score.
 
 - [ ] **Step 5: Commit local**
@@ -236,7 +236,7 @@ it("renders an honest empty research result without manufacturing a score", () =
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/research-risk-workflows.test.ts`
+Run: `bun run vitest run tests/integration/research-risk-workflows.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -267,8 +267,8 @@ export function riskSummaryBlock(data: RiskData): UIBlock {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/research-risk-workflows.test.ts`
-Additional run: `pnpm exec playwright test tests/e2e/research-risk.spec.ts; pnpm check; pnpm build`
+Run: `bun run vitest run tests/integration/research-risk-workflows.test.ts`
+Additional run: `bun run playwright test tests/e2e/research-risk.spec.ts; bun run check; bun run build`
 Expected: Fixture HTTP/model adapters drive both actual workflow/service paths; fabricated quotes fail, missing inputs show partial/unknown; live research from team-selected approved source is separately recorded. Both packs run in dashboard and agent without engine modifications.
 
 - [ ] **Step 5: Commit local**
@@ -310,7 +310,7 @@ it("rejects duplicate step IDs and unknown source profiles in a copied pack", ()
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/domain-authoring.test.ts`
+Run: `bun run vitest run tests/contracts/domain-authoring.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -342,8 +342,8 @@ export function validateDomain(
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/domain-authoring.test.ts`
-Additional run: `pnpm exec tsx scripts/validate-domains.ts; pnpm check`
+Run: `bun run vitest run tests/contracts/domain-authoring.test.ts`
+Additional run: `bun run tsx scripts/validate-domains.ts; bun run check`
 Expected: Template-generated pack validates and fixture runs without core changes; existing directory/path traversal rejected. All11 playbooks contain input schema/source choice/workflow/UI/custom-tool limits/sample input.
 
 - [ ] **Step 5: Commit local**
@@ -385,7 +385,7 @@ it("never reads another user's memory and ignores expired entries",async()=>{
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/memory-scope.test.ts`
+Run: `bun run vitest run tests/integration/memory-scope.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai; test Postgres từ A3 đang chạy.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -407,8 +407,8 @@ export function validateMemoryValue(value: unknown): JsonValue {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/memory-scope.test.ts`
-Additional run: `pnpm db:generate; pnpm db:migrate; pnpm check`
+Run: `bun run vitest run tests/integration/memory-scope.test.ts`
+Additional run: `bun run db:generate; bun run db:migrate; bun run check`
 Expected: Actual DB suite proves same-workspace different-user isolation, cross-workspace isolation, expiry, JSON size and idempotent upsert/remove. Tool outputs contain no unrelated memory.
 
 - [ ] **Step 5: Commit local**
@@ -446,7 +446,7 @@ test("registered packs remain discoverable after reload",async({page})=>{
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec playwright test tests/e2e/adaptation.spec.ts`
+Run: `bun run playwright test tests/e2e/adaptation.spec.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -459,15 +459,15 @@ Write runbook from fresh dependency install/environment setup on starter only: f
     "domain:new": "tsx scripts/create-domain.ts",
     "domain:validate": "tsx scripts/validate-domains.ts",
     "doctor": "tsx scripts/doctor.ts",
-    "verify": "pnpm check && pnpm test && pnpm build"
+    "verify": "bun run check && bun run test && bun run build"
   }
 }
 ```
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec playwright test tests/e2e/adaptation.spec.ts`
-Additional run: `pnpm verify; pnpm domain:validate; pnpm doctor --all; pnpm exec playwright test`
+Run: `bun run playwright test tests/e2e/adaptation.spec.ts`
+Additional run: `bun run verify; bun run domain:validate; bun run doctor --all; bun run playwright test`
 Expected: Fresh local stack from pinned images passes eligible checks, all archetype fixture flows and new-pack rehearsal pass. Live gateway/source gates explicitly verified or marked unverified if credentials/source absent; no fixture represented as live. Repo remains isolated, no remote/push.
 
 - [ ] **Step 5: Commit local**

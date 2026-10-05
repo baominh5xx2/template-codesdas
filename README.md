@@ -4,19 +4,23 @@
 
 ## Bắt đầu
 
+Cài **Bun 1.4.2** và **Node 24 LTS**. Bun quản lý dependencies và chạy scripts; `bun.lock` là lockfile duy nhất của repo. Next.js và Vitest vẫn chạy trên Node qua các scripts hiện có.
+
 ```sh
-pnpm install --frozen-lockfile
-pnpm dev
+bun install --frozen-lockfile
+bun run dev
 ```
 
 Mở `/playground` để xem bốn fixture và các API liên quan. Kiểm tra baseline bằng:
 
 ```sh
-pnpm domain:validate
-pnpm check
-pnpm test
-pnpm build
+bun run domain:validate
+bun run check
+bun run test
+bun run build
 ```
+
+Thêm dependencies bằng `bun add --exact <package>` hoặc `bun add --dev --exact <package>`. Chạy unit tests bằng `bun run test` để dùng Vitest theo cấu hình repo.
 
 ## Tích hợp frontend
 

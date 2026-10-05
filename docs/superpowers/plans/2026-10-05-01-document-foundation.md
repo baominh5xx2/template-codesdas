@@ -34,7 +34,7 @@
 
 ### Quy ước execution chung
 
-Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
+Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies từ npm registry cài bằng bun add --exact, commit bun.lock; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
 Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
@@ -47,18 +47,18 @@ A1 → A2 → A3 → A4 → A5 → A6 → A7 → A8 → A9. Gate1 là document p
 ### Task A1: App bootstrap, env contract và public error envelope
 
 **Files:**
-- Create: package.json, pnpm-lock.yaml, tsconfig.json, next.config.ts, eslint.config.mjs, vitest.config.ts, playwright.config.ts
+- Create: package.json, bun.lock, tsconfig.json, next.config.ts, eslint.config.mjs, vitest.config.ts, playwright.config.ts
 - Create: src/app/layout.tsx, src/app/page.tsx, src/app/globals.css, src/app/api/health/route.ts
 - Create: src/server/env.ts, src/contracts/errors.ts, .env.example, docs/dependencies.md
 - Create: tests/helpers/server-only.ts; Test: tests/contracts/env-errors.test.ts
 
 **Interfaces:**
 - Consumes: Spec v0.3; repo chưa có app.
-- Produces: loadServerEnv(values:Record<string,string|undefined>):ServerEnv; toPublicError(error:unknown,traceId:string):ErrorEnvelope; GET /api/health; pnpm check/test/build scripts. ServerEnv có DATABASE_URL, SESSION_SECRET, AI config optional cho fixture mode; loadLiveGatewayConfig bắt buộc đủ AI fields.
+- Produces: loadServerEnv(values:Record<string,string|undefined>):ServerEnv; toPublicError(error:unknown,traceId:string):ErrorEnvelope; GET /api/health; bun run check/test/build scripts. ServerEnv có DATABASE_URL, SESSION_SECRET, AI config optional cho fixture mode; loadLiveGatewayConfig bắt buộc đủ AI fields.
 
 - [ ] **Step 0: Chuẩn bị test infrastructure thuộc task**
 
-Chạy pnpm init tại root, rồi pnpm add --save-exact next react react-dom zod drizzle-orm pg server-only; pnpm add -D --save-exact typescript @types/node @types/react @types/react-dom @types/pg vitest tsx drizzle-kit eslint eslint-config-next @playwright/test @testing-library/react @testing-library/jest-dom jsdom dotenv. Cấu hình Vitest alias @/ → src/ và server-only → tests/helpers/server-only.ts (export {}); không alias server-only ở app build. Ghi versions/engines thực tế vào docs/dependencies.md. Chưa import SDK hoặc gọi network trong test.
+Chạy bun init --bare tại root, rồi bun add --exact next react react-dom zod drizzle-orm pg server-only; bun add --dev --exact typescript @types/node @types/react @types/react-dom @types/pg vitest tsx drizzle-kit eslint eslint-config-next @playwright/test @testing-library/react @testing-library/jest-dom jsdom dotenv. Cấu hình Vitest alias @/ → src/ và server-only → tests/helpers/server-only.ts (export {}); không alias server-only ở app build. Ghi versions/engines thực tế vào docs/dependencies.md. Chưa import SDK hoặc gọi network trong test.
 
 - [ ] **Step 1: Viết test behavior**
 
@@ -77,7 +77,7 @@ it("requires a session secret and masks internal credentials", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/env-errors.test.ts`
+Run: `bun run vitest run tests/contracts/env-errors.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -105,14 +105,14 @@ export function toPublicError(_error: unknown, traceId: string) {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/env-errors.test.ts`
-Additional run: `pnpm check; pnpm build`
+Run: `bun run vitest run tests/contracts/env-errors.test.ts`
+Additional run: `bun run check; bun run build`
 Expected: Env/error tests pass, TS/lint/build pass, health route không expose secrets. Package scripts: dev=next dev --hostname 127.0.0.1, check=tsc --noEmit + eslint, test=vitest run, build=next build, e2e=playwright test, db:generate/drizzle-kit generate, db:migrate/drizzle-kit migrate.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- package.json pnpm-lock.yaml tsconfig.json next.config.ts eslint.config.mjs vitest.config.ts playwright.config.ts src/app src/server/env.ts src/contracts/errors.ts .env.example tests/helpers/server-only.ts tests/contracts/env-errors.test.ts docs/dependencies.md
+git -C E:/thucchienai/hackathon-starter-kit add -- package.json bun.lock tsconfig.json next.config.ts eslint.config.mjs vitest.config.ts playwright.config.ts src/app src/server/env.ts src/contracts/errors.ts .env.example tests/helpers/server-only.ts tests/contracts/env-errors.test.ts docs/dependencies.md
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'chore: bootstrap isolated starter and server boundaries'
 ```
 
@@ -153,7 +153,7 @@ it("rejects unknown blocks, non-JSON data and unregistered schema versions", () 
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/artifacts-blocks.test.ts`
+Run: `bun run vitest run tests/contracts/artifacts-blocks.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -181,8 +181,8 @@ export const MetricBlockSchema = z.object({
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/artifacts-blocks.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/contracts/artifacts-blocks.test.ts`
+Additional run: `bun run check`
 Expected: 19 schema entries có cùng canonical type names trong master; invalid schema version/non-JSON/unknown UI type bị reject; schema modules không import server or React.
 
 - [ ] **Step 5: Commit local**
@@ -227,7 +227,7 @@ it("claims a run once and hides another workspace's artifacts", async () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/repositories.test.ts`
+Run: `bun run vitest run tests/integration/repositories.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -250,8 +250,8 @@ await db.transaction(async (tx) => {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/repositories.test.ts`
-Additional run: `pnpm db:generate; pnpm db:migrate; pnpm check`
+Run: `bun run vitest run tests/integration/repositories.test.ts`
+Additional run: `bun run db:generate; bun run db:migrate; bun run check`
 Expected: Memory and Postgres suites pass: duplicate claim false; all ID lookups scoped; atomic rollback; traversal rejected. Migrations/docs không chứa secret; operator session bootstrap chỉ local.
 
 - [ ] **Step 5: Commit local**
@@ -296,7 +296,7 @@ it("uses configured configured gateway origin and does not retry to another prov
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/btc-adapter.test.ts`
+Run: `bun run vitest run tests/integration/btc-adapter.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -322,14 +322,14 @@ export function createGatewayModel(config: GatewayConfig, fetcher: typeof fetch 
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/btc-adapter.test.ts`
-Additional run: `pnpm exec tsx scripts/doctor.ts --gateway`
+Run: `bun run vitest run tests/integration/btc-adapter.test.ts`
+Additional run: `bun run tsx scripts/doctor.ts --gateway`
 Expected: Fakes prove configured gateway origin/token masking/abort/error handling. Live doctor chỉ được ghi verified sau actual request với config do đội cung cấp; missing credentials giữ gate unverified, không dùng fixture thay live.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/llm/gateway scripts/doctor.ts docs/gateway-compatibility.md tests/integration/btc-adapter.test.ts package.json pnpm-lock.yaml .env.example
+git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/llm/gateway scripts/doctor.ts docs/gateway-compatibility.md tests/integration/btc-adapter.test.ts package.json bun.lock .env.example
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: add gateway-only model adapter and compatibility probes'
 ```
 
@@ -367,7 +367,7 @@ it("rejects dependencies on later steps", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/workflows/runner.test.ts`
+Run: `bun run vitest run tests/workflows/runner.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -397,8 +397,8 @@ export async function executeCapability<I, O>(
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/workflows/runner.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/workflows/runner.test.ts`
+Additional run: `bun run check`
 Expected: Status/timeout/budget/schema failures match spec. Invalid draft kind/version bị reject trước commit theo step registration. No background job or request fire-and-forget; duplicate model execution test passes.
 
 - [ ] **Step 5: Commit local**
@@ -442,7 +442,7 @@ it("rejects local/private destinations before fetching", async () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/document-ingestion.test.ts`
+Run: `bun run vitest run tests/integration/document-ingestion.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -465,14 +465,14 @@ export function assertUploadSize(bytes: Uint8Array) {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/document-ingestion.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/integration/document-ingestion.test.ts`
+Additional run: `bun run check`
 Expected: PDF/DOCX/TXT/JSON/HTML fixtures có locators; upload+ownership+scan+oversize+redirect+IPv6 private+DNS tests pass. URL fetch không vượt5MB/15s. CSV/XLSX request được trả unsupported format rõ ràng tới phase B1.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/parsers src/adapters/sources src/sources src/capabilities/ingestion src/core/services/uploads.ts src/app/api/uploads tests/integration/document-ingestion.test.ts package.json pnpm-lock.yaml
+git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/parsers src/adapters/sources src/sources src/capabilities/ingestion src/core/services/uploads.ts src/app/api/uploads tests/integration/document-ingestion.test.ts package.json bun.lock
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: ingest documents with source provenance'
 ```
 
@@ -516,7 +516,7 @@ it("rejects fabricated quotes and invalid extraction after one repair", async ()
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/document-workflow.test.ts`
+Run: `bun run vitest run tests/integration/document-workflow.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -561,8 +561,8 @@ Thêm golden test: segment text "abc quote xyz", locator text[0,13); excerpt "qu
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/document-workflow.test.ts`
-Additional run: `pnpm exec tsx scripts/doctor.ts --gateway; pnpm check`
+Run: `bun run vitest run tests/integration/document-workflow.test.ts`
+Additional run: `bun run tsx scripts/doctor.ts --gateway; bun run check`
 Expected: Fixture workflow produces persisted expected artifacts; repair capped; fabricated IDs/quotes rejected. Real gateway output must validate before live doctor/workflow gate. Locator comparison implementation must compare document/segment offsets exactly, not accept quote elsewhere in document.
 
 - [ ] **Step 5: Commit local**
@@ -606,7 +606,7 @@ it("renders a failed run as failed rather than complete", async () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/run-http.test.ts tests/contracts/presenter.test.ts`
+Run: `bun run vitest run tests/integration/run-http.test.ts tests/contracts/presenter.test.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -632,8 +632,8 @@ export function buildResultView(
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/run-http.test.ts tests/contracts/presenter.test.ts`
-Additional run: `pnpm check; pnpm build`
+Run: `bun run vitest run tests/integration/run-http.test.ts tests/contracts/presenter.test.ts`
+Additional run: `bun run check; bun run build`
 Expected: Presenter schema passes all run states; HTTP scoped lookups/cancel/duplicate execute tests pass; no UI import of prompts/secrets; sources open correctly and exports use persisted result.
 
 - [ ] **Step 5: Commit local**
@@ -673,7 +673,7 @@ test("document upload creates a persisted result with evidence", async ({ page }
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec playwright test tests/e2e/document-review.spec.ts`
+Run: `bun run playwright test tests/e2e/document-review.spec.ts`
 Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -698,8 +698,8 @@ tests/fixtures/document.txt có chính xác hai dòng: "Payment is due within 30
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec playwright test tests/e2e/document-review.spec.ts`
-Additional run: `pnpm check; pnpm test; pnpm build; docker compose --env-file .env.local up -d --build app postgres`
+Run: `bun run playwright test tests/e2e/document-review.spec.ts`
+Additional run: `bun run check; bun run test; bun run build; docker compose --env-file .env.local up -d --build app postgres`
 Expected: E2E/TS/unit/integration/build pass, container app healthy. Gate1 chứng minh demo/fixture document pipeline; optional gateway availability ghi riêng, không yêu cầu credentials. README có đúng run commands và P0 interruption limit.
 
 - [ ] **Step 5: Commit local**

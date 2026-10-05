@@ -39,7 +39,7 @@
 ### Task 1: Finish runnable bootstrap without external configuration
 
 **Files:**
-- Finish existing package.json, pnpm-lock.yaml, pnpm-workspace.yaml, tsconfig.json, next.config.ts, eslint.config.mjs, vitest.config.ts, playwright.config.ts, next-env.d.ts.
+- Finish existing package.json, bun.lock, bunfig.toml, tsconfig.json, next.config.ts, eslint.config.mjs, vitest.config.ts, playwright.config.ts, next-env.d.ts.
 - Modify src/server/env.ts, src/contracts/errors.ts, src/app/api/health/route.ts, src/app/page.tsx, src/app/layout.tsx, src/app/globals.css, .env.example, .gitignore, docs/dependencies.md.
 - Test tests/contracts/env-errors.test.ts and tests/integration/health.test.ts.
 
@@ -55,7 +55,7 @@ it("boots a skeleton without external configuration",async()=>{
   expect(await GET().json()).toMatchObject({status:"ok",mode:"skeleton"});
 });
 ```
-- [ ] RED: pnpm exec vitest run tests/contracts/env-errors.test.ts tests/integration/health.test.ts. Existing env requires DB/session and health lacks mode; changed expectation must fail.
+- [ ] RED: bun run vitest run tests/contracts/env-errors.test.ts tests/integration/health.test.ts. Existing env requires DB/session and health lacks mode; changed expectation must fail.
 - [ ] Implement Zod skeleton defaults, optional backend fields, health mode/version, masked errors. Remove current gateway-key configuration from env/.env.example. Narrow lint rules to UI/client imports, not all server App Router files; contracts cannot import framework/server code, core cannot import concrete domains/adapters. Add *.tsbuildinfo ignore. No next/font network fetch. Start/build requires no env.
 ```ts
 const ServerEnvSchema = z.object({
@@ -65,7 +65,7 @@ const ServerEnvSchema = z.object({
   SESSION_SECRET:z.string().min(32).optional(),
 });
 ```
-- [ ] GREEN: focused tests, pnpm check, pnpm build. Record exact stable pins and compatibility/source links; no live-AI claims.
+- [ ] GREEN: focused tests, bun run check, bun run build. Record exact stable pins and compatibility/source links; no live-AI claims.
 - [ ] Commit exact bootstrap files: chore: finish standalone skeleton bootstrap.
 
 ### Task 2: Canonical contracts and usable module boundaries
@@ -94,7 +94,7 @@ it("rejects executable blocks and out-of-range risk",()=>{
  }}).success).toBe(false);
 });
 ```
-- [ ] RED: pnpm exec vitest run tests/contracts/artifacts-blocks.test.ts tests/contracts/workflow-domain.test.ts.
+- [ ] RED: bun run vitest run tests/contracts/artifacts-blocks.test.ts tests/contracts/workflow-domain.test.ts.
 - [ ] Implement canonical schemas, inferred types and pure validators. Contracts cannot contain React/env/SDK imports. Source/doc/evidence data stored once, derived artifacts reference IDs. Registry validates full envelope and registered kind/version. Workflow validation enforces earlier-only deps but does not execute steps. Module READMEs state exact future input/output and ownership, no empty .gitkeep files or fake algorithms.
 ```ts
 export function assertPriorDependencies(ids:string[],index:number,dependsOn:string[]):void {
@@ -104,7 +104,7 @@ export function assertPriorDependencies(ids:string[],index:number,dependsOn:stri
  }
 }
 ```
-- [ ] GREEN: focused contracts tests, pnpm check, pnpm build. All19 schemas typecheck and unavailable errors remain explicit.
+- [ ] GREEN: focused contracts tests, bun run check, bun run build. All19 schemas typecheck and unavailable errors remain explicit.
 - [ ] Commit exact contracts/core/boundary files: feat: define typed starter boundaries for parallel work.
 
 ### Task 3: Domain template, fixture APIs and frontend handoff
@@ -139,15 +139,15 @@ it("shares stable data references for charts, tables and sources",()=>{
  expect(bundle.label).toContain("Demo");
 });
 ```
-- [ ] RED: pnpm exec vitest run tests/contracts/demo-fixtures.test.ts tests/integration/demo-http.test.ts.
-- [ ] Implement real validated synthetic fixtures and catalog/routes. Demo disabled in production. API routes return meaningful errors, no external credentials/DB/models. Basic playground page lists fixture JSON and API links only; do not build cards. README provides pnpm install --frozen-lockfile, pnpm dev, pnpm check/test/build and known skeleton limitations.
+- [ ] RED: bun run vitest run tests/contracts/demo-fixtures.test.ts tests/integration/demo-http.test.ts.
+- [ ] Implement real validated synthetic fixtures and catalog/routes. Demo disabled in production. API routes return meaningful errors, no external credentials/DB/models. Basic playground page lists fixture JSON and API links only; do not build cards. README provides bun install --frozen-lockfile, bun run dev, bun run check/test/build and known skeleton limitations.
 ```ts
 export function assertDemoEnabled(mode:string|undefined):void {
  if(mode==="production") throw new FeatureUnavailableError("Demo disabled in production");
 }
 ```
 Frontend handoff lists all19 block types/props, sources/evidence drawer data, table pagination/chart dataset IDs, action allowlist, state fixtures, and files the friend may own. They implement src/ui/{primitives,blocks,registry,renderers,agent,forms,shells,hooks,playground}; shared contract changes must be coordinated, never silently fork types. Parallel work doc separates UI from future engine/adapter ownership and gives integration sequence.
-- [ ] GREEN: fixture/HTTP tests, pnpm domain:validate, pnpm check, pnpm test, pnpm build; dev smoke fetch health/domains/demo/dataset endpoints and501 runs. Gate proves skeleton, not real ingestion/AI/MCP.
+- [ ] GREEN: fixture/HTTP tests, bun run domain:validate, bun run check, bun run test, bun run build; dev smoke fetch health/domains/demo/dataset endpoints and501 runs. Gate proves skeleton, not real ingestion/AI/MCP.
 - [ ] Commit exact domain/demo/route/docs files: feat: prepare fixture-driven frontend handoff.
 
 ## Completion gate

@@ -159,7 +159,7 @@ Execute không trả 202 rồi bỏ một Promise chạy nền. UI poll GET tron
 
 Default `APP_MODE=skeleton`: app vẫn boot không .env, DB hay key; run route trả unavailable. `APP_MODE=live` chỉ bật runs/artifacts khi DB + resolver ready. Model, uploads, parsers, sources, RAG, voice, MCP giữ false. Missing feature có typed unavailable error.
 
-Giữ exact dependencies hiện có: Next.js **16.3.8**, React **19.3.0**, Zod **4.6.5**, Drizzle **0.45.3**, pg **8.23.1**, drizzle-kit **0.31.11**, TypeScript **6.0.3**, pnpm **11.25.0**; Node **24 LTS** theo compatibility repo. Không thêm dependency cho CopilotKit, model hoặc parser vào P0. Khi triển khai phải recheck stable/peer compatibility nếu registry thay đổi, không bump chỉ vì số version lớn hơn.
+Giữ exact dependencies hiện có: Next.js **16.3.8**, React **19.3.0**, Zod **4.6.5**, Drizzle **0.45.3**, pg **8.23.1**, drizzle-kit **0.31.11**, TypeScript **6.0.3**, Bun **1.4.2**; Node **24 LTS** theo compatibility repo. Không thêm dependency cho CopilotKit, model hoặc parser vào P0. Khi triển khai phải recheck stable/peer compatibility nếu registry thay đổi, không bump chỉ vì số version lớn hơn.
 
 Docker project `hackathon-starter-core`, image dự kiến **postgres:18.6**, publish **127.0.0.1:55432:5432**, named volume riêng mount **/var/lib/postgresql** theo PostgreSQL 18 Docker layout. Verify image manifest và ghi digest thực tế lúc triển khai. Healthcheck `pg_isready`, không expose ra LAN. Password tạo local và chỉ ghi vào ignored .env; .env.example có placeholder. Không stop, remove, prune hoặc đổi config container đang có.
 

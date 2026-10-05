@@ -34,7 +34,7 @@
 
 ### Quy ước execution chung
 
-Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
+Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies từ npm registry cài bằng bun add --exact, commit bun.lock; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
 Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
@@ -83,7 +83,7 @@ it("enforces trusted scope and rejects injected workspace arguments", async () =
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/tool-dispatch.test.ts`
+Run: `bun run vitest run tests/contracts/tool-dispatch.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -112,8 +112,8 @@ export async function dispatchDefinition<I,O>(
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/tool-dispatch.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/contracts/tool-dispatch.test.ts`
+Additional run: `bun run check`
 Expected: Tool dispatch validates input/output, rejects spoofed scope and duplicate native aliases; non-operator tool discovery omits raw SQL. Services retain their own permission checks.
 
 - [ ] **Step 5: Commit local**
@@ -128,7 +128,7 @@ git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: register scoped bus
 **Files:**
 - Create: src/adapters/agents/stream.ts, fallback.ts, protocol.ts, budget.ts
 - Create: src/agents/runtime.ts, scope-runtime.ts, context.ts; src/app/api/copilotkit/[[...slug]]/route.ts
-- Modify: src/adapters/llm/gateway/sdk-model.ts, scripts/doctor.ts, docs/dependencies.md, package.json, pnpm-lock.yaml
+- Modify: src/adapters/llm/gateway/sdk-model.ts, scripts/doctor.ts, docs/dependencies.md, package.json, bun.lock
 - Test: tests/integration/agent-runtime.test.ts, tests/contracts/agent-fallback.test.ts
 
 **Interfaces:**
@@ -158,7 +158,7 @@ it("rejects executable output and caps the agent turn budget", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts`
+Run: `bun run vitest run tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -191,14 +191,14 @@ export function createAgentStream(request: AgentStreamRequest) {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts`
-Additional run: `pnpm exec tsx scripts/doctor.ts --gateway; pnpm check; pnpm build`
+Run: `bun run vitest run tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts`
+Additional run: `bun run tsx scripts/doctor.ts --gateway; bun run check; bun run build`
 Expected: Actual runtime emits valid AG-UI SSE through catch-all endpoint; fixture/native and no-tool fallback both call shared services and respect cancel/budgets. Two independent sessions cannot read/stop the other's threads or artifacts. All model network requests hit only configured gateway origin.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/agents src/adapters/llm/gateway/sdk-model.ts src/agents/runtime.ts src/agents/scope-runtime.ts src/agents/context.ts src/app/api/copilotkit scripts/doctor.ts docs/dependencies.md package.json pnpm-lock.yaml tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts
+git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/agents src/adapters/llm/gateway/sdk-model.ts src/agents/runtime.ts src/agents/scope-runtime.ts src/agents/context.ts src/app/api/copilotkit scripts/doctor.ts docs/dependencies.md package.json bun.lock tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: wire gateway-only CopilotKit factory runtime'
 ```
 
@@ -232,7 +232,7 @@ it("UI tools only change validated view state", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/agent-state.test.ts tests/integration/agent-isolation.test.ts`
+Run: `bun run vitest run tests/contracts/agent-state.test.ts tests/integration/agent-isolation.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -269,8 +269,8 @@ export function applyUiIntent(
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/agent-state.test.ts tests/integration/agent-isolation.test.ts`
-Additional run: `pnpm exec playwright test tests/e2e/chat-dashboard.spec.ts; pnpm check`
+Run: `bun run vitest run tests/contracts/agent-state.test.ts tests/integration/agent-isolation.test.ts`
+Additional run: `bun run playwright test tests/e2e/chat-dashboard.spec.ts; bun run check`
 Expected: Fixture AG-UI tool-call test creates a run through actual service; chat opens same businessRunId/artifact IDs as dashboard. Follow-up reuses run and does not duplicate analysis; reload dashboard keeps artifacts. Separate sessions and simultaneous requests retain correct scope.
 
 - [ ] **Step 5: Commit local**
@@ -315,7 +315,7 @@ it("all fixtures validate and cover each shipped block kind", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/playground.test.ts`
+Run: `bun run vitest run tests/contracts/playground.test.ts`
 Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites của task đã sẵn sàng.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -338,14 +338,14 @@ export function safeMediaUrl(value: string, origin: string): string {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/playground.test.ts`
-Additional run: `pnpm exec playwright test tests/e2e/playground.spec.ts; pnpm check; pnpm build`
+Run: `bun run vitest run tests/contracts/playground.test.ts`
+Additional run: `bun run playwright test tests/e2e/playground.spec.ts; bun run check; bun run build`
 Expected: Gallery renders all19 validated block kinds/six states, unsupported content isolated; evidence keyboard flow works. Report/dashboard consume same view. No external model/provider requests while using playground.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/ui/blocks src/ui/playground src/ui/registry/index.tsx src/ui/renderers src/app/playground tests/contracts/playground.test.ts tests/e2e/playground.spec.ts docs/ui-playground.md package.json pnpm-lock.yaml
+git -C E:/thucchienai/hackathon-starter-kit add -- src/ui/blocks src/ui/playground src/ui/registry/index.tsx src/ui/renderers src/app/playground tests/contracts/playground.test.ts tests/e2e/playground.spec.ts docs/ui-playground.md package.json bun.lock
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: complete reusable UI block playground'
 ```
 

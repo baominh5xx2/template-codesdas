@@ -8,7 +8,7 @@
 
 **Architecture:** Modular monolith; pure core qua ports, Drizzle/Postgres adapter và scoped Next.js BFF. Capability execution có schema boundary, deadline và attempt fence; business state không nằm trong chat SDK. P0 không cài runtime CopilotKit, nhưng cung cấp projection contract cho phase tích hợp sau.
 
-**Tech Stack:** Node 24 LTS, pnpm 11.25.0, Next.js 16.3.8, React 19.3.0, TypeScript 6.0.3, Zod 4.6.5, Drizzle 0.45.3, pg 8.23.1, drizzle-kit 0.31.11, Vitest 5.0.3; Docker Postgres 18.6 cần verify manifest lúc triển khai.
+**Tech Stack:** Node 24 LTS, Bun 1.4.2, Next.js 16.3.8, React 19.3.0, TypeScript 6.0.3, Zod 4.6.5, Drizzle 0.45.3, pg 8.23.1, drizzle-kit 0.31.11, Vitest 5.0.3; Docker Postgres 18.6 cần verify manifest lúc triển khai.
 
 **Spec:** [Core P0 design](../specs/2026-10-05-core-p0-design.md). Đọc cả spec và plan trước khi thực thi.
 
@@ -180,7 +180,7 @@ expect((await runs.get(scope, runningRun.id))?.status).toBe("interrupted");
 
 - [ ] **Step 2: RED.** Trước khi thêm default suite excludes, run `.\node_modules\.bin\vitest.cmd run tests/integration/postgres-runs.test.ts`; expect FAIL missing repository imports/behavior. Viết DB helper URL guard trong test setup nhưng chưa cần DB cho import failure; không coi thiếu Docker là bằng chứng logic fail.
 - [ ] **Step 3: Implement tables, row-lock transactions và repository factory.** Claim CAS; enforce running/deadline/current attempt trước start/commit; commit artifact + step + revision atomically. Failure/terminal/cancel writes được phép sau deadline nhưng không override terminal state. Guard ownership join, unique artifact per step, interruption-on-read và cancel idempotency. `finish` skip remaining pending steps atomically với reason phù hợp. Sessions lưu hash, check DB expiry, không lưu raw token. Dedicated DB config chỉ include postgres-runs test, reset inherited excludes; runner validate URL trước khi spawn Vitest, thiếu URL exit nonzero.
-- [ ] **Step 4: GREEN với DB thật.** Verify `docker manifest inspect postgres:18.6`, record digest; ensure 55432 free, generate ignored local password, `docker compose -p hackathon-starter-core up -d db`. Run `pnpm db:generate --name core`, `pnpm db:migrate`, tạo dedicated `starter_core_test`, rồi `pnpm test:core-db` PASS và compose ps healthy. Migration cho test schema do helper quản lý. Add forced insert-error rollback assertion: no artifact, no succeeded step, revision unchanged; double commit conflict; cross-scope create/read/cancel/write denied; cancelled terminal không bị finish override; sessions expired resolve null. Không chỉnh DB/container khác; unit suite không giả PASS bằng skip integration.
+- [ ] **Step 4: GREEN với DB thật.** Verify `docker manifest inspect postgres:18.6`, record digest; ensure 55432 free, generate ignored local password, `docker compose -p hackathon-starter-core up -d db`. Run `bun run db:generate --name core`, `bun run db:migrate`, tạo dedicated `starter_core_test`, rồi `bun run test:core-db` PASS và compose ps healthy. Migration cho test schema do helper quản lý. Add forced insert-error rollback assertion: no artifact, no succeeded step, revision unchanged; double commit conflict; cross-scope create/read/cancel/write denied; cancelled terminal không bị finish override; sessions expired resolve null. Không chỉnh DB/container khác; unit suite không giả PASS bằng skip integration.
 - [ ] **Step 5: Commit.** Stage files của Task 4 kể cả generated migration metadata, không stage `.env`; `git commit -m "feat(db): persist scoped runs with atomic attempt fences"`.
 
 ## Task 5: Sequential workflow runner
@@ -325,9 +325,9 @@ expect((await reloadResultAfterAppRestart(result.runId)).blocks[0].props.value).
 expect((await readExpiredAbandonedRun()).status).toBe("interrupted");
 ```
 
-- [ ] **Step 2: RED.** `pnpm core:smoke` ban đầu FAIL missing script hoặc incomplete live flow; record actual failure. Test runner lifecycle quản lý đúng process của starter, không kill process/container khác.
+- [ ] **Step 2: RED.** `bun run core:smoke` ban đầu FAIL missing script hoặc incomplete live flow; record actual failure. Test runner lifecycle quản lý đúng process của starter, không kill process/container khác.
 - [ ] **Step 3: Implement smoke và handoff docs.** Session→create→execute→GET run/result/artifact; validate DTO/total10, fail process rõ nếu endpoint unavailable. Integration harness restart app process do test tạo, giữ DB/volume/session; expired abandoned fixture seeded dedicated DB. Document typed registration example theo new refs, no domain logic trong core. Update trạng thái doc từ planned thành implemented chỉ phần đã pass.
-- [ ] **Step 4: Run final checks.** `pnpm test:core-db`, `pnpm test:core-smoke`, `pnpm core:smoke` với dev app đang chạy, toàn bộ unit/contract tests, domain validation, check và build đều phải PASS. Nếu pnpm sandbox gặp store/linking mismatch, dùng direct repo binaries dưới đây; không reinstall chỉ để né môi trường.
+- [ ] **Step 4: Run final checks.** `bun run test:core-db`, `bun run test:core-smoke`, `bun run core:smoke` với dev app đang chạy, toàn bộ unit/contract tests, domain validation, check và build đều phải PASS. Nếu sandbox chặn Bun truy cập tempdir hoặc linker, dùng direct repo binaries dưới đây; không reinstall chỉ để né môi trường.
 
 ```powershell
 .\node_modules\.bin\vitest.cmd run
@@ -340,7 +340,7 @@ git diff --check
 git status --short
 ```
 
-Default Vitest suite exclude đúng hai files DB/smoke qua config, không dùng conditional `it.skip`. Dedicated config/runner chạy riêng để commands trên không cần DB; final gate bắt buộc `pnpm test:core-db` và `pnpm test:core-smoke`. Review tracked diff không chứa .env, token, raw DB URL; kiểm tra remote trước push.
+Default Vitest suite exclude đúng hai files DB/smoke qua config, không dùng conditional `it.skip`. Dedicated config/runner chạy riêng để commands trên không cần DB; final gate bắt buộc `bun run test:core-db` và `bun run test:core-smoke`. Review tracked diff không chứa .env, token, raw DB URL; kiểm tra remote trước push.
 
 - [ ] **Step 5: Commit và whole-branch review.** Stage đúng Task 9 files; `git commit -m "test(core): verify durable lifecycle and document platform handoff"`. Dùng fresh **gpt-6-luna** reviewer theo preserved SDD method, sửa findings và rerun affected checks. Push chỉ remote starter đã được user cho phép; không push repo thi đấu.
 

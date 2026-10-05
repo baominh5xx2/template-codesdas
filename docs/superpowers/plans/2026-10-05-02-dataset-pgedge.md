@@ -34,7 +34,7 @@
 
 ### Quy ước execution chung
 
-Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
+Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies từ npm registry cài bằng bun add --exact, commit bun.lock; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
 Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
@@ -72,7 +72,7 @@ it("preserves missing amounts and stable row IDs", async () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/dataset-ingestion.test.ts`
+Run: `bun run vitest run tests/integration/dataset-ingestion.test.ts`
 Expected: FAIL vì behavior/import chưa có; services của task phải sẵn sàng trước integration assertion.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -95,14 +95,14 @@ export function stableRowId(sourceId: string,sheet:string,row:number) {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/dataset-ingestion.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/integration/dataset-ingestion.test.ts`
+Additional run: `bun run check`
 Expected: CSV/XLSX/null/mixed-type/leading-zero/formula fixtures pass; original sheet,row locators retained. Repeat import does not duplicate rows; cross-workspace dataset lookup remains inaccessible.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/parsers src/capabilities/ingestion/dataset.ts src/core/services/uploads.ts src/adapters/postgres/repositories.ts tests/fixtures/spending.csv tests/integration/dataset-ingestion.test.ts package.json pnpm-lock.yaml
+git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/parsers src/capabilities/ingestion/dataset.ts src/core/services/uploads.ts src/adapters/postgres/repositories.ts tests/fixtures/spending.csv tests/integration/dataset-ingestion.test.ts package.json bun.lock
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: ingest typed CSV and XLSX datasets'
 ```
 
@@ -137,7 +137,7 @@ it("computes totals without model arithmetic and marks outliers", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/contracts/analytics.test.ts tests/integration/dataset-query.test.ts`
+Run: `bun run vitest run tests/contracts/analytics.test.ts tests/integration/dataset-query.test.ts`
 Expected: FAIL vì behavior/import chưa có; services của task phải sẵn sàng trước integration assertion.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -157,8 +157,8 @@ export function numericSummary(values: Array<number|null>) {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/contracts/analytics.test.ts tests/integration/dataset-query.test.ts`
-Additional run: `pnpm check`
+Run: `bun run vitest run tests/contracts/analytics.test.ts tests/integration/dataset-query.test.ts`
+Additional run: `bun run check`
 Expected: Expected totals/mean/IQR/trend fixtures pass; missing columns, partial page globals and invalid query keys rejected. DatasetPage SQL pagination/scope tests pass.
 
 - [ ] **Step 5: Commit local**
@@ -200,12 +200,12 @@ it("rejects malformed results instead of inventing numbers", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/pgedge-client.test.ts tests/contracts/mcp-normalize.test.ts`
+Run: `bun run vitest run tests/integration/pgedge-client.test.ts tests/contracts/mcp-normalize.test.ts`
 Expected: FAIL vì behavior/import chưa có; services của task phải sẵn sàng trước integration assertion.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
 
-Install libpg-query@pg17 bằng pnpm add --save-exact libpg-query@pg17, record resolved lockfile version matching Postgres17 grammar. Use MCP-compatible SDK only after negotiated version/header test succeeds, otherwise compatible JSON-RPC HTTP driver restricted to documented methods inside client.ts. initialize/tools-list/tool-call/auth/error/AbortSignal behavior tested against actual pinned server. config base service only, no upstream web/CLI agent. Bearer secret stays backend. Disable LLM proxy, KB, embedding/similarity/searchKB and connection switching; runtime assert advertised disabled tools not exposed by app. Image entrypoint INIT_TOKENS supported only if verified pinned version; config/token example follows actual upstream schema. SQL policy use libpg-query AST, exactly one SELECT including CTEs recursively, only permitted curated relations/functions, no user-set session config, parameter/row/time/bytes limits. Restricted DB role enforces permissions beyond AST. mcp grants exclude app sessions/secrets and ordinary users cannot invoke raw SQL bridge. MCP metadata filter bound to server-approved analytics schema. Result normalizer supports exact observed pinned format; reject ambiguous outputs, retain query hash/executedAt/truncation.
+Install libpg-query@pg17 bằng bun add --exact libpg-query@pg17, record resolved lockfile version matching Postgres17 grammar. Use MCP-compatible SDK only after negotiated version/header test succeeds, otherwise compatible JSON-RPC HTTP driver restricted to documented methods inside client.ts. initialize/tools-list/tool-call/auth/error/AbortSignal behavior tested against actual pinned server. config base service only, no upstream web/CLI agent. Bearer secret stays backend. Disable LLM proxy, KB, embedding/similarity/searchKB and connection switching; runtime assert advertised disabled tools not exposed by app. Image entrypoint INIT_TOKENS supported only if verified pinned version; config/token example follows actual upstream schema. SQL policy use libpg-query AST, exactly one SELECT including CTEs recursively, only permitted curated relations/functions, no user-set session config, parameter/row/time/bytes limits. Restricted DB role enforces permissions beyond AST. mcp grants exclude app sessions/secrets and ordinary users cannot invoke raw SQL bridge. MCP metadata filter bound to server-approved analytics schema. Result normalizer supports exact observed pinned format; reject ambiguous outputs, retain query hash/executedAt/truncation.
 
 ```powershell
 docker pull ghcr.io/pgedge/postgres-mcp:latest
@@ -218,14 +218,14 @@ $pgEdgeDigest | Set-Content -LiteralPath '.data/pgedge-image-digest.txt'
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/pgedge-client.test.ts tests/contracts/mcp-normalize.test.ts`
-Additional run: `pnpm exec tsx scripts/doctor.ts --mcp`
+Run: `bun run vitest run tests/integration/pgedge-client.test.ts tests/contracts/mcp-normalize.test.ts`
+Additional run: `bun run tsx scripts/doctor.ts --mcp`
 Expected: Actual pinned MCP health+negotiation+tool discovery+schema read+SELECT succeeds; bad bearer rejected; INSERT/UPDATE and app-private SELECT denied by role. No provider network call from MCP. Normalizer handles actual fixture and rejects unknown formatting.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- scripts/pin-local-images.ps1 scripts/setup-local-env.ps1 scripts/doctor.ts infra/images.lock.json infra/pgedge infra/postgres/init/002-mcp-grants.sql src/adapters/mcp src/core/ports/mcp.ts compose.yaml .env.example tests/integration/pgedge-client.test.ts tests/contracts/mcp-normalize.test.ts package.json pnpm-lock.yaml
+git -C E:/thucchienai/hackathon-starter-kit add -- scripts/pin-local-images.ps1 scripts/setup-local-env.ps1 scripts/doctor.ts infra/images.lock.json infra/pgedge infra/postgres/init/002-mcp-grants.sql src/adapters/mcp src/core/ports/mcp.ts compose.yaml .env.example tests/integration/pgedge-client.test.ts tests/contracts/mcp-normalize.test.ts package.json bun.lock
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: integrate authenticated local pgEdge MCP'
 ```
 
@@ -259,7 +259,7 @@ it("does not let a normal session gain raw SQL access", () => {
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec vitest run tests/integration/dataset-workflow.test.ts tests/contracts/query-scope.test.ts`
+Run: `bun run vitest run tests/integration/dataset-workflow.test.ts tests/contracts/query-scope.test.ts`
 Expected: FAIL vì behavior/import chưa có; services của task phải sẵn sàng trước integration assertion.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -281,14 +281,14 @@ export function analyticsBlocks(artifact: Artifact<AnalyticsData>): UIBlock[] {
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec vitest run tests/integration/dataset-workflow.test.ts tests/contracts/query-scope.test.ts`
-Additional run: `pnpm check; pnpm build`
+Run: `bun run vitest run tests/integration/dataset-workflow.test.ts tests/contracts/query-scope.test.ts`
+Additional run: `bun run check; bun run build`
 Expected: CSV/XLSX workflows produce exact numeric artifacts and valid chart/table blocks; operator query returns persisted artifact with metadata; normal user query denied; summary failure preserves deterministic metrics.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/domains/examples/dataset-analysis src/ui/blocks/MetricCard.tsx src/ui/blocks/ChartCard.tsx src/ui/blocks/DataTable.tsx src/ui/registry/index.tsx src/core/services/database.ts src/core/domains/catalog.server.ts src/domains/catalog.client.ts src/server/container.ts tests/integration/dataset-workflow.test.ts tests/contracts/query-scope.test.ts package.json pnpm-lock.yaml
+git -C E:/thucchienai/hackathon-starter-kit add -- src/domains/examples/dataset-analysis src/ui/blocks/MetricCard.tsx src/ui/blocks/ChartCard.tsx src/ui/blocks/DataTable.tsx src/ui/registry/index.tsx src/core/services/database.ts src/core/domains/catalog.server.ts src/domains/catalog.client.ts src/server/container.ts tests/integration/dataset-workflow.test.ts tests/contracts/query-scope.test.ts package.json bun.lock
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: add dataset analysis and query artifact views'
 ```
 
@@ -320,7 +320,7 @@ test("CSV metrics persist and table pagination works",async({page})=>{
 
 - [ ] **Step 2: Xác nhận RED**
 
-Run: `pnpm exec playwright test tests/e2e/dataset-analysis.spec.ts`
+Run: `bun run playwright test tests/e2e/dataset-analysis.spec.ts`
 Expected: FAIL vì behavior/import chưa có; services của task phải sẵn sàng trước integration assertion.
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
@@ -329,15 +329,15 @@ spending.csv cố định A10/Bempty/C30 như B1, total40. Actual MCP permission
 
 ```powershell
 docker compose --env-file .env.local --env-file .env.images stop pgedge-mcp
-pnpm exec vitest run tests/integration/mcp-permissions.test.ts -t unavailable
+bun run vitest run tests/integration/mcp-permissions.test.ts -t unavailable
 docker compose --env-file .env.local --env-file .env.images start pgedge-mcp
-pnpm exec tsx scripts/doctor.ts --mcp
+bun run tsx scripts/doctor.ts --mcp
 ```
 
 - [ ] **Step 4: Xác nhận GREEN**
 
-Run: `pnpm exec playwright test tests/e2e/dataset-analysis.spec.ts`
-Additional run: `pnpm exec vitest run tests/integration/mcp-permissions.test.ts; pnpm check; pnpm build`
+Run: `bun run playwright test tests/e2e/dataset-analysis.spec.ts`
+Additional run: `bun run vitest run tests/integration/mcp-permissions.test.ts; bun run check; bun run build`
 Expected: Dataset E2E, actual MCP role/tool checks and degraded-MCP behavior pass. docs/verification records pinned digest/tool schema version and actual commands. Gate2 checked only after live local MCP query tested.
 
 - [ ] **Step 5: Commit local**
