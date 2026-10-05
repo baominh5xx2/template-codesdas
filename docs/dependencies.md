@@ -13,6 +13,12 @@ registry. The lockfile captures transitive versions. Metadata was checked on
 | `drizzle-orm` | `0.45.3` | Database access |
 | `pg` | `8.23.1` | PostgreSQL driver |
 | `server-only` | `0.0.1` | Server import boundary |
+| `@copilotkit/react-core` | `1.77.0` | CopilotKit React core bindings |
+| `@copilotkit/runtime` | `1.77.0` | CopilotKit runtime execution engine |
+| `ai` | `6.0.300` | AI SDK core; Vercel AI language model interface |
+| `@ai-sdk/openai` | `3.0.124` | OpenAI provider for Vercel AI SDK |
+| `@ag-ui/client` | `1.0.1` | AG-UI client protocol schemas and types |
+| `rxjs` | `7.8.1` | Reactive streams for agent execution pipeline |
 | `typescript` | `6.0.3` | Type checking; latest stable 7.x is incompatible with `typescript-eslint` peer `<6.1.0` |
 | `eslint` / `eslint-config-next` | `10.12.0` / `16.3.8` | Lint rules; config accepts ESLint `>=9` |
 | `vitest` | `5.0.3` | Unit tests; Node `>=24.0.0` supported |
@@ -32,4 +38,6 @@ registry. The lockfile captures transitive versions. Metadata was checked on
 Node 24.14.1 and pnpm 11.25.0 are the observed local tool versions. The newer
 `jsdom` 30.1.2 requires Node `^24.15.0`; 29.1.1 was selected for compatibility
 with the installed Node 24.14.1. Next, React, and Vitest are pinned to stable
-registry releases. No AI SDK is included in this bootstrap.
+registry releases. Chat foundation packages (`@copilotkit/*`, `ai`, `@ai-sdk/openai`,
+`@ag-ui/client`, `rxjs`) are pinned to verified compatible versions for C01 local chat model
+and execution policy runtime.
