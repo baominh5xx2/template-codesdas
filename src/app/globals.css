@@ -33,7 +33,7 @@ body {
   text-transform: uppercase;
 }
 
-h1 {
+.page-shell h1 {
   max-width: 640px;
   margin: 0;
   font-size: clamp(36px, 6vw, 60px);

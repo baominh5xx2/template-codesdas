@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
+import "../ui/chat/chat-theme.css";
 
 export const metadata: Metadata = {
   title: "Hackathon Starter Kit",
@@ -10,7 +12,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>{children}</body>
     </html>
   );

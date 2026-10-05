@@ -1,0 +1,100 @@
+[data-chat-theme="light"] {
+  color-scheme: light;
+  --chat-canvas: #ffffff;
+  --chat-sidebar: #f9f9f9;
+  --chat-surface: #f4f4f4;
+  --chat-user-bubble: #f1f1f1;
+  --chat-hover: #ececec;
+  --chat-text: #171717;
+  --chat-muted: #666666;
+  --chat-border: #e5e5e5;
+  --chat-focus: #2563eb;
+  --chat-send: #171717;
+  --chat-on-send: #ffffff;
+  color: var(--chat-text);
+  background: var(--chat-canvas);
+  font-family: system-ui, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+[data-chat-theme="light"] [data-copilotkit] {
+  color-scheme: light;
+  --background: var(--chat-canvas);
+  --foreground: var(--chat-text);
+  --card: var(--chat-canvas);
+  --card-foreground: var(--chat-text);
+  --popover: var(--chat-canvas);
+  --popover-foreground: var(--chat-text);
+  --primary: var(--chat-send);
+  --primary-foreground: var(--chat-on-send);
+  --secondary: var(--chat-surface);
+  --secondary-foreground: var(--chat-text);
+  --muted: var(--chat-surface);
+  --muted-foreground: var(--chat-muted);
+  --accent: var(--chat-hover);
+  --accent-foreground: var(--chat-text);
+  --border: var(--chat-border);
+  --input: var(--chat-border);
+  --ring: var(--chat-focus);
+}
+
+.chat-shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.chat-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chat-conversation {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-transcript {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+.chat-column {
+  width: 100%;
+  max-width: 768px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+.chat-composer-row {
+  flex: none;
+  padding-bottom: 24px;
+}
+
+@media (max-width: 1023px) {
+  .chat-column {
+    padding-inline: 16px;
+  }
+  .chat-composer-row {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Reset heading typography in chat header so landing page h1 rules do not bleed in */
+.chat-main h1,
+.chat-shell h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: normal;
+  max-width: none;
+}
