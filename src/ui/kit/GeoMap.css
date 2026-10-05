@@ -1,0 +1,53 @@
+/* Map surface and markers, styled after visitnorway.com's "Map of Norway". */
+.vn-geo { position: absolute; inset: 0; background: #dbe7f7; }
+.vn-geo .maplibregl-ctrl-group { border-radius: var(--radius-m); box-shadow: var(--shadow-2); }
+.vn-geo .maplibregl-ctrl-group button { width: 36px; height: 36px; }
+.vn-geo .maplibregl-cooperative-gesture-screen { font-family: var(--font-sans); }
+
+.vn-geo-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: var(--vn-blue);
+  color: #fff;
+  font: var(--fw-bold) 12px/1 var(--font-sans);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(6, 19, 42, 0.3);
+  transition: transform var(--dur-fast) var(--ease-standard), background var(--dur-fast);
+}
+.vn-geo-pin:hover { transform: scale(1.15); }
+.vn-geo-pin.is-active { background: var(--vn-navy); transform: scale(1.3); z-index: 2; }
+
+/* Full-bleed map section with the list panel overlaid on the left. */
+.vn-mapsec { position: relative; height: clamp(560px, 78vh, 780px); background: #dbe7f7; overflow: hidden; }
+.vn-mapsec__panel {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(calc(var(--viewport-inset) + 400px), 100%);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-6) var(--space-6) var(--viewport-inset);
+  background: rgba(238, 244, 253, 0.97);
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+  box-shadow: var(--shadow-2);
+}
+.vn-mapsec__group + .vn-mapsec__group { margin-top: var(--space-3); }
+.vn-mapsec__group-head { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 0; font: var(--fw-medium) 19px/1.3 var(--font-sans); color: var(--text-strong); }
+.vn-mapsec__group-head svg { flex-shrink: 0; }
+.vn-mapsec__list { list-style: none; margin: 0 0 var(--space-3); padding: 0; }
+.vn-mapsec__item { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border-subtle); font: var(--fw-medium) 16px/1.35 var(--font-sans); color: var(--text-strong); transition: color var(--dur-fast); }
+.vn-mapsec__item:hover, .vn-mapsec__item.is-active { color: var(--vn-blue); }
+.vn-mapsec__item small { font-size: 13px; color: var(--text-muted); font-weight: var(--fw-regular); }
+.vn-mapsec__detail { margin: 4px 0 8px; padding: 12px 14px; border-radius: var(--radius-m); background: #fff; font-size: 14px; line-height: 1.5; color: var(--text-body); }
+@media (max-width: 760px) {
+  .vn-mapsec { height: auto; }
+  .vn-mapsec__panel { position: relative; width: 100%; border-radius: 0; box-shadow: none; padding: var(--space-5) var(--gutter); }
+  .vn-mapsec__map { position: relative; height: 420px; }
+}
+.vn-mapsec__map { position: absolute; inset: 0; }
