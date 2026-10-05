@@ -1,0 +1,11 @@
+import { z } from "zod";
+export const ColumnSpecSchema = z.object({ key: z.string(), type: z.enum(["string", "number", "boolean", "date"]), nullable: z.boolean(), unit: z.string().optional() });
+export type ColumnSpec = z.infer<typeof ColumnSpecSchema>;
+export const DataRowSchema = z.object({ id: z.string(), values: z.record(z.string(), z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) });
+export type DataRow = z.infer<typeof DataRowSchema>;
+export const DatasetRefSchema = z.object({ id: z.string(), sourceId: z.string(), columns: z.array(ColumnSpecSchema), rowCount: z.number().int().nonnegative() });
+export type DatasetRef = z.infer<typeof DatasetRefSchema>;
+export const DatasetQuerySchema = z.object({ offset: z.number().int().nonnegative(), limit: z.number().int().positive(), sort: z.object({ key: z.string(), direction: z.enum(["asc", "desc"]) }).optional(), filters: z.array(z.object({ key: z.string(), op: z.enum(["eq", "gt", "lt"]), value: z.union([z.string(), z.number().finite(), z.boolean()]) })).optional() });
+export type DatasetQuery = z.infer<typeof DatasetQuerySchema>;
+export const DatasetPageSchema = z.object({ datasetId: z.string(), columns: z.array(ColumnSpecSchema), rows: z.array(DataRowSchema), total: z.number().int().nonnegative(), offset: z.number().int().nonnegative(), limit: z.number().int().positive() });
+export type DatasetPage = z.infer<typeof DatasetPageSchema>;

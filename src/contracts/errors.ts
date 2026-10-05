@@ -1,11 +1,17 @@
 export interface ErrorEnvelope {
-  code: "internal_error";
+  code: "internal_error" | "feature_unavailable";
   message: string;
   retryable: boolean;
   traceId: string;
 }
 
-export function toPublicError(_error: unknown, traceId: string): ErrorEnvelope {
+export class FeatureUnavailableError extends Error {
+  readonly code = "feature_unavailable";
+  constructor(message = "This feature is not available in the starter skeleton.") { super(message); this.name = "FeatureUnavailableError"; }
+}
+
+export function toPublicError(error: unknown, traceId: string): ErrorEnvelope {
+  if (error instanceof FeatureUnavailableError) return { code: error.code, message: error.message, retryable: false, traceId };
   return {
     code: "internal_error",
     message: "Không thể hoàn tất thao tác.",
