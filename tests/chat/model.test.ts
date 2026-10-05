@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createChatModel } from "@/adapters/llm/chat-model";
+import { CHAT_NOTICE } from "@/contracts/chat";
 import { createChatProviderFixture, type ChatProviderFixture } from "../helpers/chat-provider";
 
 type StreamingModel = {
@@ -131,5 +132,36 @@ describe("createChatModel", () => {
     }
 
     expect(customFetchCalled).toBe(true);
+  });
+
+  it("removes provider metadata from thrown model errors before SDK diagnostics", async () => {
+    fixture.setScenario("reject");
+    const model = createChatModel({ baseUrl: fixture.baseUrl, modelId: "test-model", apiKey: "RAW_SECRET_KEY" }) as unknown as StreamingModel;
+    const error = await model.doStream({ inputFormat: "messages", mode: { type: "regular" }, prompt: [{ role: "user", content: [{ type: "text", text: "PRIVATE_PROMPT" }] }] }).catch((failure: unknown) => failure);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe(CHAT_NOTICE);
+    expect(Object.getOwnPropertyNames(error)).not.toContain("requestBodyValues");
+    expect(Object.getOwnPropertyNames(error)).not.toContain("cause");
+    expect(String(error)).not.toContain("RAW_SECRET");
+  });
+
+  it("sanitizes failures encountered while reading a partial provider stream", async () => {
+    fixture.setScenario("partial-fail");
+    const model = createChatModel({ baseUrl: fixture.baseUrl, modelId: "test-model" }) as unknown as StreamingModel;
+    const stream = await model.doStream({ inputFormat: "messages", mode: { type: "regular" }, prompt: [{ role: "user", content: [{ type: "text", text: "partial" }] }] });
+    const reader = stream.stream.getReader();
+    const errors: unknown[] = [];
+    try {
+      while (true) {
+        const next = await reader.read(); if (next.done) break;
+        const chunk = next.value as { type: string; error?: unknown };
+        if (chunk.type === "error") errors.push(chunk.error);
+      }
+    } catch (error) { errors.push(error); }
+    expect(errors.length).toBeGreaterThan(0);
+    for (const error of errors) {
+      expect(String(error)).toBe(`Error: ${CHAT_NOTICE}`);
+      expect(Object.getOwnPropertyNames(error)).not.toContain("cause");
+    }
   });
 });

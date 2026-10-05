@@ -42,7 +42,19 @@ export function createChatRequestHandler(
     // Enforce Origin check on browser mutations
     if (isMutation) {
       const originHeader = request.headers.get("origin");
-      if (!originHeader || originHeader !== url.origin) {
+      // Next may normalize Request.url to its listener hostname. HTTP Host is
+      // the browser-facing authority; forwarded headers are never trusted.
+      const host = request.headers.get("host") ?? url.host;
+      let sameOrigin = false;
+      try {
+        const origin = new URL(originHeader ?? "");
+        const authority = new URL(`${url.protocol}//${host}`);
+        sameOrigin = ["http:", "https:"].includes(origin.protocol) &&
+          originHeader === origin.origin && !authority.username && !authority.password &&
+          authority.pathname === "/" && !authority.search && !authority.hash &&
+          !/[\s\\/@?#]/.test(host) && origin.origin === authority.origin;
+      } catch { /* malformed or absent origin/authority */ }
+      if (!sameOrigin) {
         emitChatDiagnostic(diagnostics, {
           code: "invalid_request",
           traceId: "request",

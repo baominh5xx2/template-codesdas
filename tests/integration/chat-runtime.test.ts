@@ -86,6 +86,29 @@ describe("createChatRequestHandler integration", () => {
     expect(body.message).toBe(CHAT_NOTICE);
   });
 
+  it("accepts the browser origin when Next normalizes its internal request URL hostname", async () => {
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {});
+    const response = await handler(new Request("http://localhost:3101/api/copilotkit/agent/default/run", {
+      method: "POST", headers: { Host: "127.0.0.1:3101", Origin: "http://127.0.0.1:3101", "Content-Type": "application/json" },
+      body: JSON.stringify({ threadId: "123e4567-e89b-12d3-a456-426614174000", runId: "123e4567-e89b-12d3-a456-426614174001", state: {}, messages: [{ id: "123e4567-e89b-12d3-a456-426614174002", role: "user", content: "normalized origin" }], tools: [], context: [], forwardedProps: {} }),
+    }));
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain('"type":"RUN_FINISHED"');
+  });
+
+  it.each([
+    { origin: "http://attacker.invalid:3101", host: "127.0.0.1:3101" },
+    { origin: "http://127.0.0.1:3101/path", host: "127.0.0.1:3101" },
+    { origin: "null", host: "127.0.0.1:3101" },
+    { origin: "http://127.0.0.1:3101", host: "127.0.0.1:3101/extra" },
+    { origin: "http://127.0.0.1:3101", host: "user@127.0.0.1:3101" },
+  ])("rejects malformed/cross-origin authority $origin/$host", async ({ origin, host }) => {
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {});
+    const response = await handler(new Request("http://localhost:3101/api/copilotkit/agent/default/run", { method: "POST", headers: { Origin: origin, Host: host }, body: "{}" }));
+    expect(response.status).toBe(403);
+    expect(fixture.requests).toHaveLength(0);
+  });
+
   it("rejects user message exceeding 8000 input chars with status 400", async () => {
     const configResult = loadChatConfig({
       CHAT_MODEL_BASE_URL: fixture.baseUrl,

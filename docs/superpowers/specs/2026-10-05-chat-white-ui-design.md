@@ -1,8 +1,8 @@
 # Chat UI — ChatGPT layout, white theme
 
-Ngày: **2026-10-05**, cập nhật **2026-10-06**. Trạng thái: **user đã cho chuyển sang writing-plans; UI plan đã viết; chưa triển khai UI**.
+Ngày: **2026-10-05**, cập nhật **2026-10-06**. Trạng thái: **C01 white UI đã triển khai và đạt browser acceptance với actual SDK**.
 
-User chọn bố cục chat như ảnh ChatGPT đính kèm và **theme trắng**. Đây là visual/interaction spec cho [Core PRD](../../platform-build-spec.md), [C01 spec](2026-10-05-chat-foundation-design.md) và [C01 plan](../plans/2026-10-05-chat-foundation-implementation-plan.md). Thay thế quyết định theme theo browser light/dark trước đó. Mình chỉ viết spec/plan; user tự triển khai code.
+User chọn bố cục chat như ảnh ChatGPT đính kèm và **theme trắng**. Đây là visual/interaction spec cho [Core PRD](../../platform-build-spec.md), [C01 spec](2026-10-05-chat-foundation-design.md) và [C01 plan](../plans/2026-10-05-chat-foundation-implementation-plan.md). Thay thế quyết định theme theo browser light/dark trước đó. Browser acceptance đã kiểm tra bốn viewports, dark preference giữ white tokens, keyboard/IME, drawer focus, Copy, long stream/scroll và reflow tương đương 200% zoom. Native browser zoom chưa kiểm tra thủ công. C01 transcript ephemeral; history thật thuộc C02.
 
 ## 1. Hướng thiết kế
 

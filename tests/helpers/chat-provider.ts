@@ -20,6 +20,7 @@ export type ChatProviderOptions = {
   port?: number;
   scenario?: ChatProviderScenario;
   rejectStatus?: 401 | 429 | 500;
+  controlRoutes?: boolean;
 };
 
 export async function createChatProviderFixture(
@@ -31,10 +32,21 @@ export async function createChatProviderFixture(
   const requests: CapturedRequest[] = [];
   const sockets = new Set<Socket>();
   const activeTimers = new Set<NodeJS.Timeout>();
+  let responseText = "Xin chào! Tôi có thể giúp gì cho bạn?";
+  let chunkDelay = 0;
+  const heldResponses = new Set<http.ServerResponse>();
+  function chunk(content: string) {
+    return `data: ${JSON.stringify({ id: "chatcmpl-test", object: "chat.completion.chunk", created: 1, model: "test-chat", choices: [{ index: 0, delta: { role: "assistant", content }, finish_reason: null }] })}\n\n`;
+  }
+  function finish(res: http.ServerResponse) {
+    if (res.destroyed) return;
+    res.write(`data: ${JSON.stringify({ id: "chatcmpl-test", object: "chat.completion.chunk", created: 1, model: "test-chat", choices: [{ index: 0, delta: {}, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`);
+    res.end();
+  }
 
   const server = http.createServer(async (req, res) => {
     let aborted = false;
-    req.on("close", () => {
+    res.on("close", () => {
       if (!res.writableEnded) {
         aborted = true;
       }
@@ -52,11 +64,39 @@ export async function createChatProviderFixture(
       parsedBody = rawBody;
     }
 
+    if (options?.controlRoutes && req.url?.startsWith("/test/")) {
+      res.setHeader("Content-Type", "application/json");
+      if (req.url === "/test/health" && req.method === "GET") {
+        res.end(JSON.stringify({ status: "ok" }));
+      } else if (req.url === "/test/requests" && req.method === "GET") {
+        res.end(JSON.stringify(requests));
+      } else if (req.url === "/test/finish" && req.method === "POST") {
+        for (const held of heldResponses) finish(held);
+        heldResponses.clear();
+        res.end("{}");
+      } else if (req.url === "/test/scenario" && req.method === "POST") {
+        const control = parsedBody as { scenario?: string; rejectStatus?: number; text?: string; chunkDelay?: number } | null;
+        if (!control || !["success", "reject", "partial-fail", "slow"].includes(control.scenario ?? "") ||
+          (control.rejectStatus !== undefined && ![401, 429, 500].includes(control.rejectStatus)) ||
+          (control.text !== undefined && (typeof control.text !== "string" || control.text.length > 32_000)) ||
+          (control.chunkDelay !== undefined && (!Number.isInteger(control.chunkDelay) || control.chunkDelay < 0 || control.chunkDelay > 100))) {
+          res.writeHead(400); res.end(JSON.stringify({ error: "invalid_control" })); return;
+        }
+        currentScenario = control.scenario as ChatProviderScenario;
+        currentRejectStatus = (control.rejectStatus ?? 401) as 401 | 429 | 500;
+        responseText = control.text ?? "Xin chào! Tôi có thể giúp gì cho bạn?";
+        chunkDelay = control.chunkDelay ?? 0;
+        requests.length = 0;
+        res.end("{}");
+      } else { res.writeHead(404); res.end("{}"); }
+      return;
+    }
+
     const captured: CapturedRequest = {
       body: parsedBody,
       authorization: req.headers["authorization"] ?? null,
       get aborted() {
-        return aborted || req.destroyed;
+        return aborted;
       },
     };
     requests.push(captured);
@@ -83,6 +123,9 @@ export async function createChatProviderFixture(
           Connection: "keep-alive",
         });
         res.write(": keepalive\n\n");
+        if (options?.controlRoutes) res.write(chunk(responseText));
+        heldResponses.add(res);
+        res.once("close", () => heldResponses.delete(res));
         // Keep connection open indefinitely until aborted or closed
         return;
       }
@@ -115,7 +158,7 @@ export async function createChatProviderFixture(
             res.write(`data: RAW_SECRET_ERROR {corrupt json\n\n`);
             res.destroy(new Error("Stream connection failed abruptly"));
           }
-        }, 30);
+        }, options?.controlRoutes ? 250 : 30);
         activeTimers.add(timer);
         return;
       }
@@ -126,6 +169,19 @@ export async function createChatProviderFixture(
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
       });
+      if (options?.controlRoutes) {
+        const parts = responseText.match(/[\s\S]{1,120}/g) ?? [""];
+        for (const part of parts) {
+          if (res.destroyed) return;
+          res.write(chunk(part));
+          if (chunkDelay) await new Promise<void>((resolve) => {
+            const timer = setTimeout(() => { activeTimers.delete(timer); resolve(); }, chunkDelay);
+            activeTimers.add(timer);
+          });
+        }
+        finish(res);
+        return;
+      }
       res.write(
         `data: ${JSON.stringify({
           id: "chatcmpl-test",

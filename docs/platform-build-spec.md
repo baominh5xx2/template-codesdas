@@ -1,6 +1,6 @@
 # PRD — AI-native Chat Core
 
-Ngày cập nhật: **2026-10-05**. Sản phẩm: **Hackathon Starter Kit**. Phạm vi bản này: **yêu cầu sản phẩm và catalog feature; chưa triển khai core chat**.
+Ngày cập nhật: **2026-10-06**. Sản phẩm: **Hackathon Starter Kit**. Phạm vi bản này: **yêu cầu sản phẩm và catalog feature; C01 chat foundation đã triển khai, C02–C05 còn trong hàng chờ**.
 
 Đây là PRD hiện hành cho phần platform mình xây. Core là một app chat AI kiểu ChatGPT: có khung chat, lịch sử hội thoại, agent gọi tools và kết quả xuất hiện ngay trong cuộc trò chuyện. Các problem templates do bạn xây sẽ cắm vào core này. Đọc [phân công](build-ownership.md) và [problem templates](problem-templates.md) để ghép hai phần.
 
@@ -31,7 +31,7 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 ## 2. Phạm vi và quyết định nền tảng
 
 - **Chat-first**: live chat và durable history đi trước custom workflow engine, ingestion hoặc analytics đầy đủ.
-- **Design giống bố cục ChatGPT, theme trắng cố định** theo ảnh/yêu cầu user; main trắng, sidebar xám nhẹ, transcript/composer giữa. [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) và [UI plan](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md) khóa visual tokens/layout và tasks chi tiết C01 UI; browser dark preference không đổi theme. Mình chỉ viết spec/plan, user tự handle code.
+- **Design giống bố cục ChatGPT, theme trắng cố định** theo ảnh/yêu cầu user; main trắng, sidebar xám nhẹ, transcript/composer giữa. [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) và [UI plan](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md) đã triển khai ở C01; browser dark preference không đổi theme.
 - **Một người dùng local** cho baseline; chưa xây multi-user login, multi-tenant management, tenant switching hoặc tenant RBAC. Giữ server-owned identity/adapter boundary để mở rộng sau; các IDs trong contracts không đồng nghĩa phải xây tenant product features.
 - **Thông báo lỗi thống nhất trong khung chat: `Chưa kết nối`**. Thiếu config, mất kết nối và mọi technical failure đi qua cùng notice; không đưa lỗi SDK/provider/tool/MCP hoặc stack trace lên UI. Chi tiết chỉ giữ trong server diagnostics đã loại secrets. Không fallback sang demo assistant replies.
 - **CopilotKit OSS làm nền mặc định**: tái sử dụng chat UI, runtime, agent loop, tool calling, shared state và HITL. Intelligence là extension tùy chọn có điều kiện, không là prerequisite. [OSS vs Intelligence](https://docs.copilotkit.ai/concepts/oss-vs-enterprise).
@@ -57,7 +57,8 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 
 | Phần hiện có | Trạng thái và giới hạn |
 |---|---|
-| Next.js/React/TypeScript bootstrap | Có implementation; trang `/` là landing skeleton, chưa có chat |
+| Next.js/React/TypeScript bootstrap | Có implementation; trang `/` là workspace chat trắng với actual CopilotKit v2 UI |
+| Chat C01 UI/runtime/model | Có implementation; stream, Stop, manual Retry, New chat, readiness/no-env và masked errors; transcript/runner ephemeral, reload reset |
 | `/api/health`, `/api/domains` | Có implementation; health báo `mode: skeleton`, domains trả bốn manifests |
 | `/api/demo/:domainId`, dataset rows API | Fixture có validation/pagination; production từ chối fixture API |
 | `/playground` | Danh sách link tới fixture JSON; chưa phải gallery React cards |
@@ -70,9 +71,9 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 | Bốn domain seeds | Dataset analysis, document review, research report, risk analyzer; workflows rỗng, dùng synthetic fixtures |
 | `/api/runs` | Placeholder trả `501 feature_unavailable`; chưa tạo business run |
 | Feature flags | Server container đang tắt runs/artifacts/uploads/datasets/storage/model/sources/parsers |
-| Toolchain checks/tests | Đã có scripts check/test/build/e2e/domain validation và tests skeleton; không phải bằng chứng live chat hoạt động |
+| Toolchain checks/tests | Check, 123 unit/integration tests, domain validation, build, 21 actual SDK chat browser cases và 1 baseline case đạt với controlled OpenAI provider; chưa kiểm tra external model |
 
-**Chưa có trong repo:** packages CopilotKit/AI SDK/MCP SDK, chat UI/provider/runtime, live model, thread storage/history, Postgres migrations/compose, pgEdge MCP integration, workflow runner, generic cards và reusable capability algorithms. Các bảng feature dưới đây đều là **yêu cầu cần tích hợp/xây**, trừ inventory nêu trên.
+**Chưa có trong repo:** MCP SDK/tool registration trong chat, durable thread storage/history, chat Postgres migrations, workflow runner, generic cards và reusable capability algorithms. Compose app/Postgres/pgEdge đã có ở infrastructure riêng; chưa tích hợp durable chat hoặc MCP tools. CopilotKit/AI SDK và configured model adapter đã có; chưa kiểm tra live external model. Các bảng feature dưới đây là **catalog yêu cầu**; chỉ phạm vi C01 trong inventory đã hoàn tất.
 
 ## 4. Trải nghiệm người dùng
 
@@ -124,7 +125,9 @@ flowchart TD
 
 ## 5. Catalog feature của core
 
-### A. Chat UI và hội thoại — tất cả chưa xây trong repo
+### A. Chat UI và hội thoại
+
+C01 đã triển khai CHAT-01…05 cho text chat trong phiên; tool progress/history và các enhancements vẫn thuộc roadmap.
 
 CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọn **CopilotChat trong workspace shell** cho trải nghiệm toàn màn hình. [Prebuilt components](https://docs.copilotkit.ai/prebuilt-components).
 
@@ -155,7 +158,9 @@ CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọ
 
 **Threads Drawer có sẵn trong hệ sinh thái nhưng cần Intelligence/entitlement**, nên không là sidebar mặc định của bản OSS. Có thể thay sidebar riêng bằng nó sau khi chủ động chọn integration phù hợp. [Threads Drawer](https://docs.copilotkit.ai/prebuilt-components/copilot-threads-drawer).
 
-### C. Runtime, agent, model và độ tin cậy — tất cả chưa xây trong repo
+### C. Runtime, agent, model và độ tin cậy
+
+C01 đã wire runtime/BuiltInAgent/model, deadline/cancellation/error masking cho text-only flow. Một model step, zero automatic retries; tools và multi-step tool loop thuộc C03.
 
 | ID | Feature / yêu cầu | Dùng lại / phần app xây | Ưu tiên |
 |---|---|---|---|
@@ -351,8 +356,8 @@ Mỗi phần là một sub-project architectural: làm rõ mục đích/constrai
 
 | Thứ tự | Phần | Kết quả nhìn thấy được | Phụ thuộc | Trạng thái thiết kế |
 |---|---|---|---|---|
-| C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Skeleton hiện có + configured model để chạy live | [Spec](superpowers/specs/2026-10-05-chat-foundation-design.md) đã được cho chuyển sang [plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md); plan đã viết, chưa execute |
-| C02 | **Threads & Durable History** | New chat/list/switch/rename/archive/delete; restart rồi hỏi tiếp | Interfaces chat/runtime/identity chốt ở C01 | Chờ C01; chưa có spec/plan mới |
+| C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Configured model; no-env vẫn có shell/notice | [Spec](superpowers/specs/2026-10-05-chat-foundation-design.md)/[plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md) đã triển khai; controlled-provider acceptance đạt; transcript ephemeral |
+| C02 | **Threads & Durable History** | New chat/list/switch/rename/archive/delete; restart rồi hỏi tiếp | Interfaces chat/runtime/identity và injectable runner chốt ở C01 | C01 sẵn sàng handoff; chưa có spec/plan mới |
 | C03 | **Tools, Context & Inline Results** | Agent gọi một tool thật, hiển thị trạng thái/result và trả lời dựa trên result | C01 + history/execution identities của C02 | Chờ C02; chưa có spec/plan mới |
 | C04 | **Local MCP & pgEdge** | Agent dùng scoped query/read tools từ MCP local | Tool boundary C03 + starter database C02 | Chờ C03; chưa có spec/plan mới |
 | C05 | **Domain Plug-in & Artifact Bridge** | Cắm một pack mới bằng config/tools/presenter; chat giữ nguyên | C03; C04 chỉ cần khi pack sử dụng MCP | Chờ C03; chưa có spec/plan mới |
@@ -483,7 +488,9 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-05 | C01/C02 UI | User chọn design theo ảnh ChatGPT với theme trắng; thay browser light/dark bằng white cố định. C01 thêm sidebar shell, C02 mới có history thật. User tự handle code, mình chỉ viết spec/plan | [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) và C01 spec/plan đã đồng bộ; chưa triển khai UI |
 | 2026-10-06 | C01 UI | Đã viết [UI implementation plan](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md): theme/shell → navigation → messages/Copy → composer/integration → acceptance. Tasks UI chi tiết hóa C01 Task 4–5, không execute hai backlog song song | Spec được user cho chuyển sang plan; docs only, user tự handle code |
 
-Điểm hiện tại là **plan C01 — Chat Foundation đã viết, chưa execute**. Các phần C02–C05 giữ trong hàng chờ. Spec và plan C01 đều đã tồn tại; product implementation chưa có.
+| 2026-10-06 | C01 | User yêu cầu tiếp tục implementation; actual SDK UI/runtime, model adapter, text stream/Stop/Retry/New chat và strict notice đã triển khai. Check, 123 unit/integration tests, domain validation, build, 21 chat browser cases và 1 baseline đạt với controlled provider. Docker local chiếm 3100 nên validation dùng config tạm no-env 3190; repo defaults giữ nguyên | C01 acceptance đạt; external model và native browser zoom chưa kiểm tra; transcript ephemeral, C02 durable history và C03/C04 tools/MCP chưa triển khai |
+
+Điểm hiện tại là **C01 — Chat Foundation đã triển khai và kiểm chứng bằng controlled provider**. Các phần C02–C05 giữ trong hàng chờ; C02 có thể tiếp nối qua injectable runner. Không coi in-memory transcript hoặc infrastructure Docker là durable chat history.
 
 
 ### Docker local setup — 2026-10-06

@@ -97,6 +97,9 @@ export function createCopilotChatClient(
       };
 
       const subscriber: AgentSubscriber = {
+        onMessagesChanged: (params) => {
+          emitMessages(params.messages);
+        },
         onRunStartedEvent: () => {
           if (!terminalEmitted) {
             sink.started();
