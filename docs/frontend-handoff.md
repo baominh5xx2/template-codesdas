@@ -2,6 +2,8 @@
 
 Frontend có thể bắt đầu từ `/playground`, `GET /api/domains` và các fixture tại `GET /api/demo/:domainId`. Mỗi bundle chứa `view`, `snapshot`, `sources`, `evidence`, `claims`, và `datasets`; đây là các dữ liệu chung cho renderer, nguồn trích dẫn và phân trang. Đọc trực tiếp schema tại `src/contracts/ui/blocks.ts`, không khai báo lại props trong UI.
 
+Bốn archetype hiện chia sẻ cùng một bộ dữ liệu sales synthetic và gallery fixture gồm 19 block để kiểm tra các hợp đồng renderer. Đây không phải các phân tích đại diện cho từng domain. Fixture riêng, đại diện hơn có thể được bổ sung khi hành vi nghiệp vụ thực tế được xây dựng.
+
 ## Hợp đồng renderer
 
 ```ts

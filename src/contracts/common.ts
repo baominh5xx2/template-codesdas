@@ -9,6 +9,15 @@ export const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() => z.union([
 ])) as z.ZodType<JsonValue>;
 export type Schema<T> = z.ZodType<T>;
 
+export const HttpUrlSchema = z.string().url().refine(value => {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "http_url_protocol_invalid");
+
 export const SourceLocatorSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), start: z.number().int().nonnegative(), end: z.number().int().nonnegative() }),
   z.object({ type: z.literal("pdf"), page: z.number().int().positive(), start: z.number().int().nonnegative(), end: z.number().int().nonnegative() }),

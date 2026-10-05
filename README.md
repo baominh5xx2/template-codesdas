@@ -24,4 +24,4 @@ pnpm build
 
 ## Giới hạn của baseline
 
-Bốn archetype và template cung cấp manifest, schema, workflow rỗng, presenter thuần và dữ liệu demo. Chưa có component UI, xử lý upload, lưu trữ, phân tích nghiệp vụ, ingestion, MCP hay gọi AI. API run cố ý trả unavailable cho đến khi một capability thật được đăng ký. Demo fixtures chỉ hoạt động trong development/test; production trả unavailable.
+Bốn archetype hiện dùng chung một bộ dữ liệu sales synthetic và gallery fixture gồm 19 block để kiểm tra các hợp đồng renderer. Các fixture này không phải phân tích đại diện cho từng domain. Có thể bổ sung fixture riêng, đại diện hơn khi hành vi nghiệp vụ thực tế được xây dựng. Chưa có component UI, xử lý upload, lưu trữ, phân tích nghiệp vụ, ingestion, MCP hay gọi AI. API run cố ý trả unavailable cho đến khi một capability thật được đăng ký. Demo fixtures chỉ hoạt động trong development/test; production trả unavailable.

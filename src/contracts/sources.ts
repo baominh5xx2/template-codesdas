@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { SourceLocatorSchema } from "./common";
-export const SourceRefSchema = z.object({ id: z.string(), kind: z.enum(["upload", "url", "dataset"]), title: z.string(), retrievedAt: z.string(), contentHash: z.string(), url: z.string().url().optional(), publishedAt: z.string().optional() });
+import { HttpUrlSchema, SourceLocatorSchema } from "./common";
+export const SourceRefSchema = z.object({ id: z.string(), kind: z.enum(["upload", "url", "dataset"]), title: z.string(), retrievedAt: z.string(), contentHash: z.string(), url: HttpUrlSchema.optional(), publishedAt: z.string().optional() });
 export type SourceRef = z.infer<typeof SourceRefSchema>;
 export const SourceProfileSchema = z.object({ id: z.string(), adapterId: z.string(), allowedDomains: z.array(z.string()), maxSources: z.number().int().positive(), maxBytes: z.number().int().positive(), fetchTimeoutMs: z.number().int().positive(), requireCitation: z.boolean() });
 export type SourceProfile = z.infer<typeof SourceProfileSchema>;
@@ -8,7 +8,7 @@ export const NormalizedDocumentSchema = z.object({ id: z.string(), sourceId: z.s
 export type NormalizedDocument = z.infer<typeof NormalizedDocumentSchema>;
 export const SourceDocumentSchema = z.object({ source: SourceRefSchema, document: NormalizedDocumentSchema });
 export type SourceDocument = z.infer<typeof SourceDocumentSchema>;
-export const SearchHitSchema = z.object({ url: z.string().url(), title: z.string(), summary: z.string().optional() });
+export const SearchHitSchema = z.object({ url: HttpUrlSchema, title: z.string(), summary: z.string().optional() });
 export type SearchHit = z.infer<typeof SearchHitSchema>;
 export const SourceCollectionDataSchema = z.object({ sources: z.array(SourceRefSchema), documents: z.array(NormalizedDocumentSchema) });
 export type SourceCollectionData = z.infer<typeof SourceCollectionDataSchema>;
