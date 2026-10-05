@@ -31,6 +31,7 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 ## 2. Phạm vi và quyết định nền tảng
 
 - **Chat-first**: live chat và durable history đi trước custom workflow engine, ingestion hoặc analytics đầy đủ.
+- **Design giống bố cục ChatGPT, theme trắng cố định** theo ảnh/yêu cầu user; main trắng, sidebar xám nhẹ, transcript/composer giữa. [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) khóa visual tokens/layout; browser dark preference không đổi theme. Mình chỉ viết spec/plan, user tự handle code.
 - **Một người dùng local** cho baseline; chưa xây multi-user login, multi-tenant management, tenant switching hoặc tenant RBAC. Giữ server-owned identity/adapter boundary để mở rộng sau; các IDs trong contracts không đồng nghĩa phải xây tenant product features.
 - **Thông báo lỗi thống nhất trong khung chat: `Chưa kết nối`**. Thiếu config, mất kết nối và mọi technical failure đi qua cùng notice; không đưa lỗi SDK/provider/tool/MCP hoặc stack trace lên UI. Chi tiết chỉ giữ trong server diagnostics đã loại secrets. Không fallback sang demo assistant replies.
 - **CopilotKit OSS làm nền mặc định**: tái sử dụng chat UI, runtime, agent loop, tool calling, shared state và HITL. Intelligence là extension tùy chọn có điều kiện, không là prerequisite. [OSS vs Intelligence](https://docs.copilotkit.ai/concepts/oss-vs-enterprise).
@@ -85,6 +86,7 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 
 ### Bố cục
 
+- Visual direction: [ChatGPT-style white workspace](superpowers/specs/2026-10-05-chat-white-ui-design.md); desktop sidebar 280px, transcript/composer cột tối đa 768px, mobile drawer và theme trắng cố định.
 - Sidebar trái: New chat, lịch sử, rename/archive/delete; search history bổ sung ở P1.
 - Trung tâm: transcript, Markdown/code, tool progress, citations và inline result blocks.
 - Composer: multiline, gửi, Stop khi đang chạy; attachments/microphone chỉ hiện khi feature sẵn sàng.
@@ -477,5 +479,6 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-05 | C04 | User yêu cầu official modelcontextprotocol/typescript-sdk; ưu tiên stable v2 client, giữ pgEdge local server và CopilotKit agent loop. C04 acceptance bổ sung kiểm chứng SDK-to-tool bridge | SDK choice đã xác nhận; transport/lifecycle/bridge và exact versions chưa chốt; chưa cài SDK |
 | 2026-10-05 | C01 | Đã viết [Chat Foundation technical spec](superpowers/specs/2026-10-05-chat-foundation-design.md): runtime/UI/model/config/state/error/acceptance và handoff C02–C03. Layout/adapter/limits là đề xuất kỹ thuật để review | Spec đã self-review, chờ user review; chưa có implementation plan hoặc product code |
 | 2026-10-05 | C01 | User yêu cầu viết plan ngay; đã tạo [implementation plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md) gồm 5 tasks với files/interfaces/TDD checks và SDK evidence | Spec được cho chuyển sang planning; plan đã self-review, chưa execute, chưa có product code |
+| 2026-10-05 | C01/C02 UI | User chọn design theo ảnh ChatGPT với theme trắng; thay browser light/dark bằng white cố định. C01 thêm sidebar shell, C02 mới có history thật. User tự handle code, mình chỉ viết spec/plan | [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) và C01 spec/plan đã đồng bộ; chưa triển khai UI |
 
 Điểm hiện tại là **plan C01 — Chat Foundation đã viết, chưa execute**. Các phần C02–C05 giữ trong hàng chờ. Spec và plan C01 đều đã tồn tại; product implementation chưa có.

@@ -50,8 +50,8 @@ Không sửa Artifact/Run/Domain contracts chỉ để chat text hoạt động.
 
 ## 4. Chat shell và tương tác
 
-- Route `/` chuyển từ landing skeleton thành chat workspace. Header có tên starter và **New chat**; vùng main là transcript; composer ở dưới. Sidebar history dành cho C02, không dựng danh sách hội thoại giả trong C01.
-- Dùng `CopilotChat` và SDK styles làm nền; app tùy biến slots/controller cho branding, state, composer và error surfaces cần thiết. Theme theo browser light/dark; không thêm theme settings product trong C01.
+- Route `/` chuyển từ landing skeleton thành chat workspace giống bố cục ChatGPT theo reference user: sidebar shell có branding/New chat/thu gọn, header mỏng, transcript giữa và composer dưới. Sidebar history có dữ liệu/actions dành cho C02, không dựng danh sách hội thoại giả trong C01.
+- Dùng `CopilotChat` và SDK styles làm nền; app tùy biến slots/controller cho branding, state, composer và error surfaces cần thiết. **Theme trắng cố định theo yêu cầu user**, kể cả browser dark preference; không thêm theme settings product trong C01. Kích thước/tokens/interaction theo [White UI design](2026-10-05-chat-white-ui-design.md).
 - Welcome/empty state copy: **`Bạn muốn hỏi gì?`**. Placeholder: **`Nhập tin nhắn…`**. Buttons: **`Gửi`**, **`Dừng`**, **`Thử lại`**, **`Cuộc trò chuyện mới`**, **`Sao chép`**.
 - Enter gửi; Shift+Enter xuống dòng. Không gửi khi IME đang composing. Whitespace-only input không tạo execution; draft giữ nguyên khi send không được chấp nhận.
 - Gửi một lần tạo một user message stable ID và một execution mới. Trong lúc chạy, Send bị khóa và Stop xuất hiện; không tạo hai executions từ double-click/Enter lặp.

@@ -10,6 +10,8 @@
 
 **Spec:** [C01 Chat Foundation](../specs/2026-10-05-chat-foundation-design.md). User đã cho chuyển sang writing-plans ngày 2026-10-05; chưa yêu cầu execute plan này. Đọc cả spec và plan khi triển khai.
 
+**UI direction update:** [ChatGPT layout / white theme](../specs/2026-10-05-chat-white-ui-design.md) theo reference và yêu cầu user. Plan chỉ là handoff; user tự handle code. Theme trắng cố định thay quyết định browser light/dark trước đó. C01 có sidebar shell, C02 mới có history data/actions.
+
 ## Global Constraints
 
 - Chỉ làm tại `E:/thucchienai/hackathon-starter-kit`, origin `baominh5xx2/template-codesdas`. Không đọc/thao tác repo thi `aitc2026-team-939-triplepeek`, secrets, tài liệu BTC hoặc config của nó.
@@ -23,7 +25,7 @@
 - Core không import React/Next/CopilotKit SDK; integrations ở adapters/server/UI. Existing fixture APIs và production gating giữ nguyên.
 - Đọc local Next guides trong `node_modules/next/dist/docs/` theo AGENTS trước khi viết implementation code.
 - Dependencies exact stable pins và lockfile; không force peer conflicts, không cài MCP/parser/vector/UI-card dependencies vào C01.
-- Execution method user đã chọn trước đó: subagent-driven; mọi implementer/reviewer subagent dùng **gpt-6-luna**. Không spawn subagent trong bước viết plan; dependency tasks chạy tuần tự.
+- User hiện chỉ yêu cầu mình viết spec/plan và tự handle code. Không execute/spawn implementer. Preference subagent-driven/**gpt-6-luna** trước đó chỉ áp dụng nếu user sau này giao execution lại; dependency tasks trong handoff chạy tuần tự.
 - Không đánh dấu checkbox hoặc claim test PASS trước khi execute. Commands/tests dưới đây là yêu cầu tương lai.
 
 ## SDK facts đã kiểm chứng khi viết plan
@@ -301,9 +303,9 @@ Không dùng direct low-level agent.runAgent làm agent loop thay thế. Mỗi r
 
 ## Task 4: Workspace UI và SDK view/error customization
 
-**Files:** create `src/ui/chat/{workspace,chat-panel,connection-notice,error-boundary}.tsx`, `src/ui/chat/use-controller.ts`; modify `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, `vitest.config.ts`; tests `tests/chat/workspace.test.tsx`, `tests/chat/panel.test.tsx`.
+**Files:** create `src/ui/chat/{workspace,sidebar-shell,chat-panel,connection-notice,error-boundary}.tsx`, `src/ui/chat/use-controller.ts`; modify `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, `vitest.config.ts`; tests `tests/chat/workspace.test.tsx`, `tests/chat/panel.test.tsx`.
 
-**Interfaces:** `ChatWorkspace(): ReactElement`; `ChatPanel({controller}: {controller: ChatController}): ReactElement`; `ConnectionNotice({visible,onRetry}: {visible:boolean;onRetry:()=>void}): ReactElement|null`; `ChatErrorBoundary({children,onRetry}: {children: ReactNode;onRetry:()=>void})` fallback shell; `useChatController(controller: ChatController): ChatSnapshot` using useSyncExternalStore. Workspace tạo một controller với Task 3 binding port trước provider; below-provider bridge attach actual SDK port khi discovery ready. Workspace/controller là một nguồn draft/transcript/notice, không tạo controller thứ hai.
+**Interfaces:** `ChatWorkspace(): ReactElement`; `SidebarShell({open,onClose,onNewChat,pending}: {open:boolean;onClose:()=>void;onNewChat:()=>void;pending:boolean}): ReactElement`; `ChatPanel({controller}: {controller: ChatController}): ReactElement`; `ConnectionNotice({visible,onRetry}: {visible:boolean;onRetry:()=>void}): ReactElement|null`; `ChatErrorBoundary({children,onRetry}: {children: ReactNode;onRetry:()=>void})` fallback shell; `useChatController(controller: ChatController): ChatSnapshot` using useSyncExternalStore. Workspace tạo một controller với Task 3 binding port trước provider; below-provider bridge attach actual SDK port khi discovery ready. Workspace/controller là một nguồn draft/transcript/notice, không tạo controller thứ hai. SidebarShell chỉ shell/nav, không fetch hoặc giả lập history; workspace giữ open state, desktop mở mặc định/mobile đóng, breakpoint 1024px theo UI spec.
 
 - [ ] **Step 1: Viết jsdom component tests.** Thêm file directive `// @vitest-environment jsdom`; Vitest include cả `.test.ts` và `.test.tsx`. Dùng Testing Library existing dependency và `vi.stubGlobal("fetch", ...)` cho readiness; SDK renderer mock chỉ trong isolated UI tests, Task 5 kiểm chứng real SDK.
 
@@ -313,10 +315,10 @@ expect(screen.getAllByText("Chưa kết nối")).toHaveLength(1);
 expect(screen.getByRole("status")).toHaveTextContent("Chưa kết nối");
 ```
 
-Tests workspace: `{available:false}` → không mount SDK/provider, editable draft + disabled Send, Retry readiness không append messages; reject/malformed readiness cùng notice. ErrorBoundary throws sentinel → fallback copy không sentinel; notice không duplication với provider/chat onError cùng firing. Panel tests Send/Stop/newChat/retry disable khi pending, Enter/Shift+Enter/IME, Copy, hide edit/regenerate/voice/upload/Inspector controls.
+Tests workspace: `{available:false}` → không mount SDK/provider, editable draft + disabled Send, Retry readiness không append messages; reject/malformed readiness cùng notice. ErrorBoundary throws sentinel → fallback copy không sentinel; notice không duplication với provider/chat onError cùng firing. Panel tests Send/Retry disable khi pending; Stop và New chat vẫn gọi được trong running (New chat abort/chờ teardown theo controller, không reset ngay). Chặn lặp Stop/New chat trong teardown, kiểm tra Enter/Shift+Enter/IME, Copy, hide edit/regenerate/voice/upload/Inspector controls. Sidebar test không fake history, New chat dùng cùng controller; drawer Escape/close trả focus, không render feature controls chưa sẵn. `pending` prop không tự disable New chat chỉ vì model đang chạy.
 
 - [ ] **Step 2: RED.** `pnpm test -- tests/chat/workspace.test.tsx tests/chat/panel.test.tsx` expected missing components (sau mở include, không accept zero tests found).
-- [ ] **Step 3: Implement readiness-gated provider và safe notice.** Workspace fetch own endpoint, failure normalized boolean, AbortController cancel stale requests/unmount; unreadiness không mount failing SDK. Hydrated UUID tạo client-side khi initialization ready, tránh SSR mismatch. Browser has dark/light CSS và outer fallback composer để draft vẫn sửa được no-env.
+- [ ] **Step 3: Implement readiness-gated provider và safe notice.** Workspace fetch own endpoint, failure normalized boolean, AbortController cancel stale requests/unmount; unreadiness không mount failing SDK. Hydrated UUID tạo client-side khi initialization ready, tránh SSR mismatch. Workspace white theme và outer fallback composer để draft vẫn sửa được no-env; cả fallback và SDK-mounted view dùng cùng tokens.
 
 ```tsx
 <CopilotKit runtimeUrl="/api/copilotkit" agent="default" useSingleEndpoint={false}
@@ -339,7 +341,7 @@ Snippet là provider policy; workspace controller dùng stable binding port, act
 
 Controller hook reads SDK useAgent/useCopilotKit only in bridge child, stable port/controller refs; render feedback không thay state trong render. Override input slot để enforce IME/input-limit/draft behavior và pending/no-env disabled; latest SDK callback clearInput không làm mất failed draft. Copy uses clipboard API và safe product feedback; failed clipboard action dùng same technical notice.
 
-- [ ] **Step 5: Integrate entry/style/UX.** Page renders workspace; root import `@copilotkit/react-core/v2/styles.css`; lang `vi`, title starter. Full height shell (`100dvh`), min-width 0, mobile input sticky vùng chat, avoid horizontal overflow. Auto-scroll only sticky-bottom; when detached show scroll-to-bottom; focus không theo token. Exact labels từ spec; no history sidebar/list, no vendor debug UI.
+- [ ] **Step 5: Integrate entry/style/UX.** Page renders workspace; root import `@copilotkit/react-core/v2/styles.css`; lang `vi`, title starter. Map semantic colors từ White UI spec sang pinned SDK theme variables tại workspace scope, `color-scheme: light`; không có prefers-color-scheme dark overrides. Full height shell (`100dvh`), sidebar 280px/desktop collapse/mobile dialog, cột transcript/composer tối đa 768px, min-width 0; composer chiếm hàng flex riêng, safe-area inset, không che message cuối. System font tiếng Việt, user bubble xám phải/assistant plain text trái. Auto-scroll only sticky-bottom; when detached show scroll-to-bottom; focus không theo token. Exact labels từ spec; sidebar shell có thật nhưng chưa có history list, no vendor debug UI.
 - [ ] **Step 6: Verify.** UI tests + `pnpm check`; kiểm tra server-only import boundary trong client bundle và SSR/no-env renders không crash.
 - [ ] **Step 7: Commit Task 4 files.** `git commit -m "feat: build CopilotKit chat workspace with unified notice"`.
 
@@ -360,7 +362,7 @@ await expect(page.getByText("RAW_SECRET_ERROR")).toHaveCount(0);
 
 No-env test giữ editable draft và không có `/agent/default/run` request. Live tests send hai lượt + captured provider history; assert one user ID per send/Retry, actual streamed text; Stop/New chat and late delta, retry checkpoint, reload reset. Failure tests drive 401/network/partial-fail/timeout/discovery/info failure và renderer fallback; assert one notice/no sentinel in DOM/API/stream/app-emitted console events, terminal/loading recovery. Timeout deadline unit fake timers ở Task 2; browser timeout case drop stream/reject để suite không sleep 120 seconds.
 
-Responsive tests viewport 390×844: no x overflow/composer visible, Enter/Shift+Enter/IME; long stream then scroll up keeps position/focus, button về cuối; Copy clipboard. Two browser contexts send concurrent, second rejected notice, first finishes normally. Repeated error+Retry không spam. Route mocks chỉ dùng transport outage cases; success/end-to-end không thay runtime bằng mocked AG-UI events.
+Responsive tests viewport 390×844, 768×1024, 1440×900 và 1920×1080: sidebar/drawer đúng breakpoint, no x overflow/composer visible; Enter/Shift+Enter/IME, drawer focus trap/restore/Escape. Emulate dark preference và assert computed canvas/text/composer/bubble colors vẫn đúng white tokens với actual SDK mounted; no-env fallback dùng cùng theme. Test 200% zoom, long URLs/code, long stream then scroll up keeps position/focus, button về cuối; Copy clipboard. Two browser contexts send concurrent, second rejected notice, first finishes normally. Repeated error+Retry không spam. Route mocks chỉ dùng transport outage cases; success/end-to-end không thay runtime bằng mocked AG-UI events.
 
 - [ ] **Step 2: Define harness/scripts.** Add `chat:smoke: tsx scripts/chat-smoke.ts`; script dùng explicit `CHAT_SMOKE_URL` default `http://127.0.0.1:3100`, check health/readiness; if readiness unavailable verify runtime 503/copy and no crash, if available perform UUID text run and verify successful stream terminal or mask failure. Không auto boot provider hoặc đọc unrelated env/secrets. Controlled provider command:
 
@@ -415,4 +417,4 @@ Expected PASS khi execute. Production project chạy built app không chat confi
 | Ephemeral limitation và C02/C03 handoff | 3, 5 |
 | Existing build/contracts/fixture production gating | 1, 5 |
 
-Plan đã self-review về spec coverage, type/interface consistency và placeholders. Các checkbox còn unchecked; không có test results từ bước viết plan. Execution approach đã được user chọn là subagent-driven với gpt-6-luna; giữ preference đó khi user yêu cầu triển khai, không hỏi lại phương pháp. Plan này chưa được execute hoặc duyệt như một kết quả implementation.
+Plan đã self-review về spec coverage, type/interface consistency và placeholders. Các checkbox còn unchecked; không có test results từ bước viết plan. User tự handle code; mình chỉ viết spec/plan. Preference subagent-driven với gpt-6-luna giữ để tham khảo nếu sau này user giao execution lại. Plan này chưa được execute hoặc duyệt như một kết quả implementation.
