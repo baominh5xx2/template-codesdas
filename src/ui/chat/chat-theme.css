@@ -67,6 +67,114 @@
   position: relative;
 }
 
+/* Message wrappers own spacing and actions; SDK owns content rendering. */
+.chat-assistant-message,
+.chat-user-message {
+  min-width: 0;
+  margin-block: 0 24px;
+  overflow-wrap: anywhere;
+}
+
+.chat-assistant-message .copilotKitAssistantMessage {
+  background: transparent;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--chat-text);
+}
+
+.chat-user-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.chat-user-message .copilotKitUserMessage {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+}
+
+.chat-user-message .copilotKitUserMessage > div {
+  max-width: min(85%, 640px);
+  padding: 12px 16px;
+  border-radius: 20px;
+  background: var(--chat-user-bubble);
+  color: var(--chat-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-assistant-message :where(p, ul, ol) {
+  margin-block: 0 12px;
+}
+
+.chat-assistant-message :where(pre, code) {
+  background: var(--chat-surface);
+  color: var(--chat-text);
+  font-family: ui-monospace, monospace;
+}
+
+.chat-assistant-message pre {
+  max-width: 100%;
+  padding: 16px;
+  border: 1px solid var(--chat-border);
+  border-radius: 8px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.chat-assistant-message table {
+  display: block;
+  max-width: 100%;
+  border-collapse: collapse;
+  overflow-x: auto;
+}
+
+.chat-assistant-message :where(th, td) {
+  padding: 8px 12px;
+  border: 1px solid var(--chat-border);
+}
+
+.chat-copy-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--chat-muted);
+}
+
+.chat-copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--chat-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.chat-copy-button:hover {
+  background: var(--chat-hover);
+}
+
+.chat-copy-button:focus-visible {
+  outline: 2px solid var(--chat-focus);
+  outline-offset: 2px;
+}
+
+.chat-copy-feedback {
+  min-width: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
 .chat-column {
   width: 100%;
   max-width: 768px;
