@@ -9,6 +9,6 @@ import { domain as researchReport } from "./examples/research-report/index.serve
 import { domain as riskAnalyzer } from "./examples/risk-analyzer/index.server";
 
 const definitions = [documentReview, datasetAnalysis, researchReport, riskAnalyzer];
-const validationCatalog = { sourceProfileIds: new Set(createSourceCatalog().list().map(profile => profile.id)), toolNames: new Set<string>(), artifactSchemas: createArtifactRegistry() };
+const validationCatalog = { sourceProfileIds: new Set(createSourceCatalog().list().map(profile => profile.id)), toolNames: new Set<string>(), registeredDomainIdentities: new Set<string>(), artifactSchemas: createArtifactRegistry() };
 for (const domain of definitions) validateDomain(domain, validationCatalog);
 export const domains: readonly DomainDefinition[] = definitions;
