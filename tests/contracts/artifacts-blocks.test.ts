@@ -31,6 +31,17 @@ it("validates registered artifact kind and schema version", () => {
   expect(() => registry.parse({ ...envelope, version: 2 })).toThrow("artifact_schema_unregistered");
 });
 
+it("keeps registered schema transforms inside JSON-safe artifact data", () => {
+  const envelopeWithString = { ...envelope, data: "input" };
+  const registry = createArtifactRegistry();
+  registry.register("analysis", 1, z.string().transform(value => value.toUpperCase()));
+  expect(registry.parse(envelopeWithString).data).toBe("INPUT");
+
+  const unsafeRegistry = createArtifactRegistry();
+  unsafeRegistry.register("analysis", 1, z.string().transform(() => new Date("2026-10-05T00:00:00.000Z")));
+  expect(() => unsafeRegistry.parse(envelopeWithString)).toThrow();
+});
+
 it("rejects executable blocks, out-of-range risk, and invalid coordinates", () => {
   expect(UIBlockSchema.safeParse({ id: "x", type: "jsx", props: {} }).success).toBe(false);
   expect(UIBlockSchema.safeParse({
@@ -42,6 +53,20 @@ it("rejects executable blocks, out-of-range risk, and invalid coordinates", () =
   expect(UIBlockSchema.safeParse({
     id: "p", type: "place", props: { name: "x", lat: 91, lng: 0, sourceIds: [] },
   }).success).toBe(false);
+});
+
+it("allows HTTP(S) or storage-backed media and rejects unsafe URL schemes", () => {
+  const media = (url: string) => UIBlockSchema.safeParse({
+    id: "media", type: "media", props: { kind: "image", url, alt: "Preview" },
+  }).success;
+  expect(media("https://cdn.example.test/image.png")).toBe(true);
+  expect(media("http://cdn.example.test/image.png")).toBe(true);
+  for (const url of ["javascript:alert(1)", "data:image/png;base64,AA==", "file:///tmp/image.png", "not a URL"]) {
+    expect(media(url)).toBe(false);
+  }
+  expect(UIBlockSchema.safeParse({
+    id: "media", type: "media", props: { kind: "image", storageKey: "uploads/image.png", alt: "Preview" },
+  }).success).toBe(true);
 });
 
 it("rejects report references that are missing or cyclic", () => {

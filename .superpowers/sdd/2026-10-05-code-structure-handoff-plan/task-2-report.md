@@ -47,3 +47,23 @@ All pnpm commands were run with escalation because sandbox pnpm would attempt a 
 ## Concerns
 
 None remaining for this task. Implementations for external adapters, capability algorithms, repositories, and UI components remain intentionally unbound for parallel follow-on work.
+
+## Round-one follow-up
+
+The reviewer found that URL-backed media accepted unsafe protocols, and the controller found that a registered Zod transform could return non-JSON data after the artifact envelope had already been validated. Added URL-backed media protocol validation for HTTP/HTTPS only; storage-key media remains supported. The registry now validates the registered schema's transformed output again with `JsonValueSchema`. Added rejection cases for `javascript:`, `data:`, `file:`, malformed URLs, and a `Date`-producing artifact transform, alongside valid HTTP/HTTPS, storage-key media, and JSON-safe transformed data cases. Added a direct duplicate-dependency assertion so the workflow test coverage matches the earlier report wording.
+
+**RED:** the media test accepted an unsafe URL scheme, and the registry test showed a `Date` transform did not throw. The direct duplicate-dependency case targets the existing validator branch.
+
+**GREEN:**
+
+```text
+pnpm exec vitest run tests/contracts/artifacts-blocks.test.ts tests/contracts/workflow-domain.test.ts
+```
+
+Result: 2 files passed, 9 tests passed.
+
+```text
+pnpm check
+```
+
+Passed: route type generation, TypeScript, and ESLint.

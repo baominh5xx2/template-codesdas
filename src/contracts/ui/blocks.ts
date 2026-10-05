@@ -20,7 +20,15 @@ export const PlacePropsSchema = z.object({ name: z.string(), lat: z.number().fin
 export const ComparisonPropsSchema = z.object({ criteria: z.array(z.object({ key: id, label: z.string(), unit: z.string().optional() })), options: z.array(z.object({ id, label: z.string(), values: z.record(id, z.union([z.string(), z.number().finite(), z.null()])) })) });
 export const ReportSectionPropsSchema = z.object({ title: z.string(), blockIds: z.array(id) });
 export const MarkdownPropsSchema = z.object({ content: z.string() });
-export const MediaPropsSchema = z.object({ kind: z.enum(["image", "audio", "video"]), storageKey: z.string().min(1).optional(), url: z.string().url().optional(), alt: z.string() }).refine(p => Number(Boolean(p.storageKey)) + Number(Boolean(p.url)) === 1, "media_source_invalid");
+const SafeMediaUrlSchema = z.string().url().refine(value => {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "media_url_protocol_invalid");
+export const MediaPropsSchema = z.object({ kind: z.enum(["image", "audio", "video"]), storageKey: z.string().min(1).optional(), url: SafeMediaUrlSchema.optional(), alt: z.string() }).refine(p => Number(Boolean(p.storageKey)) + Number(Boolean(p.url)) === 1, "media_source_invalid");
 
 export const UIBlockSchema = z.discriminatedUnion("type", [
   z.object({ id, type: z.literal("metric"), props: MetricPropsSchema }), z.object({ id, type: z.literal("chart"), props: ChartPropsSchema }),

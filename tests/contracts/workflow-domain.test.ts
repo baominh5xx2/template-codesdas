@@ -7,6 +7,7 @@ it("requires workflow dependencies to be earlier, present, and unique", () => {
   expect(() => assertPriorDependencies(["a", "b"], 1, ["a"])).not.toThrow();
   expect(() => assertPriorDependencies(["a", "b"], 0, ["b"])).toThrow("workflow_dependency_invalid");
   expect(() => assertPriorDependencies(["a", "b"], 1, ["missing"])).toThrow("workflow_dependency_invalid");
+  expect(() => assertPriorDependencies(["a", "b"], 1, ["a", "a"])).toThrow("workflow_dependency_duplicate");
   expect(() => validateWorkflow({ steps: [
     { id: "a", dependsOn: [], artifactKind: "analysis", version: 1 },
     { id: "a", dependsOn: [], artifactKind: "report", version: 1 },

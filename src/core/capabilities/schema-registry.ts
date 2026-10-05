@@ -1,5 +1,5 @@
 import { ArtifactEnvelopeSchema, type Artifact } from "@/contracts/artifacts";
-import type { Schema } from "@/contracts/common";
+import { JsonValueSchema, type Schema } from "@/contracts/common";
 export interface ArtifactSchemaRegistry { register<T>(kind: string, version: number, schema: Schema<T>): void; has(kind: string, version: number): boolean; parse(artifact: unknown): Artifact<unknown> }
 export function createArtifactRegistry(): ArtifactSchemaRegistry {
   const schemas = new Map<string, Schema<unknown>>();
@@ -15,7 +15,8 @@ export function createArtifactRegistry(): ArtifactSchemaRegistry {
       const envelope = ArtifactEnvelopeSchema.parse(value);
       const schema = schemas.get(key(envelope.kind, envelope.version));
       if (!schema) throw new Error("artifact_schema_unregistered");
-      return { ...envelope, data: schema.parse(envelope.data) };
+      const parsedData = schema.parse(envelope.data);
+      return { ...envelope, data: JsonValueSchema.parse(parsedData) };
     },
   };
 }
