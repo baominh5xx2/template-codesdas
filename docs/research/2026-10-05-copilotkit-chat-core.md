@@ -1,5 +1,7 @@
 # CopilotKit ecosystem — research cho chat core
 
+> **Scope update — 2026-10-06:** pgEdge MCP chỉ dành cho coding agent, nằm ngoài app runtime. C03 dùng custom business MCP server cùng app Next.js; app DB queries dùng Drizzle/repositories. Các đề xuất app-to-pgEdge trong research cũ không còn là yêu cầu. Đọc [PRD hiện hành](../platform-build-spec.md).
+
 Ngày kiểm tra: 2026-10-05. Đây là kết quả đọc tài liệu chính thức, chưa phải implementation hoặc compatibility test trên SDK đã cài.
 
 User muốn core là app chat AI như ChatGPT: chat chính, sidebar history, hội thoại lưu được, tools/MCP và reusable capabilities cắm vào phía dưới. Generic cards và problem templates vẫn là phần riêng. Repo starter hiện chưa cài CopilotKit SDK.
@@ -76,7 +78,8 @@ flowchart LR
   Agent --> MCP[MCP SDK integration]
   Tools --> Capabilities[Reusable business capabilities]
   Tools --> Artifacts[Artifacts + presenter]
-  MCP --> PGEdge[Local pgEdge MCP]
+  MCP --> BusinessMCP[Custom business MCP server trong Next.js]
+  CodingAgent[Coding agent - dev tooling] --> PGEdge[Local pgEdge MCP]
 ```
 
 Đề xuất giữ **OSS TypeScript runtime + BuiltInAgent + CopilotChat**, chưa yêu cầu Intelligence. Khi giữ Postgres stack đã chọn, cần triển khai history adapter/conversation endpoints và custom sidebar; nếu muốn giảm code persistence cho single instance, có thể chọn first-party SQLite runner nhưng đó là thay đổi storage strategy phải phản ánh trong spec.
