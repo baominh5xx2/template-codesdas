@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
-    "check": "tsc --noEmit && eslint .",
+    "check": "next typegen && tsc --noEmit && eslint .",
     "test": "vitest run",
     "build": "next build",
     "e2e": "playwright test",

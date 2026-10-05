@@ -27,4 +27,11 @@ Mỗi domain chủ yếu là schema, prompt, workflow, source profiles, presente
 
 P0 chạy workflow trong request được await, lưu trạng thái và artifacts sau từng step. Worker, queue và resume bền vững là P1.
 
+## Client component boundary
+
+Client components placed under `src/app` must use the `.client.ts` or
+`.client.tsx` suffix so the ESLint import boundary applies to them. Other App
+Router files follow the server component default. Shared UI code belongs under
+`src/ui`.
+
 Repo này tách biệt với repo nộp bài của AI. Việc chuyển source sang repo nộp bài cần một yêu cầu riêng của người dùng. Không cấu hình remote tự động.
