@@ -59,7 +59,7 @@ switching are disabled. MCP performs database queries without a provider key.
 
 The app receives `MCP_SERVER_URL` and `MCP_AUTH_TOKEN` as server environment.
 **This Compose setup does not register MCP tools in the chat agent or implement
-durable history.** Those are the C04 and C02 integrations from the PRD. The smoke
+durable history.** Those are the C03 (including the former C04) and C02 integrations from the PRD. The smoke
 script exercises MCP directly as an infrastructure probe; it is not the planned
 MCP TypeScript SDK adapter. Existing app persistence remains a separate task.
 

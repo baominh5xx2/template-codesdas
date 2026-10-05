@@ -1,6 +1,6 @@
 # PRD — AI-native Chat Core
 
-Ngày cập nhật: **2026-10-05**. Sản phẩm: **Hackathon Starter Kit**. Phạm vi bản này: **yêu cầu sản phẩm và catalog feature; chưa triển khai core chat**.
+Ngày cập nhật: **2026-10-06**. Sản phẩm: **Hackathon Starter Kit**. Phạm vi bản này: **yêu cầu sản phẩm, catalog feature và roadmap hiện hành**.
 
 Đây là PRD hiện hành cho phần platform mình xây. Core là một app chat AI kiểu ChatGPT: có khung chat, lịch sử hội thoại, agent gọi tools và kết quả xuất hiện ngay trong cuộc trò chuyện. Các problem templates do bạn xây sẽ cắm vào core này. Đọc [phân công](build-ownership.md) và [problem templates](problem-templates.md) để ghép hai phần.
 
@@ -41,7 +41,7 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 - Luồng mặc định: **CopilotChat → CopilotRuntime → BuiltInAgent → configured model + tools**. Dùng model instance tương thích AI SDK trước khi chọn Factory mode; Factory chỉ khi cần kiểm soát model loop đặc biệt. [Runtime](https://docs.copilotkit.ai/backend/copilot-runtime), [model selection](https://docs.copilotkit.ai/model-selection), [custom agent](https://docs.copilotkit.ai/backend/custom-agent).
 - App tự sở hữu tích hợp Postgres/history và thread sidebar cho baseline OSS. Không giả định CopilotKit đã có Postgres runner dựng sẵn. [AgentRunner](https://docs.copilotkit.ai/backend/agent-runner).
 - **pgEdge MCP host local** là connector tùy chọn, bật sau chat/history. Không phải database driver hay điều kiện để chat text hoạt động.
-- **MCP TypeScript SDK chính thức** từ [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) là lựa chọn user yêu cầu cho MCP adapter. Ưu tiên stable v2 cho code mới; kiểm chứng CopilotKit/AI SDK bridge và pin exact versions lúc triển khai C04.
+- **MCP TypeScript SDK chính thức** từ [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) là lựa chọn user yêu cầu cho MCP adapter. Ưu tiên stable v2 cho code mới; kiểm chứng CopilotKit/AI SDK bridge và pin exact versions lúc triển khai C03.
 - Starter dùng cấu hình riêng. BTC Gateway chỉ là binding tùy chọn nếu sau này chủ động cấu hình; không đọc key, tài liệu hay config của repo thi.
 - Mình xây shared platform; bạn xây FE composition và backend flow của problem templates. Generic cards là phần mở rộng của platform, không phải điều kiện để hoàn tất chat core.
 
@@ -53,7 +53,9 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 
 **Nguồn cung cấp:** `SDK` là khả năng đã có trong hệ sinh thái CopilotKit, cần cài/wire/config; `App` là phần starter phải xây; `Intelligence` có điều kiện entitlement/license. **SDK có feature không có nghĩa repo đã triển khai feature đó.**
 
-### Inventory thực tế của repo hôm nay
+### Inventory baseline tại lúc viết PRD — 2026-10-05
+
+Snapshot này giữ để đọc nền ban đầu. Trạng thái hiện hành xem mục 10: chat UI/runtime và Docker đã có implementation; durable history và agent-to-MCP bridge chưa có.
 
 | Phần hiện có | Trạng thái và giới hạn |
 |---|---|
@@ -72,7 +74,7 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 | Feature flags | Server container đang tắt runs/artifacts/uploads/datasets/storage/model/sources/parsers |
 | Toolchain checks/tests | Đã có scripts check/test/build/e2e/domain validation và tests skeleton; không phải bằng chứng live chat hoạt động |
 
-**Chưa có trong repo:** packages CopilotKit/AI SDK/MCP SDK, chat UI/provider/runtime, live model, thread storage/history, Postgres migrations/compose, pgEdge MCP integration, workflow runner, generic cards và reusable capability algorithms. Các bảng feature dưới đây đều là **yêu cầu cần tích hợp/xây**, trừ inventory nêu trên.
+**Chưa có tại snapshot baseline này:** packages CopilotKit/AI SDK/MCP SDK, chat UI/provider/runtime, live model, thread storage/history, Postgres migrations/compose, pgEdge MCP integration, workflow runner, generic cards và reusable capability algorithms. Các bảng feature dưới đây đều là **yêu cầu cần tích hợp/xây**, trừ inventory nêu trên.
 
 ## 4. Trải nghiệm người dùng
 
@@ -124,7 +126,7 @@ flowchart TD
 
 ## 5. Catalog feature của core
 
-### A. Chat UI và hội thoại — tất cả chưa xây trong repo
+### A. Chat UI và hội thoại
 
 CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọn **CopilotChat trong workspace shell** cho trải nghiệm toàn màn hình. [Prebuilt components](https://docs.copilotkit.ai/prebuilt-components).
 
@@ -138,7 +140,7 @@ CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọ
 | CHAT-06 | Suggested prompts/follow-up và domain-aware empty state | SDK extension points; App nội dung theo pack | P1 |
 | CHAT-07 | Edit message, regenerate, branch conversation | App semantics/history/versioning; không giả định tự có đủ trong SDK | P2 |
 
-### B. Threads và durable history — tất cả chưa xây trong repo
+### B. Threads và durable history
 
 `InMemoryAgentRunner` không bảo toàn history sau restart. SDK có SQLite runner bền vững, nhưng baseline đã chọn Postgres nên cần integration riêng. Transcript gửi lên mỗi turn và history lưu server phải có một policy tránh lặp. [Runners](https://docs.copilotkit.ai/backend/agent-runner), [message history](https://docs.copilotkit.ai/backend/message-history).
 
@@ -155,7 +157,7 @@ CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọ
 
 **Threads Drawer có sẵn trong hệ sinh thái nhưng cần Intelligence/entitlement**, nên không là sidebar mặc định của bản OSS. Có thể thay sidebar riêng bằng nó sau khi chủ động chọn integration phù hợp. [Threads Drawer](https://docs.copilotkit.ai/prebuilt-components/copilot-threads-drawer).
 
-### C. Runtime, agent, model và độ tin cậy — tất cả chưa xây trong repo
+### C. Runtime, agent, model và độ tin cậy
 
 | ID | Feature / yêu cầu | Dùng lại / phần app xây | Ưu tiên |
 |---|---|---|---|
@@ -176,12 +178,12 @@ CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọ
 
 | ID | Feature / yêu cầu | Dùng lại / phần app xây | Ưu tiên |
 |---|---|---|---|
-| TOOL-01 | Server tool có schema input/output và execute server-side | SDK `defineTool`; App registration, service binding, output validation | P0 |
+| TOOL-01 | MCP tool có schema input/output, gọi từ backend và expose cho agent | Official MCP SDK discovery/call; CopilotKit tool registration; App bridge/policy/output validation. Custom server tools là extension | P0 |
 | TOOL-02 | Hiện tool arguments/status/result trong chat | SDK `useRenderTool`; App typed renderer, giới hạn nội dung hiển thị | P0 |
 | TOOL-03 | Tool Registry theo domain/capability/readiness; enforce permissions | App registry/scope/budgets; không viết lại SDK tool protocol | P0 |
 | TOOL-04 | Frontend tools cho selection/navigation hoặc UI interaction | SDK `useFrontendTool`; App allowlisted UI actions | P1 |
-| MCP-01 | Kết nối MCP server cấu hình server-side; discover/call tools | Official MCP TypeScript SDK client/transport; bridge sang CopilotKit tools; App auth/lifecycle/timeout/name collisions | P1 |
-| MCP-02 | pgEdge Postgres MCP chạy local, chỉ expose tools cần cho domain | App local service/permissions/allowlist; tắt khi service chưa sẵn | P1 |
+| MCP-01 | Kết nối MCP server cấu hình server-side; discover/call tools | Official MCP TypeScript SDK client/transport; bridge sang CopilotKit tools; App auth/lifecycle/timeout/name collisions | P0 cho connector C03; nhiều connectors là mở rộng P1 |
+| MCP-02 | pgEdge Postgres MCP chạy local, chỉ expose tools cần cho domain | Docker server đã chạy; C03 bổ sung SDK/agent bridge và allowlist; unavailable khi service chưa sẵn | P0 cho demo MCP C03; pack không dùng DB không bắt buộc pgEdge |
 | MCP-03 | MCP Apps tương tác khi server cung cấp UI tương thích | SDK runtime middleware; App sandbox/render policy; khác MCP tools thông thường | P2 |
 | HITL-01 | Approval trước tool có external side effect | SDK HITL UI; App server enforcement với pending/approve/reject/expiry | P1, bắt buộc trước khi bật tool có side effect |
 
@@ -347,17 +349,17 @@ Yêu cầu hiện hành: xé nhỏ PRD để cùng brainstorm từng phần, gi�
 
 Mỗi phần là một sub-project architectural: làm rõ mục đích/constraints → hỏi từng câu → so sánh 2–3 hướng → chốt thiết kế → viết spec riêng → review spec → viết plan riêng → review plan → triển khai khi được yêu cầu. Ưu tiên tái sử dụng CopilotKit; không tự xây lại agent loop, streaming protocol hoặc MCP client đã có trong SDK.
 
-### 10.1. Năm phần core — brainstorm theo thứ tự
+### 10.1. Bốn phần core — C04 cũ đã gộp vào C03
 
 | Thứ tự | Phần | Kết quả nhìn thấy được | Phụ thuộc | Trạng thái thiết kế |
 |---|---|---|---|---|
-| C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Skeleton hiện có + configured model để chạy live | [Spec](superpowers/specs/2026-10-05-chat-foundation-design.md) đã được cho chuyển sang [plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md); plan đã viết, chưa execute |
+| C01 | **Chat Foundation** | Mở app → gửi câu hỏi → stream → Stop/error/retry | Skeleton hiện có + configured model để chạy live | [Spec](superpowers/specs/2026-10-05-chat-foundation-design.md) và [plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md) đã có; UI/runtime đã có implementation. Docker no-config smoke pass; live model acceptance cần cấu hình model |
 | C02 | **Threads & Durable History** | New chat/list/switch/rename/archive/delete; restart rồi hỏi tiếp | Interfaces chat/runtime/identity chốt ở C01 | Chờ C01; chưa có spec/plan mới |
-| C03 | **Tools, Context & Inline Results** | Agent gọi một tool thật, hiển thị trạng thái/result và trả lời dựa trên result | C01 + history/execution identities của C02 | Chờ C02; chưa có spec/plan mới |
-| C04 | **Local MCP & pgEdge** | Agent dùng scoped query/read tools từ MCP local | Tool boundary C03 + starter database C02 | Chờ C03; chưa có spec/plan mới |
-| C05 | **Domain Plug-in & Artifact Bridge** | Cắm một pack mới bằng config/tools/presenter; chat giữ nguyên | C03; C04 chỉ cần khi pack sử dụng MCP | Chờ C03; chưa có spec/plan mới |
+| C03 | **MCP Tools, Context & Inline Results** | Agent gọi MCP tool → progress/result → trả lời; lưu tool call/result vào history | C01 + history/execution identities của C02 + MCP server đã setup | Gồm official MCP SDK client, discovery/call, policy/bridge và UI; chưa có spec/plan riêng |
+| C04 cũ | **Local MCP & pgEdge — đã gộp** | Hạ tầng pgEdge/Postgres đã chạy; client/agent integration thuộc C03 | Không còn là một phase sau C03 | Giữ ID để đọc tài liệu cũ; không tạo backlog/spec/plan C04 riêng |
+| C05 | **Domain Plug-in & Artifact Bridge** | Cắm một pack mới bằng config/tools/presenter; chat giữ nguyên | C03; pgEdge chỉ cần khi pack dùng DB tools | Chờ C03; chưa có spec/plan mới |
 
-C01–C03 tạo release **chat core P0**. C04–C05 tạo release **plug-and-play P1**. Thứ tự brainstorm là C01 → C02 → C03 → C04 → C05; dependency kỹ thuật của C05 không bắt buộc MCP cho mọi domain.
+C01–C03 tạo release **chat core P0**, gồm MCP tools ở C03. C05 tạo release **plug-and-play P1**. Thứ tự hiện hành: **C01 → C02 → C03 → C05**. C04 cũ được gộp vào C03 theo quyết định user ngày 2026-10-06; không tách client/bridge khỏi feature agent dùng MCP tools. pgEdge là connector DB mẫu; không bắt mọi domain dùng nó.
 
 #### C01 — Chat Foundation
 
@@ -375,7 +377,7 @@ C01–C03 tạo release **chat core P0**. C04–C05 tạo release **plug-and-pla
 
 #### C02 — Threads & Durable History
 
-**Phạm vi:** thread sidebar/lifecycle, Postgres Docker riêng + Drizzle, scoped repositories/BFF, persistence integration với runtime/runner, hydrate/reconcile và concurrency. Conversation context projection giữ đúng tool call/result pairs và token budget.
+**Phạm vi:** thread sidebar/lifecycle, Drizzle trên Postgres Docker đã setup, scoped repositories/BFF, persistence integration với runtime/runner, hydrate/reconcile và concurrency. Conversation context projection giữ đúng tool call/result pairs và token budget. Không setup lại Compose đã chạy.
 
 **Feature mapping:** HIST-01…05, CTX-01, persistence/access checks của OPS-02. HIST-02 thiết kế lưu tool events từ đầu; C03 kiểm chứng bằng tool thật.
 
@@ -385,35 +387,31 @@ C01–C03 tạo release **chat core P0**. C04–C05 tạo release **plug-and-pla
 
 **Chốt được khi:** hai thread độc lập; reload/restart giữ đúng history; hỏi tiếp có context; không duplicate; một thread không chạy hai executions cùng lúc; local identity không lấy quyền từ client. History/storage failures đi qua notice chung của chat.
 
-#### C03 — Tools, Context & Inline Results
+#### C03 — MCP Tools, Context & Inline Results
 
-**Phạm vi:** typed server Tool Registry, SDK tool registration/rendering, context/shared-state bridge và một deterministic read-only tool mẫu. Render result tối thiểu trong chat; không cần xây đủ 19 generic cards.
+**Phạm vi:** official MCP SDK client chạy server-side → discovery/allowlist/schema mapping → CopilotKit tool registration/call → progress/inline result → assistant trả lời. Dùng một pgEdge read-only tool thật trên database starter làm vertical slice. Tool Registry là lớp metadata/policy cho MCP tools, không là một dự án custom tools phải hoàn tất trước MCP. Context/shared-state bridge mở theo mapping bên dưới; không cần xây đủ 19 generic cards.
 
-**Feature mapping:** TOOL-01…04, RESULT-01, CTX-02…03; tool authorization của OPS-02. TOOL-04/CTX-02…03 là P1: có thể tách khỏi acceptance P0 nhưng phải có scope rõ trong spec/plan.
+**Feature mapping:** TOOL-01…04, MCP-01…02, RESULT-01, CTX-02…03; tool authorization của OPS-02. TOOL-04/CTX-02…03 là P1: có thể tách khỏi acceptance P0 nhưng phải có scope rõ trong spec/plan. MCP Apps (MCP-03) vẫn là X15.
 
-**Các quyết định cần brainstorm:** tool contract và namespacing; input/output validation; tool scope/readiness/budget; state do UI hay server sở hữu; progress/errors; lưu tool call/result qua C02. Ghi rõ extension point cho approval, không bật side-effect tools tại phần này.
+**Các quyết định cần brainstorm:** MCP auth/transport và per-run/persistent client; discovery/namespacing/allowlist; schema/output validation; scope/readiness/budget; timeout/cancellation/cleanup; context ownership; progress/error projection; lưu call/result qua C02. Quyền DB vẫn enforce bằng role, không chỉ tool allowlist. Side-effect tools chỉ bật sau X08 approval.
 
-**Đầu ra/handoff:** domain-aware tool registration boundary, render bridge và context contract để MCP/domain packs dùng lại.
+**Đầu ra/handoff:** MCP client/connector, policy/Tool Registry, SDK-to-agent bridge, minimal result renderer và history integration; domain packs C05 dùng lại các boundaries này. Browser không nhận token MCP hoặc quyền gọi unrestricted SQL.
 
-**Chốt được khi:** agent gọi tool thật → hiện trạng thái/result → assistant trả lời dựa trên result; errors/cancel/scope đều kiểm chứng được; mở lại history vẫn có tool call/result hợp lệ.
+**Chốt được khi:** agent gọi pgEdge MCP tool qua official SDK/bridge → hiện progress/result → trả lời dựa trên dữ liệu thật; mở lại history giữ đúng call/result. Missing server, token sai, denied tool/private schema, timeout/cancel và cleanup có checks. Technical failures chỉ hiện `Chưa kết nối`; không leak token/connections. Infrastructure smoke trực tiếp không thay thế nghiệm thu agent-to-MCP này.
 
-#### C04 — Local MCP & pgEdge
+##### Official MCP SDK và compatibility — thuộc C03
 
-**Phạm vi:** cấu hình MCP server/client server-side, lifecycle/discovery/name mapping và pgEdge Postgres MCP local use case chỉ đọc/query trong scope cho phép.
+**Hạ tầng hiện có:** [Compose local](docker-local.md) đã chạy app, Postgres và pgEdge MCP; auth/query/DB grants đã smoke test. C03 xây production client và agent integration trên hạ tầng này.
 
 **Đã chốt theo user:** dùng [MCP TypeScript SDK chính thức](https://github.com/modelcontextprotocol/typescript-sdk) cho MCP adapter của starter. SDK cung cấp client/transport; pgEdge là server cung cấp database tools; CopilotKit giữ agent loop/chat và nhận tools qua bridge.
 
 **Dependency policy, đối chiếu 2026-10-05:** repo SDK xác định v2 là stable release line, với `@modelcontextprotocol/client` và `@modelcontextprotocol/server`; `@modelcontextprotocol/sdk` thuộc v1.x. Connector mới ưu tiên client v2; chỉ thêm server package nếu cần tự expose tools thành MCP server. Exact patch versions chốt sau compatibility verification, không cài từ GitHub main hoặc prerelease. [SDK README](https://github.com/modelcontextprotocol/typescript-sdk), [v2 docs](https://ts.sdk.modelcontextprotocol.io/v2/).
 
-**Compatibility gate:** ví dụ `mcpClients` hiện trong CopilotKit dùng `createMCPClient` từ `@ai-sdk/mcp` và transport import v1. MCP SDK `Client` cung cấp `listTools`/`callTool`; không giả định truyền thẳng nó vào `mcpClients` là tương thích. C04 spec phải chọn và kiểm chứng bridge v2 → registered tools hoặc compatible tool provider, gồm schemas/results/errors/cancellation/cleanup. Agent loop vẫn do CopilotKit chạy. [CopilotKit MCP clients](https://docs.copilotkit.ai/mcp-servers), [SDK client guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/get-started/first-client.md).
+**Compatibility gate:** ví dụ `mcpClients` trong research CopilotKit dùng `createMCPClient` từ `@ai-sdk/mcp` và transport import v1. MCP SDK `Client` cung cấp `listTools`/`callTool`; không giả định truyền thẳng nó vào `mcpClients` là tương thích. C03 spec phải chọn và kiểm chứng bridge v2 → registered tools hoặc compatible tool provider, gồm schemas/results/errors/cancellation/cleanup. Agent loop vẫn do CopilotKit chạy. [CopilotKit MCP clients](https://docs.copilotkit.ai/mcp-servers), [SDK client guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/get-started/first-client.md).
 
-**Feature mapping:** MCP-01…02. MCP Apps (MCP-03) thuộc extension, không ghép vào baseline chỉ để đủ ecosystem.
+#### C04 cũ — đã gộp vào C03
 
-**Các quyết định cần brainstorm:** per-run connection hay persistent client; auth/transport phù hợp server local; tools nào expose; database role/schema access; timeouts/cancellation/connection cleanup; service unavailable. Tool allowlist không thay thế quyền database.
-
-**Đầu ra/handoff:** một connector dùng Tool Registry của C03; service/config/run instructions riêng cho starter; không để frontend tự gọi unrestricted SQL.
-
-**Chốt được khi:** agent đọc dữ liệu local được phép qua official SDK/bridge đã kiểm chứng; tool bị cấm không execute; server down/timeout rõ; không leak connections hoặc quyền giữa executions. Hiện chỉ ghi quyết định SDK, chưa cài packages hoặc triển khai connector.
+ID này chỉ còn để giải thích references cũ. MCP client/transport/discovery/tool bridge/lifecycle thuộc C03; pgEdge server thuộc Compose local đã setup. Không có một feature hoặc plan C04 độc lập cần làm sau C03.
 
 #### C05 — Domain Plug-in & Artifact Bridge
 
@@ -455,14 +453,14 @@ Những safeguards cần cho C01–C05 như validation, scope, cancellation và 
 
 File này là **PRD + roadmap + decision log**. Technical spec/implementation plan chi tiết lưu riêng trong Superpowers và link về đây sau khi thực sự tạo file. Không tạo link tới placeholder file chưa tồn tại.
 
-Tên đề xuất cho năm cặp tài liệu, với ngày thực tế lúc viết:
+Tên đề xuất cho bốn cặp tài liệu hiện hành, với ngày thực tế lúc viết; C04 cũ không có cặp mới:
 
 | Phần | Spec dưới `docs/superpowers/specs/` | Plan dưới `docs/superpowers/plans/` |
 |---|---|---|
 | C01 | `YYYY-MM-DD-chat-foundation-design.md` | `YYYY-MM-DD-chat-foundation-implementation-plan.md` |
 | C02 | `YYYY-MM-DD-chat-history-design.md` | `YYYY-MM-DD-chat-history-implementation-plan.md` |
 | C03 | `YYYY-MM-DD-chat-tools-context-design.md` | `YYYY-MM-DD-chat-tools-context-implementation-plan.md` |
-| C04 | `YYYY-MM-DD-local-mcp-pgedge-design.md` | `YYYY-MM-DD-local-mcp-pgedge-implementation-plan.md` |
+| C04 cũ | Đã gộp vào spec C03 | Đã gộp vào plan C03 |
 | C05 | `YYYY-MM-DD-domain-artifact-bridge-design.md` | `YYYY-MM-DD-domain-artifact-bridge-implementation-plan.md` |
 
 Tiến độ mỗi phần: `Chưa mở → Brainstorming → Spec đã viết → Spec đã review → Plan đã viết → Plan đã review → Đang triển khai → Đã nghiệm thu`. Spec/plan tồn tại không đồng nghĩa đã review hoặc đã implement.
@@ -482,10 +480,11 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-05 | C01 | User yêu cầu viết plan ngay; đã tạo [implementation plan](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md) gồm 5 tasks với files/interfaces/TDD checks và SDK evidence | Spec được cho chuyển sang planning; plan đã self-review, chưa execute, chưa có product code |
 | 2026-10-05 | C01/C02 UI | User chọn design theo ảnh ChatGPT với theme trắng; thay browser light/dark bằng white cố định. C01 thêm sidebar shell, C02 mới có history thật. User tự handle code, mình chỉ viết spec/plan | [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) và C01 spec/plan đã đồng bộ; chưa triển khai UI |
 | 2026-10-06 | C01 UI | Đã viết [UI implementation plan](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md): theme/shell → navigation → messages/Copy → composer/integration → acceptance. Tasks UI chi tiết hóa C01 Task 4–5, không execute hai backlog song song | Spec được user cho chuyển sang plan; docs only, user tự handle code |
+| 2026-10-06 | C03 / C04 cũ | User chốt tools của C03 là MCP tools. Gộp official SDK client, discovery/call, policy/bridge, context/results và history integration vào C03; pgEdge server là hạ tầng Compose đã chạy. Giữ C04 như reference cũ, không là phase riêng | Roadmap đã cập nhật; chưa tạo spec/plan C03 hoặc triển khai agent-to-MCP bridge |
 
-Điểm hiện tại là **plan C01 — Chat Foundation đã viết, chưa execute**. Các phần C02–C05 giữ trong hàng chờ. Spec và plan C01 đều đã tồn tại; product implementation chưa có.
+Điểm hiện tại: **C01 có spec/plan và implementation; Compose app/Postgres/pgEdge đã chạy**. C02, C03 và C05 chưa có spec/plan riêng theo roadmap chat-first; C04 cũ đã gộp vào C03. Bước planning tiếp theo là C02 durable history, rồi C03 MCP tools + context/results, rồi C05 domain/artifact bridge.
 
 
 ### Docker local setup — 2026-10-06
 
-Đã có [Compose app + PostgreSQL + pgEdge MCP](docker-local.md): project riêng, Bun frozen install, Node production standalone image, localhost ports, credentials tự sinh và DB roles riêng. Image build, healthchecks, MCP negotiation/query và quyền đọc/ghi đã kiểm tra bằng services thật. Đây là infrastructure đã chạy; durable chat history (C02) và MCP SDK/tool registration trong chat (C04) vẫn là integrations cần triển khai.
+Đã có [Compose app + PostgreSQL + pgEdge MCP](docker-local.md): project riêng, Bun frozen install, Node production standalone image, localhost ports, credentials tự sinh và DB roles riêng. Image build, healthchecks, MCP negotiation/query và quyền đọc/ghi đã kiểm tra bằng services thật. Đây là infrastructure đã chạy; durable chat history (C02) và MCP SDK/tool registration trong chat (C03, gồm C04 cũ) vẫn là integrations cần triển khai.

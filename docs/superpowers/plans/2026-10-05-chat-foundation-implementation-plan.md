@@ -4,7 +4,7 @@
 
 **Goal:** Tạo chat local dùng CopilotKit: text streaming, New chat, Stop/Retry và một notice `Chưa kết nối` cho mọi technical failure.
 
-**Architecture:** Next.js BFF chạy TypeScript CopilotRuntime/BuiltInAgent, model instance từ endpoint cấu hình riêng và InMemoryAgentRunner cho C01. Client dùng CopilotChat với app-owned view/controller/error projection. History durable và domain/tools/MCP thuộc C02–C05.
+**Architecture:** Next.js BFF chạy TypeScript CopilotRuntime/BuiltInAgent, model instance từ endpoint cấu hình riêng và InMemoryAgentRunner cho C01. Client dùng CopilotChat với app-owned view/controller/error projection. History durable thuộc C02, MCP tools/context/results thuộc C03 (gồm C04 cũ đã gộp), domain/artifact bridge thuộc C05.
 
 **Tech Stack:** Existing Node 24 LTS/Bun 1.4.2/Next 16.3.8/React 19.3.0/TypeScript 6.0.3/Zod 4.6.5; thêm stable CopilotKit 1.77.0 với imports v2, AI SDK 6.0.300, OpenAI adapter 3.0.124, AG-UI client 1.0.1 và RxJS 7.8.1.
 
