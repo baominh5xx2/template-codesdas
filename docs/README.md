@@ -4,7 +4,7 @@ Phân công hiện hành là **platform dùng chung do mình xây; problem templ
 
 **Ưu tiên mới: core là app chat AI có lịch sử hội thoại.** Đọc [Core PRD](platform-build-spec.md) trước để xem scope, catalog features, trạng thái repo và acceptance. [CopilotKit ecosystem research](research/2026-10-05-copilotkit-chat-core.md) giải thích SDK/runtime/history và các điều kiện Intelligence. SDK chưa được cài vào app.
 
-**UI đã chọn:** [bố cục ChatGPT, theme trắng](superpowers/specs/2026-10-05-chat-white-ui-design.md). C01 có sidebar shell và chat; history thật thuộc C02. Mình chỉ viết spec/plan, user tự triển khai code.
+**UI đã chọn:** [bố cục ChatGPT, theme trắng](superpowers/specs/2026-10-05-chat-white-ui-design.md), có [UI implementation plan riêng](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md) gồm 5 tasks. Plan này chi tiết hóa UI của C01, không phải thêm một core khác. C01 có sidebar shell và chat; history thật thuộc C02. Mình chỉ viết spec/plan, user tự triển khai code.
 
 **Brainstorm từng phần:** mục 10 trong Core PRD chia C01 Chat Foundation → C02 History → C03 Tools/Context → C04 MCP local → C05 Domain bridge. Mỗi phần có vòng spec/plan riêng; extensions nằm trong hàng chờ. [Technical spec C01](superpowers/specs/2026-10-05-chat-foundation-design.md) đã được user cho chuyển sang [implementation plan C01](superpowers/plans/2026-10-05-chat-foundation-implementation-plan.md): 5 tasks, chưa execute.
 
