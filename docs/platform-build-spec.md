@@ -26,11 +26,13 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 | Có lịch sử bền vững | Tạo hai thread, reload và restart, mở lại đúng messages và hỏi tiếp |
 | Agent làm việc được | Gọi một server tool thật, thấy tiến trình và kết quả trong chat |
 | Đổi domain dễ | Thêm domain config/tool/presenter mà không sửa chat shell hoặc protocol |
-| Demo độc lập | Không cần secrets/tài liệu repo thi; no-env mode báo unavailable hoặc demo rõ ràng |
+| Starter độc lập | Không cần secrets/tài liệu repo thi; no-env chat hiện notice `Chưa kết nối` |
 
 ## 2. Phạm vi và quyết định nền tảng
 
 - **Chat-first**: live chat và durable history đi trước custom workflow engine, ingestion hoặc analytics đầy đủ.
+- **Một người dùng local** cho baseline; chưa xây multi-user login, multi-tenant management, tenant switching hoặc tenant RBAC. Giữ server-owned identity/adapter boundary để mở rộng sau; các IDs trong contracts không đồng nghĩa phải xây tenant product features.
+- **Thông báo lỗi thống nhất trong khung chat: `Chưa kết nối`**. Thiếu config, mất kết nối và mọi technical failure đi qua cùng notice; không đưa lỗi SDK/provider/tool/MCP hoặc stack trace lên UI. Chi tiết chỉ giữ trong server diagnostics đã loại secrets. Không fallback sang demo assistant replies.
 - **CopilotKit OSS làm nền mặc định**: tái sử dụng chat UI, runtime, agent loop, tool calling, shared state và HITL. Intelligence là extension tùy chọn có điều kiện, không là prerequisite. [OSS vs Intelligence](https://docs.copilotkit.ai/concepts/oss-vs-enterprise).
 - **Next.js App Router + TypeScript + Next.js BFF**; **Postgres local Docker + Drizzle** là đích lưu trữ của app. Docker project, ports và volumes riêng cho starter.
 - **CopilotKit v2** khi tích hợp; kiểm tra release ổn định và compatibility trước khi pin. Không tự nâng packages hiện có trong lần cập nhật PRD này.
@@ -89,6 +91,17 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 - Result/source panel tùy chọn: xem artifact/report/evidence mà vẫn giữ conversation context.
 - Responsive: sidebar đóng/mở trên mobile; bàn phím, focus, scroll và contrast đủ dùng.
 
+### Notice và error behavior đã chốt
+
+- Copy duy nhất cho technical unavailable/failure trên chat là **`Chưa kết nối`**, hiển thị bằng notice trong khung chat. Đây là trạng thái hệ thống, không phải assistant answer giả lập.
+- Áp dụng cho thiếu model/config, network/runtime/stream errors, timeout, provider rejection/rate limit và lỗi tool/MCP/history/storage khi chúng ảnh hưởng thao tác chat. Nội bộ vẫn phân biệt đúng cause/status; UI dùng cùng copy.
+- Không render raw error messages, HTTP status/provider names, stack traces, SDK default error bubbles/toasts hoặc technical fallback text do model tạo. Khi integrate SDK phải kiểm chứng cả error surfaces và tool-result projection, không chỉ catch fetch ở composer.
+- Một failure chỉ tạo một notice đang hiển thị; repeated errors không spam transcript/toasts. Notice được thay/cập nhật khi reconnect hoặc retry thành công. Không lưu notice thành model conversation message.
+- Lỗi giữa stream giữ nội dung đã nhận; execution ghi failed/interrupted đúng nguyên nhân, UI thêm notice chung và kết thúc loading. Nội dung partial không được đánh dấu completed.
+- Khung chat vẫn xem được khi chưa config. Không tự gửi request nếu đã biết model chưa sẵn; gửi/retry khi unavailable dùng cùng notice. Retry là hành động rõ ràng, không tạo user messages trùng.
+- Stop do người dùng chủ động, empty state, input validation và thiếu evidence là trạng thái thông thường của sản phẩm; không tự biến chúng thành exception hoặc in lỗi kỹ thuật. Lỗi execution thực sự vẫn dùng notice trên.
+- Server logs có error code/correlation ID đủ debug; loại credentials và sensitive payload. Fallback UI không được che mất trạng thái lỗi trong persistence hoặc biến failure thành success.
+
 ```mermaid
 flowchart TD
   UI[Chat shell + thread sidebar] --> CK[CopilotKit provider / CopilotChat]
@@ -132,7 +145,7 @@ CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọ
 | HIST-02 | Persist user/assistant messages, tool calls/results và execution status | App Postgres integration với runner/event lifecycle | P0 |
 | HIST-03 | Reload/restart mở lại đúng transcript và hỏi tiếp đúng context | App hydrate/reconcile; giữ tool call/result pairs hợp lệ | P0 |
 | HIST-04 | Rename, archive, delete hội thoại; xác nhận delete trong UI | App thread metadata/actions và lifecycle dữ liệu liên quan | P0 |
-| HIST-05 | Scope theo owner/workspace; một thread active execution tại một thời điểm | App server identity, access checks, concurrency policy | P0 |
+| HIST-05 | Local operator identity do server sở hữu; một thread active execution tại một thời điểm | App identity boundary và concurrency; chưa xây multi-tenant UX/auth | P0 |
 | HIST-06 | Search history, pagination và sort theo lần cập nhật | App indexed queries + sidebar search | P1 |
 | HIST-07 | Reconnect/replay execution đang chạy khi mất kết nối | App/runner khả năng resume; không đánh đồng reopen transcript với resume | P1 |
 | HIST-08 | Export conversation; retention policy; multi-device sync | App storage/API policy; sync chỉ khi auth/deployment hỗ trợ | P2 |
@@ -147,7 +160,7 @@ CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọ
 | AGENT-02 | Một BuiltInAgent mặc định, system prompt và tools theo domain | SDK agent loop; App config/registration | P0 |
 | AGENT-03 | Multi-step tool → result → assistant answer có giới hạn | SDK `maxSteps`; App chọn budget phù hợp, không để mặc định một bước khi cần tool loop | P0 |
 | AGENT-04 | Model/gateway adapter dùng endpoint/model đã cấu hình | SDK custom language model; App server-only settings và compatibility | P0 |
-| AGENT-05 | Timeout, cancellation, transient retry và trạng thái lỗi trung thực | SDK `maxRetries`/lifecycle; App deadline, error mapping và storage | P0 |
+| AGENT-05 | Timeout, cancellation, transient retry; nội bộ giữ đúng lỗi, chat chỉ notice `Chưa kết nối` | SDK `maxRetries`/lifecycle; App deadline, error projection và storage | P0 |
 | AGENT-06 | Theo dõi token/call/time, cap output và chặn vượt budget | SDK params/usage khi có; App cost guard, usage records | P1 |
 | AGENT-07 | Chọn model từ allowlist theo pack hoặc UI | App router/config; không nhận arbitrary provider credentials từ client | P1 |
 | AGENT-08 | Fallback đổi model/provider theo cấu hình rõ ràng | App policy riêng: trigger, allowed targets, budget, audit; mặc định tắt | P2 |
@@ -204,7 +217,7 @@ Generative UI có thể render component đã đăng ký với schema; app khôn
 
 | ID | Feature / yêu cầu | Trạng thái repo / nguồn cung cấp | Ưu tiên |
 |---|---|---|---|
-| OPS-01 | No-env boot; model/MCP chưa config → unavailable rõ, demo có nhãn | Skeleton/fixture gating có; chat readiness chưa xây | P0 |
+| OPS-01 | No-env boot; mọi technical unavailable/failure trên chat → notice `Chưa kết nối` | Skeleton/fixture gating có; chat readiness/error projection chưa xây | P0 |
 | OPS-02 | Thread/tool/storage authorization và server-only credentials | Scope contracts có; server identity/enforcement chưa xây | P0 |
 | OPS-03 | Preflight: DB/model/MCP/feature readiness chỉ kiểm tra phần bật | Chưa xây script tổng hợp; health skeleton có | P1 |
 | OPS-04 | Pre-submit, smoke, secret scan, provider/network verification | Checks/tests nền có; readiness/scan scripts chưa xây | P1 |
@@ -256,9 +269,10 @@ Slice 1–3 là release **chat core P0**. Slice 4–5 là release **plug-and-pla
 - Model/tool streaming không làm treo composer; Stop hủy execution và các tác vụ con đã khởi tạo.
 - History giữ đúng message order, tool call/result pairing và execution status sau refresh/restart.
 - Rename/archive/delete có semantics rõ; archived thread không mất transcript; deleted thread không còn được hydrate/access qua API.
-- Owner/workspace được xác định và kiểm tra server-side. Local single-operator mode phải khai báo rõ; client không tự nhận trusted operator.
+- Baseline local single-operator được khai báo rõ; identity do server xác định, client không tự nhận trusted operator. Không yêu cầu multi-tenant management hoặc login để nghiệm thu.
 - Tool input/output hợp lệ; timeout/retry không lặp side effect ngoài policy. P0 mẫu dùng tool deterministic chỉ đọc.
 - Thất bại provider không trở thành fake success; không auto dùng fixtures trong production.
+- Mọi technical error/unavailable surface trong khung chat chỉ hiển thị đúng `Chưa kết nối`; không có raw SDK/provider/tool/MCP errors hoặc default error bubbles/toasts. Missing config, network error, timeout, mid-stream failure và tool/history failure đều có coverage; repeated errors chỉ một notice.
 - Có smoke coverage cho chat → history → tool result, test scope/concurrency và failure paths cần thiết; existing skeleton tests không thay thế các checks này.
 
 ### Gate P1 quan trọng
@@ -348,13 +362,13 @@ C01–C03 tạo release **chat core P0**. C04–C05 tạo release **plug-and-pla
 
 **Feature mapping:** CHAT-01…05, AGENT-01…05, OPS-01; phần nền identity/server-only config của OPS-02. Feature OPS-02 phải hoàn tất xuyên C01–C03, không coi boundary declaration là enforcement đã xong.
 
-**Đã chốt:** bản đầu phục vụ một người dùng local; giữ identity/scope boundary để thêm login sau. Không đưa multi-user login vào acceptance C01. Cách server xác định local operator vẫn cần thiết kế, không dùng giá trị identity do client tự khai làm quyền truy cập.
+**Đã chốt:** bản đầu phục vụ một người dùng local; chưa cần multi-tenant hoặc multi-user login. Giữ identity boundary để mở rộng sau, không dùng giá trị identity do client tự khai làm quyền truy cập. Khi chưa kết nối hoặc có technical failure, chat hiện đúng notice `Chưa kết nối`; mọi error surfaces phải đi qua policy ở mục 4, không dùng demo reply hoặc raw SDK errors.
 
-**Các quyết định còn cần brainstorm:** shell/UX tối thiểu; configured model contract và trải nghiệm chưa config; transcript ownership trước khi có persistence; cancellation/error/retry semantics. Không hỏi lại mục tiêu chat kiểu ChatGPT đã được xác nhận.
+**Các quyết định còn cần brainstorm:** shell/UX tối thiểu; configured model contract; transcript ownership trước khi có persistence; cancellation/retry mechanics. Identity mode và error copy/no-env UX đã chốt, không hỏi lại.
 
 **Đầu ra/handoff:** một chat vertical slice có thể kiểm chứng; interfaces cho thread binding, execution status và identity; danh sách những khả năng còn unavailable. Durable history, database và domain workflow thuộc các phần sau.
 
-**Chốt được khi:** gửi text → stream → hoàn tất; Stop giữ partial response với status đúng; retry không nhân đôi user message; thiếu model config hiện unavailable rõ.
+**Chốt được khi:** gửi text → stream → hoàn tất; Stop giữ partial response với status đúng; retry không nhân đôi user message; missing config và mọi technical failure chỉ hiện notice `Chưa kết nối`, không in lỗi kỹ thuật hoặc spam notice.
 
 #### C02 — Threads & Durable History
 
@@ -362,11 +376,11 @@ C01–C03 tạo release **chat core P0**. C04–C05 tạo release **plug-and-pla
 
 **Feature mapping:** HIST-01…05, CTX-01, persistence/access checks của OPS-02. HIST-02 thiết kế lưu tool events từ đầu; C03 kiểm chứng bằng tool thật.
 
-**Các quyết định cần brainstorm:** custom Postgres runner integration và event/message persistence; một nguồn transcript authoritative; append/dedupe; thread title; archive/delete semantics; restart/interrupted behavior; owner/workspace resolution. Reconnect/resume execution đang chạy là HIST-07, không bắt buộc P0.
+**Các quyết định cần brainstorm:** custom Postgres runner integration và event/message persistence; một nguồn transcript authoritative; append/dedupe; thread title; archive/delete semantics; restart/interrupted behavior; local identity mapping. Không đưa multi-tenant auth vào C02. Reconnect/resume execution đang chạy là HIST-07, không bắt buộc P0.
 
 **Đầu ra/handoff:** thread/execution/storage contracts và API semantics cho UI, runtime và tools; migration/service lifecycle riêng cho starter. Không sử dụng database/container của repo thi.
 
-**Chốt được khi:** hai thread độc lập; reload/restart giữ đúng history; hỏi tiếp có context; không duplicate; một thread không chạy hai executions cùng lúc; access sai scope bị từ chối.
+**Chốt được khi:** hai thread độc lập; reload/restart giữ đúng history; hỏi tiếp có context; không duplicate; một thread không chạy hai executions cùng lúc; local identity không lấy quyền từ client. History/storage failures đi qua notice chung của chat.
 
 #### C03 — Tools, Context & Inline Results
 
@@ -459,6 +473,7 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-05 | Tổng thể | Chia core thành C01–C05; chat/history đi trước workflow; extensions mở theo nhu cầu | Roadmap đề xuất đã ghi theo yêu cầu, chưa là technical design đã review |
 | 2026-10-05 | C01 | Đã có mục tiêu app chat kiểu ChatGPT, dùng CopilotKit và repo starter riêng | Constraint đã được user xác nhận trong hội thoại |
 | 2026-10-05 | C01 | User chọn một người local trước, giữ boundary để thêm login sau. Lý do: thu hẹp bản đầu; acceptance C01 không yêu cầu multi-user login, vẫn cần server-owned scope | Đã được user xác nhận; chưa chọn auth/session implementation |
+| 2026-10-05 | C01 / xuyên core | User xác nhận chưa cần multi-tenant; mọi technical error/unavailable trên khung chat fallback về notice chính xác `Chưa kết nối`, không in lỗi lung tung. Nội bộ giữ cause/status để debug; không demo assistant fallback | Đã chốt; đưa vào C01 và gates C02–C04, chưa triển khai UI/error handling |
 | 2026-10-05 | C04 | User yêu cầu official modelcontextprotocol/typescript-sdk; ưu tiên stable v2 client, giữ pgEdge local server và CopilotKit agent loop. C04 acceptance bổ sung kiểm chứng SDK-to-tool bridge | SDK choice đã xác nhận; transport/lifecycle/bridge và exact versions chưa chốt; chưa cài SDK |
 
 Phiên tiếp theo bắt đầu tại **C01 — Chat Foundation**. Chỉ brainstorm phần đó, giữ các phần sau trong hàng chờ. Lần cập nhật roadmap này không tạo technical spec/plan mới hoặc triển khai product code.
