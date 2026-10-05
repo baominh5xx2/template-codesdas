@@ -1,12 +1,14 @@
 # Hackathon Starter Kit — Master Implementation Plan
 
+**Execution update — user directive 2026-10-05:** Starter độc lập. Build/test/demo không cần API key hoặc tài liệu của BTC; không đọc repo thi hay cấu hình của họ. Demo adapter là default rõ nhãn cho local development; optional generic gateway adapter để cắm sau, không có live-AI gate bắt buộc trong baseline. Thiếu external gateway là unavailable, không phải lý do dừng triển khai. Production vẫn không tự bật fixture.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build bộ khung local tái sử dụng, chứng minh document và dataset workflows cùng artifact/presenter với chat agent.
 
 **Architecture:** Artifact là tâm của modular monolith. Routes/agent tools dùng core services; runner tuần tự ghép capabilities và lưu artifacts; Domain Packs định nghĩa schema/config/presenter. Drizzle xử lý persistence và pgEdge MCP phục vụ các database tools local có scope.
 
-**Tech Stack:** Next.js App Router, TypeScript, Zod, Postgres/Drizzle, CopilotKit v2, BTC Gateway, local pgEdge MCP; Vitest + Playwright.
+**Tech Stack:** Next.js App Router, TypeScript, Zod, Postgres/Drizzle, CopilotKit v2, optional AI Gateway, local pgEdge MCP; Vitest + Playwright.
 
 **Spec:** [Design v0.3](../specs/2026-10-05-hackathon-plug-and-play-design.md)
 
@@ -15,7 +17,7 @@
 ## Global Constraints
 
 - Repo chuẩn bị ở E:/thucchienai/hackathon-starter-kit. Repo thi aitc2026-team-939-triplepeek nằm ngoài phạm vi thao tác. Không tự chuyển source, cấu hình remote hay push sang repo thi.
-- Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua BTC Gateway.
+- Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua optional AI Gateway.
 - pgEdge Postgres MCP được chọn làm service host local cho database exploration/query; mỗi domain chỉ bật các database tools thực sự cần.
 - P0 chạy tuần tự. Dependency chỉ được tham chiếu một step trước đó.
 - Default deadline toàn run 120 giây, mỗi step tối đa 30 giây trong ngân sách còn lại.
@@ -34,7 +36,7 @@
 
 Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
-Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Live BTC check cần BTC_GATEWAY_BASE_URL, BTC_GATEWAY_API_KEY và BTC_MODEL do đội cung cấp trong .env.local; không đọc .env hoặc key files ở repo thi, không ghi secret vào output.
+Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
 Một task có thể cần nhiều vòng 2–5 phút cho các files nhỏ. Mỗi task có test cycle và local commit riêng; không gộp cả phase thành một lần viết code lớn.
 
@@ -59,7 +61,7 @@ Phạm vi plan là baseline P0 và hai archetypes bổ sung của spec. Worker/r
 | src/core/ports/*, src/core/capabilities/* | I/O interfaces và artifact validation/execution | Thay dependency/execution contract |
 | src/core/workflows/*, src/core/services/* | Sequential run lifecycle và use cases | Workflow behavior hoặc scope |
 | src/adapters/postgres/*, infra/postgres/* | Tables, transactions và database grants | Persistence/query layout |
-| src/adapters/llm/btc/* | Model protocol, limits, feature probe | BTC capability/protocol |
+| src/adapters/llm/gateway/* | Model protocol, limits, feature probe | AI capability/protocol |
 | src/adapters/parsers/*, src/adapters/sources/* | File extraction và allowed URL fetch | Format/source adapter mới |
 | src/adapters/mcp/pgedge/*, infra/pgedge/* | MCP transport/tool mapping/result normalization | Pinned pgEdge integration |
 | src/agents/* | CopilotKit lifecycle, state projection và tool bridge | Chat integration |
@@ -113,8 +115,8 @@ Các signatures là contracts của dự án, được tạo ở Task A2 hoặc 
 | A2 | PresentationContext | {snapshot:RunSnapshot;get<T>(kind:string,schema:Schema<T>):Artifact<T>\|null;sources:SourceRef[];evidence:Evidence[]} |
 | A3 | createMemoryRepositories | (): {runs:RunRepository;artifacts:ArtifactRepository;uploads:UploadRepository;datasets:DatasetRepository}, test-only adapter |
 | A3 | createTestContext | (options:{scope?:Scope;ports?:Partial<RuntimePorts>;signal?:AbortSignal;deadlineAt?:number;expectedArtifact?:{kind:string,version:number};artifactSchemas?:ArtifactSchemaRegistry}):RunContext; defaults use fixtures, never external I/O |
-| A4 | BTC SDK facade | sdk-model.ts exports loadLiveGatewayConfig(env:NodeJS.ProcessEnv=process.env):BtcConfig; createGatewayModel(config:BtcConfig,fetcher:typeof fetch=fetch):LanguageModel; probeGateway(config):Promise<GatewayFeatures>. SDK types stay inside adapters. |
-| A4 | createBtcGateway | (config:BtcConfig,fetcher?:typeof fetch):LlmPort; BtcConfig:{baseUrl,apiKey,model,features:GatewayFeatures} |
+| A4 | AI SDK facade | sdk-model.ts exports loadLiveGatewayConfig(env:NodeJS.ProcessEnv=process.env):GatewayConfig; createGatewayModel(config:GatewayConfig,fetcher:typeof fetch=fetch):LanguageModel; probeGateway(config):Promise<GatewayFeatures>. SDK types stay inside adapters. |
+| A4 | createGateway | (config:GatewayConfig,fetcher?:typeof fetch):LlmPort; GatewayConfig:{baseUrl,apiKey,model,features:GatewayFeatures} |
 | A5 | Capability<I,O> / executeCapability | {id,version,input:Schema<I>,output:Schema<O>,run(ctx,input):Promise<ArtifactDraft<O>>}; executeCapability(capability,input,ctx):Promise<Artifact<O>> |
 | A5 | Step<I,O> / WorkflowDefinition | spec §7 plus artifactKind/version; workflow:{steps:AnyStep[],requiredArtifactKinds:string[]} |
 | A5 | StepBindingContext | {input:JsonValue;get<T>(stepId:string,kind:string,schema:Schema<T>):Artifact<T>}; get rejects undeclared dependencies |
@@ -182,7 +184,7 @@ UIBlock has {id,type,props}; z.discriminatedUnion("type", schemas) is canonical.
 - Node version must meet Next.js and pinned SDK engines; record actual Node/pnpm versions in docs/dependencies.md. No package version guessed from this plan.
 - Vitest for pure/integration behavior; Playwright for end-to-end user flows. Import-boundary lint runs in check; tests do not mirror file layout.
 - Postgres tables use text IDs generated server-side, UTC timestamps and indexed workspace_id. Sessions store token hashes; trusted-operator flag is server-owned.
-- P0 extraction initially implements OpenAI chat-compatible BTC transport only after doctor verifies that protocol. Unsupported protocol produces a typed unsupported error; implement another BTC transport only if official gateway documentation confirms it is needed. Do not enable a fallback provider.
+- P0 extraction initially implements OpenAI chat-compatible AI transport only after doctor verifies that protocol. Unsupported protocol produces a typed unsupported error; implement another AI transport only if official gateway documentation confirms it is needed. Do not enable a fallback provider.
 - Source search needs a permitted endpoint with a fixed JSON adapter contract. Seed URLs remain usable without search. Search unavailable is explicit, never replaced by fabricated links or model memory.
 - Static map/voice unavailable states count as supported UI contract behavior; backend geo/voice remain P1.
 - Commit commands have a fixed -C path; no step may operate Git in the competition repo.
@@ -193,7 +195,7 @@ UIBlock has {id,type,props}; z.discriminatedUnion("type", schemas) is canonical.
 |---|---|
 | Artifact/contracts, namespace/version, JSON-safe data | A2, A5 |
 | Drizzle scope, sessions, metadata and datasets | A3, A8, B1 |
-| BTC-only/probe/repair/budget | A4, A5, A7, C2 |
+| gateway-only/probe/repair/budget | A4, A5, A7, C2 |
 | Sequential workflow, duplicate execute, cancellation/partial/interrupted | A5, A8, A9 |
 | PDF/DOCX/TXT/JSON/URL ingestion + evidence | A6, A7, A9 |
 | CSV/XLSX + metrics/trend/outlier/chart | B1, B2, B4 |
@@ -210,7 +212,7 @@ UIBlock has {id,type,props}; z.discriminatedUnion("type", schemas) is canonical.
 
 ## Phase gates and execution handoff
 
-- [ ] Gate 1: document fixture and real permitted BTC run produce persisted artifact/result with valid evidence; missing gateway config fails explicitly.
+- [ ] Gate 1: document demo run produces persisted artifact/result with valid evidence; optional gateway remains unavailable until explicitly configured.
 - [ ] Gate 2: dataset numbers match expected values; pgEdge role cannot write/read private app data and MCP results become artifacts.
 - [ ] Gate 3: chat and dashboard point to the same businessRunId/artifact IDs; 19 block fixtures render or show feature-unavailable.
 - [ ] Gate 4: research/risk archetypes and domain validation pass; team can create a new pack using the authoring guide.

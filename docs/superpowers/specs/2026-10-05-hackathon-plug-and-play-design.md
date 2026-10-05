@@ -8,7 +8,7 @@ Các đoạn TypeScript là contract dự kiến của dự án, không phải m
 
 Mục tiêu là chuẩn bị machinery dùng chung trước ngày thi; lúc nhận đề thay Domain Pack để ráp sản phẩm trong 2–3 giờ. Starter tập trung vào document analysis, research, dataset analytics, risk, recommendation và report.
 
-Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua BTC Gateway. pgEdge Postgres MCP được chọn làm service host local cho database exploration/query; mỗi domain chỉ bật các database tools thực sự cần.
+Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua optional AI Gateway. pgEdge Postgres MCP được chọn làm service host local cho database exploration/query; mỗi domain chỉ bật các database tools thực sự cần.
 
 Ba cách tổ chức đã cân nhắc:
 
@@ -49,7 +49,7 @@ flowchart TD
   PACK[Domain Pack] --> SERVICE
   SERVICE --> WORKFLOW[Sequential Workflow]
   WORKFLOW --> CAP[Reusable Capability]
-  CAP --> IO[BTC / Parser / Source Adapters qua ports]
+  CAP --> IO[AI / Parser / Source Adapters qua ports]
   WORKFLOW --> ART[Persisted Artifacts]
   ART --> PRESENTER[Domain Presenter]
   PRESENTER --> BLOCKS[Validated UIBlock Array]
@@ -452,7 +452,7 @@ Research: query planning giới hạn → search → fetch → clean → normali
 
 Fetch chỉ HTTP/HTTPS, kiểm tra destination/redirect, chặn private/localhost/metadata addresses và giới hạn kích thước. Không có connector hay nguồn bị policy chặn thì trả unavailable/partial.
 
-Sources do BTC/network policy quyết định. official-web là source profile, không phải nhãn bảo đảm mọi kết luận là đúng. Phân biệt retrievedAt, publishedAt và contentHash.
+Sources do AI/network policy quyết định. official-web là source profile, không phải nhãn bảo đảm mọi kết luận là đúng. Phân biệt retrievedAt, publishedAt và contentHash.
 
 ## 13. Ingestion, evidence và calculation
 
@@ -468,15 +468,15 @@ Analytics tính statistics/trend/outlier bằng code hoặc allowed queries. Mod
 
 Report ghép artifacts và UI blocks; model chỉ viết prose dựa trên claim refs. P0 web/print view + Markdown/JSON export; PDF/DOCX exporter là P1.
 
-## 14. CopilotKit và BTC Gateway
+## 14. CopilotKit và optional AI Gateway
 
 agents/runtime.ts đăng ký runtime + domain-aware tool bridge. agents/tool-bridge.ts expose các core services/capabilities được phép. agents/state.ts giữ active business run/artifact IDs và summaries cần thiết.
 
 CopilotKit runtime/protocol là integration adapter, không phải chủ sở hữu business workflows. Runtime catch-all/provider pair dùng v2 SDK đã pin. [Copilot Runtime](https://docs.copilotkit.ai/agno/backend/copilot-runtime)
 
-Factory mode phù hợp để đưa BTC transport riêng và nối tools/instructions một cách tường minh. [Factory mode](https://docs.copilotkit.ai/agno/backend/custom-agent)
+Factory mode phù hợp để đưa AI transport riêng và nối tools/instructions một cách tường minh. [Factory mode](https://docs.copilotkit.ai/agno/backend/custom-agent)
 
-BTC adapter là đường model duy nhất cho chat/extraction/analysis/recommendation/report/verification. doctor probe protocol và features thật: streaming, structured JSON, tool calls, vision, embeddings và audio. Không mặc định hỗ trợ chỉ dựa vào tên model.
+gateway adapter là đường model duy nhất cho chat/extraction/analysis/recommendation/report/verification. doctor probe protocol và features thật: streaming, structured JSON, tool calls, vision, embeddings và audio. Không mặc định hỗ trợ chỉ dựa vào tên model.
 
 Feature thiếu: JSON parse + validate + tối đa một repair; non-stream message nếu thiếu streaming; validated ActionIntent + allowlist nếu thiếu native tools; full-text retrieval nếu thiếu embeddings. Không fallback sang model provider khác.
 
@@ -500,14 +500,14 @@ Browser → Next.js / CopilotKit → ToolRegistry
                          pgedge-mcp → Postgres
 
 Next.js core services → Drizzle → cùng Postgres
-BTC Gateway ← model requests của starter
+optional AI Gateway ← model requests của starter
 ```
 
 | Công việc | Đường thực thi |
 |---|---|
 | Migration, seed, upload rows, lưu run/artifact/evidence | Drizzle/repository |
 | Agent đọc metadata và phân tích dataset bằng truy vấn | pgEdge MCP qua server adapter |
-| Sinh SQL/giải thích kết quả/gọi model | BTC Gateway adapter |
+| Sinh SQL/giải thích kết quả/gọi model | optional AI Gateway adapter |
 | Render chart/table/report | Persisted artifacts → presenter → UIBlock |
 
 MCP không thay repository, scoring engine hoặc typed artifact contracts. Kết quả truy vấn đi qua normalizer/schema validator rồi executor lưu artifact; agent/dashboard không giữ một bản query result độc lập.
@@ -522,7 +522,7 @@ Doctor kiểm tra protocol negotiation, tool discovery, schema read và một tr
 
 Truy vấn có deadline, giới hạn rows/response size và source/dataset scope. Adapter kiểm tra truy vấn đọc qua SQL parser/allowed statement policy; không dùng regex như cơ chế quyền duy nhất. PostgreSQL role/grants là biên quyền thực thi. Result artifact lưu executedAt, SQL/query hash, dataset/source refs và truncation state để truy vết số liệu.
 
-### Local configuration và BTC-only
+### Local configuration và gateway-only
 
 Endpoint HTTP dùng Bearer token server-side. MCP service ở Docker network riêng; port debug nếu bật chỉ bind 127.0.0.1. Browser không nhận MCP token/DB password và không gọi MCP trực tiếp.
 
@@ -541,7 +541,7 @@ PGEDGE_BUILTIN_TOOL_SEARCH_KNOWLEDGEBASE=false
 
 Feature flags cho built-in tools được upstream hỗ trợ; llm_connection_selection giữ false. App tool allowlist vẫn kiểm tra riêng vì server có thể advertise tool khác. [Feature configuration](https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docs/guide/feature_config.md)
 
-LLM proxy có setting riêng trong Compose của upstream. Tắt proxy, không chạy upstream agent CLI/web client, không cấp provider credentials ngoài BTC. Embedding/knowledgebase tools chỉ được bật về sau khi có adapter/policy đáp ứng BTC-only. [Upstream Compose](https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docker-compose.yml)
+LLM proxy có setting riêng trong Compose của upstream. Tắt proxy, không chạy upstream agent CLI/web client, không cấp provider credentials ngoài AI. Embedding/knowledgebase tools chỉ được bật về sau khi có adapter/policy đáp ứng gateway-only. [Upstream Compose](https://github.com/pgEdge/pgedge-postgres-mcp/blob/main/docker-compose.yml)
 
 ### Database scope
 
@@ -591,7 +591,7 @@ Verification cần thiết khi triển khai:
 - Sequential workflow reject missing/later dependencies; timeout, retry budget, optional/required failure và cancel có status đúng.
 - Duplicate execute request không chạy capability lần hai.
 - Interrupted execution giữ artifact đã commit và không báo completed.
-- Gateway model path chỉ đi qua BTC adapter.
+- Gateway model path chỉ đi qua gateway adapter.
 - pgEdge handshake/tools/list/query probe với đúng image đã pin; read-only role, app-private data access và disabled model tools được kiểm tra.
 - Dataset statistic/outlier fixture có expected numbers.
 - Evidence ID giả/quote sai/locator sai bị phát hiện.
@@ -626,15 +626,17 @@ P0 không có worker, queue, leases, parallel DAG, automatic resume hoặc durab
 
 ## 18. Thứ tự triển khai sau khi thiết kế được duyệt
 
-P0-A: contracts + artifact executor/store + BTC adapter/doctor + sequential runner + upload/document parsing + analysis + presenter + generic result UI + document-review example.
+P0-A: contracts + artifact executor/store + gateway adapter/doctor + sequential runner + upload/document parsing + analysis + presenter + generic result UI + document-review example.
 
 P0-B: dataset ingestion/analytics + chart/table + evidence/source blocks + report/recommendation/scoring theo examples; pgEdge MCP local service + adapter + scoped database tools; CopilotKit bridge dùng cùng services; playground và dataset-analysis example.
 
 Sau đó: research-report và risk-analyzer archetypes khi capabilities tương ứng đã sẵn sàng.
 
-P1 theo nhu cầu: durable worker, SSE event replay, resumable workflows, geo/planner, expanded verification, voice, advanced redaction, PDF/DOCX export, BTC embeddings, MCP query scope cho nhiều workspace và durable chat runner.
+P1 theo nhu cầu: durable worker, SSE event replay, resumable workflows, geo/planner, expanded verification, voice, advanced redaction, PDF/DOCX export, AI embeddings, MCP query scope cho nhiều workspace và durable chat runner.
 
 Nhận đề: chọn archetype → schemas → prompts → workflow → source profiles → rules/tools cần thiết → presenter → branding → validate-domain/doctor → happy path + missing-data/failure path.
 
 Một layer chỉ được thêm nếu giảm công ráp của consumer thực tế. Giữ dependency injection ở biên I/O; không tạo abstraction cho mọi function.
 
+
+**Execution update — user directive 2026-10-05:** Starter độc lập. Build/test/demo không cần API key hoặc tài liệu của BTC; không đọc repo thi hay cấu hình của họ. Demo adapter là default rõ nhãn cho local development; optional generic gateway adapter để cắm sau, không có live-AI gate bắt buộc trong baseline. Thiếu external gateway là unavailable, không phải lý do dừng triển khai. Production vẫn không tự bật fixture.

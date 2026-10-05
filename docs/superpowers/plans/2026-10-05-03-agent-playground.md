@@ -1,12 +1,14 @@
 # 03 — Agent Bridge and UI Playground Implementation Plan
 
+**Execution update — user directive 2026-10-05:** Starter độc lập. Build/test/demo không cần API key hoặc tài liệu của BTC; không đọc repo thi hay cấu hình của họ. Demo adapter là default rõ nhãn cho local development; optional generic gateway adapter để cắm sau, không có live-AI gate bắt buộc trong baseline. Thiếu external gateway là unavailable, không phải lý do dừng triển khai. Production vẫn không tự bật fixture.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Chat CopilotKit chạy cùng workflows/artifacts với dashboard và playground phủ 19 block types.
 
-**Architecture:** Tool registry enforce server scope và bridge cùng run/artifact services. CopilotKit factory mode dùng BTC transport; frontend tools chỉ điều khiển UI.
+**Architecture:** Tool registry enforce server scope và bridge cùng run/artifact services. CopilotKit factory mode dùng AI transport; frontend tools chỉ điều khiển UI.
 
-**Tech Stack:** Next.js App Router, TypeScript, Zod, Postgres/Drizzle, CopilotKit v2, BTC Gateway, local pgEdge MCP; Vitest + Playwright.
+**Tech Stack:** Next.js App Router, TypeScript, Zod, Postgres/Drizzle, CopilotKit v2, optional AI Gateway, local pgEdge MCP; Vitest + Playwright.
 
 **Spec:** [Design v0.3](../specs/2026-10-05-hackathon-plug-and-play-design.md)
 
@@ -15,7 +17,7 @@
 ## Global Constraints
 
 - Repo chuẩn bị ở E:/thucchienai/hackathon-starter-kit. Repo thi aitc2026-team-939-triplepeek nằm ngoài phạm vi thao tác. Không tự chuyển source, cấu hình remote hay push sang repo thi.
-- Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua BTC Gateway.
+- Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua optional AI Gateway.
 - pgEdge Postgres MCP được chọn làm service host local cho database exploration/query; mỗi domain chỉ bật các database tools thực sự cần.
 - P0 chạy tuần tự. Dependency chỉ được tham chiếu một step trước đó.
 - Default deadline toàn run 120 giây, mỗi step tối đa 30 giây trong ngân sách còn lại.
@@ -34,7 +36,7 @@
 
 Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
-Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Live BTC check cần BTC_GATEWAY_BASE_URL, BTC_GATEWAY_API_KEY và BTC_MODEL do đội cung cấp trong .env.local; không đọc .env hoặc key files ở repo thi, không ghi secret vào output.
+Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
 Một task có thể cần nhiều vòng 2–5 phút cho các files nhỏ. Mỗi task có test cycle và local commit riêng; không gộp cả phase thành một lần viết code lớn.
 
@@ -121,12 +123,12 @@ git -C E:/thucchienai/hackathon-starter-kit add -- src/core/tools src/core/servi
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: register scoped business tools for agent bridge'
 ```
 
-### Task C2: CopilotKit factory runtime qua BTC, native tools và bounded fallback
+### Task C2: CopilotKit factory runtime qua AI, native tools và bounded fallback
 
 **Files:**
 - Create: src/adapters/agents/stream.ts, fallback.ts, protocol.ts, budget.ts
 - Create: src/agents/runtime.ts, scope-runtime.ts, context.ts; src/app/api/copilotkit/[[...slug]]/route.ts
-- Modify: src/adapters/llm/btc/sdk-model.ts, scripts/doctor.ts, docs/dependencies.md, package.json, pnpm-lock.yaml
+- Modify: src/adapters/llm/gateway/sdk-model.ts, scripts/doctor.ts, docs/dependencies.md, package.json, pnpm-lock.yaml
 - Test: tests/integration/agent-runtime.test.ts, tests/contracts/agent-fallback.test.ts
 
 **Interfaces:**
@@ -161,7 +163,7 @@ Expected: FAIL tại behavior/import chưa triển khai, sau khi prerequisites c
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
 
-BuildInAgent type aisdk factory uses createAgentStream only when doctor proves protocol + streaming + native tools. streamText uses explicit BTC model, systemPrompt from selected server pack, validated context/messages, maxRetries:0, abort signal and max6 steps. Tool conversion includes only approved server definitions and C3 UI names; server tools execute via registry. A4 retry policy governs raw model calls; do not stack SDK automatic retries. For no native tools, custom factory calls LlmPort.complete and parses ActionIntentSchema, executes approved tool, feeds JSON result back, repeats max6 within120s; only one validation repair across the turn budget. Output AG-UI typed events RUN_STARTED → TEXT_MESSAGE_START/CONTENT/END → RUN_FINISHED, tool/state events as applicable; errors RUN_ERROR. Check signal every yield and actual stream event schema in tests. Thread ID and run ID come from validated protocol, never authorize artifacts. Scoped handler cache keyed user/workspace/domain, bounded TTL60min/max32 local runtimes; never share mutable agents across scopes. Session-required same-origin BFF wraps info/run/connect/stop routes; reject domain spoof and cross-scope thread reuse. GET/POST/OPTIONS plus PATCH/DELETE export same scoped wrapper if pinned route table uses them. No business SSE replacement.
+BuildInAgent type aisdk factory uses createAgentStream only when doctor proves protocol + streaming + native tools. streamText uses explicit AI model, systemPrompt from selected server pack, validated context/messages, maxRetries:0, abort signal and max6 steps. Tool conversion includes only approved server definitions and C3 UI names; server tools execute via registry. A4 retry policy governs raw model calls; do not stack SDK automatic retries. For no native tools, custom factory calls LlmPort.complete and parses ActionIntentSchema, executes approved tool, feeds JSON result back, repeats max6 within120s; only one validation repair across the turn budget. Output AG-UI typed events RUN_STARTED → TEXT_MESSAGE_START/CONTENT/END → RUN_FINISHED, tool/state events as applicable; errors RUN_ERROR. Check signal every yield and actual stream event schema in tests. Thread ID and run ID come from validated protocol, never authorize artifacts. Scoped handler cache keyed user/workspace/domain, bounded TTL60min/max32 local runtimes; never share mutable agents across scopes. Session-required same-origin BFF wraps info/run/connect/stop routes; reject domain spoof and cross-scope thread reuse. GET/POST/OPTIONS plus PATCH/DELETE export same scoped wrapper if pinned route table uses them. No business SSE replacement.
 
 ```ts
 import { streamText } from "ai";
@@ -183,7 +185,7 @@ export function createAgentStream(request: AgentStreamRequest) {
 // requireDomain(id):DomainDefinition is catalog.server.ts export from A7.
 // createScopedAiTools(scope,pack,signal) is this task's AI SDK tool adapter,
 // wrapping C1 dispatchTool and validating tool outputs before conversion.
-// loadLiveGatewayConfig/createGatewayModel are BTC sdk-model.ts exports from A4.
+// loadLiveGatewayConfig/createGatewayModel are AI sdk-model.ts exports from A4.
 
 ```
 
@@ -191,13 +193,13 @@ export function createAgentStream(request: AgentStreamRequest) {
 
 Run: `pnpm exec vitest run tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts`
 Additional run: `pnpm exec tsx scripts/doctor.ts --gateway; pnpm check; pnpm build`
-Expected: Actual runtime emits valid AG-UI SSE through catch-all endpoint; fixture/native and no-tool fallback both call shared services and respect cancel/budgets. Two independent sessions cannot read/stop the other's threads or artifacts. All model network requests hit only BTC origin.
+Expected: Actual runtime emits valid AG-UI SSE through catch-all endpoint; fixture/native and no-tool fallback both call shared services and respect cancel/budgets. Two independent sessions cannot read/stop the other's threads or artifacts. All model network requests hit only configured gateway origin.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/agents src/adapters/llm/btc/sdk-model.ts src/agents/runtime.ts src/agents/scope-runtime.ts src/agents/context.ts src/app/api/copilotkit scripts/doctor.ts docs/dependencies.md package.json pnpm-lock.yaml tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts
-git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: wire BTC-only CopilotKit factory runtime'
+git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/agents src/adapters/llm/gateway/sdk-model.ts src/agents/runtime.ts src/agents/scope-runtime.ts src/agents/context.ts src/app/api/copilotkit scripts/doctor.ts docs/dependencies.md package.json pnpm-lock.yaml tests/integration/agent-runtime.test.ts tests/contracts/agent-fallback.test.ts
+git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: wire gateway-only CopilotKit factory runtime'
 ```
 
 ### Task C3: Agent panel, UI tools và state projection từ persisted artifacts
@@ -350,6 +352,6 @@ git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: complete reusable U
 ## Gate 3
 
 - [ ] Chat và dashboard truy cập cùng persisted run/artifact IDs, không nhân đôi engine.
-- [ ] BTC native-tool path hoặc validated fallback hoạt động theo doctor feature flags; live check được ghi riêng.
+- [ ] AI native-tool path hoặc validated fallback hoạt động theo doctor feature flags; live check được ghi riêng.
 - [ ] Client không gọi raw MCP/SQL, không giữ gateway/MCP secrets.
 - [ ] UI gallery đủ 19 kinds, sáu states, report cùng ResultView; business state không do model tự viết.

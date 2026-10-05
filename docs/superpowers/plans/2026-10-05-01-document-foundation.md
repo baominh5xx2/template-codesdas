@@ -1,12 +1,14 @@
 # 01 — Document Foundation Implementation Plan
 
+**Execution update — user directive 2026-10-05:** Starter độc lập. Build/test/demo không cần API key hoặc tài liệu của BTC; không đọc repo thi hay cấu hình của họ. Demo adapter là default rõ nhãn cho local development; optional generic gateway adapter để cắm sau, không có live-AI gate bắt buộc trong baseline. Thiếu external gateway là unavailable, không phải lý do dừng triển khai. Production vẫn không tự bật fixture.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Một app local upload/tải document, extraction/analysis/evidence và dashboard/report chạy end-to-end.
 
 **Architecture:** Đặt contracts, artifact executor và sequential runner trước. Document archetype là consumer đầu tiên; adapters được inject ở server/container.ts, UI đọc ResultView từ artifact service.
 
-**Tech Stack:** Next.js App Router, TypeScript, Zod, Postgres/Drizzle, CopilotKit v2, BTC Gateway, local pgEdge MCP; Vitest + Playwright.
+**Tech Stack:** Next.js App Router, TypeScript, Zod, Postgres/Drizzle, CopilotKit v2, optional AI Gateway, local pgEdge MCP; Vitest + Playwright.
 
 **Spec:** [Design v0.3](../specs/2026-10-05-hackathon-plug-and-play-design.md)
 
@@ -15,7 +17,7 @@
 ## Global Constraints
 
 - Repo chuẩn bị ở E:/thucchienai/hackathon-starter-kit. Repo thi aitc2026-team-939-triplepeek nằm ngoài phạm vi thao tác. Không tự chuyển source, cấu hình remote hay push sang repo thi.
-- Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua BTC Gateway.
+- Chọn modular monolith: một app Next.js + TypeScript + BFF + CopilotKit runtime, Postgres Docker + Drizzle, mọi lời gọi model qua optional AI Gateway.
 - pgEdge Postgres MCP được chọn làm service host local cho database exploration/query; mỗi domain chỉ bật các database tools thực sự cần.
 - P0 chạy tuần tự. Dependency chỉ được tham chiếu một step trước đó.
 - Default deadline toàn run 120 giây, mỗi step tối đa 30 giây trong ngân sách còn lại.
@@ -34,7 +36,7 @@
 
 Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
-Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Live BTC check cần BTC_GATEWAY_BASE_URL, BTC_GATEWAY_API_KEY và BTC_MODEL do đội cung cấp trong .env.local; không đọc .env hoặc key files ở repo thi, không ghi secret vào output.
+Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
 Một task có thể cần nhiều vòng 2–5 phút cho các files nhỏ. Mỗi task có test cycle và local commit riêng; không gộp cả phase thành một lần viết code lớn.
 
@@ -52,7 +54,7 @@ A1 → A2 → A3 → A4 → A5 → A6 → A7 → A8 → A9. Gate1 là document p
 
 **Interfaces:**
 - Consumes: Spec v0.3; repo chưa có app.
-- Produces: loadServerEnv(values:Record<string,string|undefined>):ServerEnv; toPublicError(error:unknown,traceId:string):ErrorEnvelope; GET /api/health; pnpm check/test/build scripts. ServerEnv có DATABASE_URL, SESSION_SECRET, BTC config optional cho fixture mode; loadLiveGatewayConfig bắt buộc đủ BTC fields.
+- Produces: loadServerEnv(values:Record<string,string|undefined>):ServerEnv; toPublicError(error:unknown,traceId:string):ErrorEnvelope; GET /api/health; pnpm check/test/build scripts. ServerEnv có DATABASE_URL, SESSION_SECRET, AI config optional cho fixture mode; loadLiveGatewayConfig bắt buộc đủ AI fields.
 
 - [ ] **Step 0: Chuẩn bị test infrastructure thuộc task**
 
@@ -88,9 +90,9 @@ import { z } from "zod";
 const serverEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
-  BTC_GATEWAY_BASE_URL: z.url().optional(),
-  BTC_GATEWAY_API_KEY: z.string().min(1).optional(),
-  BTC_MODEL: z.string().min(1).optional(),
+  AI_GATEWAY_BASE_URL: z.url().optional(),
+  AI_GATEWAY_API_KEY: z.string().min(1).optional(),
+  AI_MODEL: z.string().min(1).optional(),
 });
 export const loadServerEnv = (values: Record<string, string | undefined>) =>
   serverEnvSchema.parse(values);
@@ -259,27 +261,27 @@ git -C E:/thucchienai/hackathon-starter-kit add -- compose.yaml drizzle.config.t
 git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: add scoped repositories and step transactions'
 ```
 
-### Task A4: BTC adapter và feature doctor có fake/live separation
+### Task A4: gateway adapter và feature doctor có fake/live separation
 
 **Files:**
-- Create: src/adapters/llm/btc/client.ts, features.ts, structured.ts, sdk-model.ts
+- Create: src/adapters/llm/gateway/client.ts, features.ts, structured.ts, sdk-model.ts
 - Create: scripts/doctor.ts, docs/gateway-compatibility.md; Test: tests/integration/btc-adapter.test.ts
 - Modify: package.json, .env.example
 
 **Interfaces:**
-- Consumes: A2 LlmPort/LlmRequest/GatewayFeatures; BTC env contract A1.
-- Produces: createBtcGateway(config,fetcher):LlmPort; loadLiveGatewayConfig(env:NodeJS.ProcessEnv=process.env):BtcConfig; probeGateway(config):Promise<GatewayFeatures>; sdk-model.ts là SDK facade chỉ cho agent phase C2.
+- Consumes: A2 LlmPort/LlmRequest/GatewayFeatures; AI env contract A1.
+- Produces: createGateway(config,fetcher):LlmPort; loadLiveGatewayConfig(env:NodeJS.ProcessEnv=process.env):GatewayConfig; probeGateway(config):Promise<GatewayFeatures>; sdk-model.ts là SDK facade chỉ cho agent phase C2.
 
 - [ ] **Step 1: Viết test behavior**
 
 ```ts
 import { expect, it, vi } from "vitest";
-import { createBtcGateway } from "@/adapters/llm/btc/client";
+import { createGateway } from "@/adapters/llm/gateway/client";
 
-it("uses configured BTC origin and does not retry to another provider", async () => {
+it("uses configured configured gateway origin and does not retry to another provider", async () => {
   const fetcher = vi.fn(async () => new Response("rate limit", { status: 429 }));
-  const gateway = createBtcGateway({
-    baseUrl: "https://btc.test/v1", apiKey: "fixture-key", model: "fixture-model",
+  const gateway = createGateway({
+    baseUrl: "https://gateway.test/v1", apiKey: "fixture-key", model: "fixture-model",
     features: { protocol: "openai-chat", streaming: false, structuredJson: false,
       nativeTools: false, vision: false, embeddings: false, audio: false },
   }, fetcher);
@@ -299,15 +301,15 @@ Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites c
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
 
-Install ai + @ai-sdk/openai-compatible với --save-exact ở task này nếu doctor confirms OpenAI chat protocol. Guard fetch phải reject origin ngoài configured BTC origin, redirects không được tự gửi bearer sang host khác. SDK retries=0; runner sở hữu retry budget. Probe nhỏ từng feature, optional probes chỉ chạy khi flag bật; thiếu env là configuration error. Không gửi image/audio/embedding probe tùy tiện. doctor reports status unavailable/verified riêng cho DB, gateway và feature; chỉ log model ID và capability bool, không keys/prompts.
+Install ai + @ai-sdk/openai-compatible với --save-exact ở task này nếu doctor confirms OpenAI chat protocol. Guard fetch phải reject origin ngoài configured configured gateway origin, redirects không được tự gửi bearer sang host khác. SDK retries=0; runner sở hữu retry budget. Probe nhỏ từng feature, optional probes chỉ chạy khi flag bật; thiếu env là configuration error. Không gửi image/audio/embedding probe tùy tiện. doctor reports status unavailable/verified riêng cho DB, gateway và feature; chỉ log model ID và capability bool, không keys/prompts.
 
 ```ts
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-export function createGatewayModel(config: BtcConfig, fetcher: typeof fetch = fetch) {
+export function createGatewayModel(config: GatewayConfig, fetcher: typeof fetch = fetch) {
   const allowedOrigin = new URL(config.baseUrl).origin;
   return createOpenAICompatible({
-    name: "btc", baseURL: config.baseUrl, apiKey: config.apiKey,
+    name: "gateway", baseURL: config.baseUrl, apiKey: config.apiKey,
     supportsStructuredOutputs: config.features.structuredJson,
     fetch: async (input, init) => {
       const url = new URL(input instanceof Request ? input.url : String(input));
@@ -322,13 +324,13 @@ export function createGatewayModel(config: BtcConfig, fetcher: typeof fetch = fe
 
 Run: `pnpm exec vitest run tests/integration/btc-adapter.test.ts`
 Additional run: `pnpm exec tsx scripts/doctor.ts --gateway`
-Expected: Fakes prove BTC origin/token masking/abort/error handling. Live doctor chỉ được ghi verified sau actual request với config do đội cung cấp; missing credentials giữ gate unverified, không dùng fixture thay live.
+Expected: Fakes prove configured gateway origin/token masking/abort/error handling. Live doctor chỉ được ghi verified sau actual request với config do đội cung cấp; missing credentials giữ gate unverified, không dùng fixture thay live.
 
 - [ ] **Step 5: Commit local**
 
 ```powershell
-git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/llm/btc scripts/doctor.ts docs/gateway-compatibility.md tests/integration/btc-adapter.test.ts package.json pnpm-lock.yaml .env.example
-git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: add BTC-only model adapter and compatibility probes'
+git -C E:/thucchienai/hackathon-starter-kit add -- src/adapters/llm/gateway scripts/doctor.ts docs/gateway-compatibility.md tests/integration/btc-adapter.test.ts package.json pnpm-lock.yaml .env.example
+git -C E:/thucchienai/hackathon-starter-kit commit -m 'feat: add gateway-only model adapter and compatibility probes'
 ```
 
 ### Task A5: Artifact executor và sequential run services
@@ -676,7 +678,7 @@ Expected: FAIL tại import/behavior chưa triển khai, sau khi prerequisites c
 
 - [ ] **Step 3: Triển khai phần tối thiểu**
 
-tests/fixtures/document.txt có chính xác hai dòng: "Payment is due within 30 days." và "Contact: demo@example.org.". Fixture extraction trả paymentDays:30 và quote "30 days" với normalized locator thật; fake transport không bật trong production. Fixture transport được inject chỉ trong e2e/dev mode có nhãn Demo; package script chạy local webServer with fixture DB/session. Test phải cover source drawer và refresh không chạy model lại; thêm aborted run/partial flow khi fixture failure bật. Docker multi-stage Next standalone image excludes .env/.data, waits for db health, no debug secrets. Migrations là explicit command, không tự chạy bằng app_writer startup. Live manual flow repeat bằng permitted BTC và PDF/URL riêng; ghi observed commands/output metadata trong docs/verification.md.
+tests/fixtures/document.txt có chính xác hai dòng: "Payment is due within 30 days." và "Contact: demo@example.org.". Fixture extraction trả paymentDays:30 và quote "30 days" với normalized locator thật; fake transport không bật trong production. Fixture transport được inject chỉ trong e2e/dev mode có nhãn Demo; package script chạy local webServer with fixture DB/session. Test phải cover source drawer và refresh không chạy model lại; thêm aborted run/partial flow khi fixture failure bật. Docker multi-stage Next standalone image excludes .env/.data, waits for db health, no debug secrets. Migrations là explicit command, không tự chạy bằng app_writer startup. Live manual flow repeat bằng permitted AI và PDF/URL riêng; ghi observed commands/output metadata trong docs/verification.md.
 
 ```json
 {
@@ -698,7 +700,7 @@ tests/fixtures/document.txt có chính xác hai dòng: "Payment is due within 30
 
 Run: `pnpm exec playwright test tests/e2e/document-review.spec.ts`
 Additional run: `pnpm check; pnpm test; pnpm build; docker compose --env-file .env.local up -d --build app postgres`
-Expected: E2E/TS/unit/integration/build pass, container app healthy. Gate1 ghi riêng fixture passes và actual gateway integration; không đánh dấu live verified nếu thiếu credentials. README có đúng run commands và P0 interruption limit.
+Expected: E2E/TS/unit/integration/build pass, container app healthy. Gate1 chứng minh demo/fixture document pipeline; optional gateway availability ghi riêng, không yêu cầu credentials. README có đúng run commands và P0 interruption limit.
 
 - [ ] **Step 5: Commit local**
 
@@ -713,4 +715,4 @@ git -C E:/thucchienai/hackathon-starter-kit commit -m 'test: verify document ver
 - [ ] Schema repair/evidence failure không báo success giả.
 - [ ] Dashboard/report đọc lại artifact sau refresh.
 - [ ] Scope, interruption/cancel và duplicate execution tests pass.
-- [ ] Fixture/live verification được ghi riêng; BTC integration được chạy bằng credentials của repo riêng.
+- [ ] Fixture/live verification được ghi riêng; AI integration được chạy bằng credentials của repo riêng.
