@@ -279,3 +279,11 @@
   outline: 2px solid var(--chat-focus);
   outline-offset: 2px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-header-toggle,
+  .chat-sidebar-action-btn,
+  .chat-sidebar-new-chat-btn {
+    transition: none;
+  }
+}
