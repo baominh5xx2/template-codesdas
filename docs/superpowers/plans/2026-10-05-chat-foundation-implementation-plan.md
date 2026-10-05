@@ -303,49 +303,21 @@ Không dùng direct low-level agent.runAgent làm agent loop thay thế. Mỗi r
 
 ## Task 4: Workspace UI và SDK view/error customization
 
-**Files:** create `src/ui/chat/{workspace,sidebar-shell,chat-panel,connection-notice,error-boundary}.tsx`, `src/ui/chat/use-controller.ts`; modify `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`, `vitest.config.ts`; tests `tests/chat/workspace.test.tsx`, `tests/chat/panel.test.tsx`.
+**Detailed plan:** [White UI implementation plan](2026-10-05-chat-white-ui-implementation-plan.md), **Tasks 1–4**. Đây là decomposition của cùng Task 4, thay checklist UI cũ; không thực thi hai phiên bản shell/controller.
 
-**Interfaces:** `ChatWorkspace(): ReactElement`; `SidebarShell({open,onClose,onNewChat,pending}: {open:boolean;onClose:()=>void;onNewChat:()=>void;pending:boolean}): ReactElement`; `ChatPanel({controller}: {controller: ChatController}): ReactElement`; `ConnectionNotice({visible,onRetry}: {visible:boolean;onRetry:()=>void}): ReactElement|null`; `ChatErrorBoundary({children,onRetry}: {children: ReactNode;onRetry:()=>void})` fallback shell; `useChatController(controller: ChatController): ChatSnapshot` using useSyncExternalStore. Workspace tạo một controller với Task 3 binding port trước provider; below-provider bridge attach actual SDK port khi discovery ready. Workspace/controller là một nguồn draft/transcript/notice, không tạo controller thứ hai. SidebarShell chỉ shell/nav, không fetch hoặc giả lập history; workspace giữ open state, desktop mở mặc định/mobile đóng, breakpoint 1024px theo UI spec.
+**Files:** các files/tests theo file map trong UI plan; entry `src/app/page.tsx`, layout/CSS; toàn bộ UI dưới `src/ui/chat`. Không đổi server/model/core interfaces của Tasks 1–3.
 
-- [ ] **Step 1: Viết jsdom component tests.** Thêm file directive `// @vitest-environment jsdom`; Vitest include cả `.test.ts` và `.test.tsx`. Dùng Testing Library existing dependency và `vi.stubGlobal("fetch", ...)` cho readiness; SDK renderer mock chỉ trong isolated UI tests, Task 5 kiểm chứng real SDK.
+**Interfaces giữ nguyên:** `ChatWorkspace`, `ChatPanel({controller})`, `SidebarShell({open,onClose,onNewChat,pending})`, `ConnectionNotice({visible,onRetry})`, `ChatErrorBoundary({children,onRetry})`, `useChatController(controller): ChatSnapshot`. UI plan bổ sung presentation components/context và optional notice ReactNode, không thêm nguồn transcript/state thứ hai.
 
-```tsx
-render(<ConnectionNotice visible={true} onRetry={vi.fn()} />);
-expect(screen.getAllByText("Chưa kết nối")).toHaveLength(1);
-expect(screen.getByRole("status")).toHaveTextContent("Chưa kết nối");
-```
-
-Tests workspace: `{available:false}` → không mount SDK/provider, editable draft + disabled Send, Retry readiness không append messages; reject/malformed readiness cùng notice. ErrorBoundary throws sentinel → fallback copy không sentinel; notice không duplication với provider/chat onError cùng firing. Panel tests Send/Retry disable khi pending; Stop và New chat vẫn gọi được trong running (New chat abort/chờ teardown theo controller, không reset ngay). Chặn lặp Stop/New chat trong teardown, kiểm tra Enter/Shift+Enter/IME, Copy, hide edit/regenerate/voice/upload/Inspector controls. Sidebar test không fake history, New chat dùng cùng controller; drawer Escape/close trả focus, không render feature controls chưa sẵn. `pending` prop không tự disable New chat chỉ vì model đang chạy.
-
-- [ ] **Step 2: RED.** `pnpm test -- tests/chat/workspace.test.tsx tests/chat/panel.test.tsx` expected missing components (sau mở include, không accept zero tests found).
-- [ ] **Step 3: Implement readiness-gated provider và safe notice.** Workspace fetch own endpoint, failure normalized boolean, AbortController cancel stale requests/unmount; unreadiness không mount failing SDK. Hydrated UUID tạo client-side khi initialization ready, tránh SSR mismatch. Workspace white theme và outer fallback composer để draft vẫn sửa được no-env; cả fallback và SDK-mounted view dùng cùng tokens.
-
-```tsx
-<CopilotKit runtimeUrl="/api/copilotkit" agent="default" useSingleEndpoint={false}
-  enableInspector={false} debug={false} onError={() => controller.fail()}>
-  <ChatPanel controller={controller} />
-</CopilotKit>
-```
-
-Snippet là provider policy; workspace controller dùng stable binding port, actual SDK hooks chỉ gọi trong bridge child/provider context. Bridge effect attach port + setAvailable khi agent ready; detach/stop trên cleanup, không release execution mới khi run cũ chưa settle. Notice đọc một controller snapshot; outer error fallback cũng dùng controller.fail. ErrorBoundary bao provider/panel; callbacks không throw hoặc log raw event.
-
-- [ ] **Step 4: Implement custom chatView/controller wiring.** Slot replacement nhận actual `CopilotChatViewProps` derived bằng ComponentProps từ exported `CopilotChatView`; render `<CopilotChatView>` với controller snapshot/messages/status/actions sau khi spread SDK view props. Override submit/input/stop/messages/isRunning để SDK built-in submit không double-dispatch. Replace/hide user edit và assistant regenerate toolbar slots; giữ Markdown/code/Copy và scroll view mặc định. Welcome greeting phải xuất hiện dù explicit ephemeral thread được truyền; không thêm greeting vào transcript.
-
-```tsx
-<CopilotChatView {...sdkViewProps} messages={snapshot.messages}
-  isRunning={snapshot.pending} inputValue={snapshot.draft}
-  onInputChange={controller.setDraft}
-  onSubmitMessage={() => { void controller.send(); }}
-  onStop={() => { void controller.stop(); }} />
-```
-
-Controller hook reads SDK useAgent/useCopilotKit only in bridge child, stable port/controller refs; render feedback không thay state trong render. Override input slot để enforce IME/input-limit/draft behavior và pending/no-env disabled; latest SDK callback clearInput không làm mất failed draft. Copy uses clipboard API và safe product feedback; failed clipboard action dùng same technical notice.
-
-- [ ] **Step 5: Integrate entry/style/UX.** Page renders workspace; root import `@copilotkit/react-core/v2/styles.css`; lang `vi`, title starter. Map semantic colors từ White UI spec sang pinned SDK theme variables tại workspace scope, `color-scheme: light`; không có prefers-color-scheme dark overrides. Full height shell (`100dvh`), sidebar 280px/desktop collapse/mobile dialog, cột transcript/composer tối đa 768px, min-width 0; composer chiếm hàng flex riêng, safe-area inset, không che message cuối. System font tiếng Việt, user bubble xám phải/assistant plain text trái. Auto-scroll only sticky-bottom; when detached show scroll-to-bottom; focus không theo token. Exact labels từ spec; sidebar shell có thật nhưng chưa có history list, no vendor debug UI.
-- [ ] **Step 6: Verify.** UI tests + `pnpm check`; kiểm tra server-only import boundary trong client bundle và SSR/no-env renders không crash.
-- [ ] **Step 7: Commit Task 4 files.** `git commit -m "feat: build CopilotKit chat workspace with unified notice"`.
+- [ ] **Step 1: Thực hiện UI plan Task 1 — theme và shell**, với tests/code/commit ở plan đó.
+- [ ] **Step 2: Thực hiện UI plan Task 2 — navigation/drawer**, giữ New chat abort/teardown semantics của controller.
+- [ ] **Step 3: Thực hiện UI plan Task 3 — messages/context/Copy**, reuse SDK renderer và same controller.
+- [ ] **Step 4: Thực hiện UI plan Task 4 — composer/readiness/SDK view integration**, render-prop layout thay SDK absolute overlay.
+- [ ] **Step 5: Ghi kết quả checks Task 1–4 và entry SSR/no-env**, không chạy lại một vòng UI implementation khác. Browser acceptance đi cùng C01 Task 5/UI plan Task 5.
 
 ## Task 5: Real SDK browser flow, failure matrix và release handoff
+
+Browser requirements trong [UI plan Task 5](2026-10-05-chat-white-ui-implementation-plan.md) bổ sung vào cùng harness/suite dưới đây; chạy một vòng release checks chung sau khi UI và runtime đã tích hợp.
 
 **Files:** create `tests/helpers/chat-provider-server.ts`, `tests/e2e/baseline.spec.ts`, `tests/e2e/chat-no-env.spec.ts`, `tests/e2e/chat-live.spec.ts`, `tests/e2e/chat-failures.spec.ts`, `tests/e2e/chat-production.spec.ts`, `scripts/chat-smoke.ts`; modify `playwright.config.ts`, `next.config.ts`, `.gitignore`, `package.json`, `docs/api-contracts.md`, `docs/code-structure.md`, `docs/README.md`, PRD/spec status chỉ khi checks đạt.
 
