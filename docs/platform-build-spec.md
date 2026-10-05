@@ -37,6 +37,7 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 - Luồng mặc định: **CopilotChat → CopilotRuntime → BuiltInAgent → configured model + tools**. Dùng model instance tương thích AI SDK trước khi chọn Factory mode; Factory chỉ khi cần kiểm soát model loop đặc biệt. [Runtime](https://docs.copilotkit.ai/backend/copilot-runtime), [model selection](https://docs.copilotkit.ai/model-selection), [custom agent](https://docs.copilotkit.ai/backend/custom-agent).
 - App tự sở hữu tích hợp Postgres/history và thread sidebar cho baseline OSS. Không giả định CopilotKit đã có Postgres runner dựng sẵn. [AgentRunner](https://docs.copilotkit.ai/backend/agent-runner).
 - **pgEdge MCP host local** là connector tùy chọn, bật sau chat/history. Không phải database driver hay điều kiện để chat text hoạt động.
+- **MCP TypeScript SDK chính thức** từ [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) là lựa chọn user yêu cầu cho MCP adapter. Ưu tiên stable v2 cho code mới; kiểm chứng CopilotKit/AI SDK bridge và pin exact versions lúc triển khai C04.
 - Starter dùng cấu hình riêng. BTC Gateway chỉ là binding tùy chọn nếu sau này chủ động cấu hình; không đọc key, tài liệu hay config của repo thi.
 - Mình xây shared platform; bạn xây FE composition và backend flow của problem templates. Generic cards là phần mở rộng của platform, không phải điều kiện để hoàn tất chat core.
 
@@ -163,7 +164,7 @@ CopilotKit có chat/popup/sidebar và điểm tùy biến giao diện; app chọ
 | TOOL-02 | Hiện tool arguments/status/result trong chat | SDK `useRenderTool`; App typed renderer, giới hạn nội dung hiển thị | P0 |
 | TOOL-03 | Tool Registry theo domain/capability/readiness; enforce permissions | App registry/scope/budgets; không viết lại SDK tool protocol | P0 |
 | TOOL-04 | Frontend tools cho selection/navigation hoặc UI interaction | SDK `useFrontendTool`; App allowlisted UI actions | P1 |
-| MCP-01 | Kết nối MCP server cấu hình server-side; discover/call tools | SDK `mcpServers` hoặc `mcpClients`; App auth/lifecycle/timeout/name collisions | P1 |
+| MCP-01 | Kết nối MCP server cấu hình server-side; discover/call tools | Official MCP TypeScript SDK client/transport; bridge sang CopilotKit tools; App auth/lifecycle/timeout/name collisions | P1 |
 | MCP-02 | pgEdge Postgres MCP chạy local, chỉ expose tools cần cho domain | App local service/permissions/allowlist; tắt khi service chưa sẵn | P1 |
 | MCP-03 | MCP Apps tương tác khi server cung cấp UI tương thích | SDK runtime middleware; App sandbox/render policy; khác MCP tools thông thường | P2 |
 | HITL-01 | Approval trước tool có external side effect | SDK HITL UI; App server enforcement với pending/approve/reject/expiry | P1, bắt buộc trước khi bật tool có side effect |
@@ -383,13 +384,19 @@ C01–C03 tạo release **chat core P0**. C04–C05 tạo release **plug-and-pla
 
 **Phạm vi:** cấu hình MCP server/client server-side, lifecycle/discovery/name mapping và pgEdge Postgres MCP local use case chỉ đọc/query trong scope cho phép.
 
+**Đã chốt theo user:** dùng [MCP TypeScript SDK chính thức](https://github.com/modelcontextprotocol/typescript-sdk) cho MCP adapter của starter. SDK cung cấp client/transport; pgEdge là server cung cấp database tools; CopilotKit giữ agent loop/chat và nhận tools qua bridge.
+
+**Dependency policy, đối chiếu 2026-10-05:** repo SDK xác định v2 là stable release line, với `@modelcontextprotocol/client` và `@modelcontextprotocol/server`; `@modelcontextprotocol/sdk` thuộc v1.x. Connector mới ưu tiên client v2; chỉ thêm server package nếu cần tự expose tools thành MCP server. Exact patch versions chốt sau compatibility verification, không cài từ GitHub main hoặc prerelease. [SDK README](https://github.com/modelcontextprotocol/typescript-sdk), [v2 docs](https://ts.sdk.modelcontextprotocol.io/v2/).
+
+**Compatibility gate:** ví dụ `mcpClients` hiện trong CopilotKit dùng `createMCPClient` từ `@ai-sdk/mcp` và transport import v1. MCP SDK `Client` cung cấp `listTools`/`callTool`; không giả định truyền thẳng nó vào `mcpClients` là tương thích. C04 spec phải chọn và kiểm chứng bridge v2 → registered tools hoặc compatible tool provider, gồm schemas/results/errors/cancellation/cleanup. Agent loop vẫn do CopilotKit chạy. [CopilotKit MCP clients](https://docs.copilotkit.ai/mcp-servers), [SDK client guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/get-started/first-client.md).
+
 **Feature mapping:** MCP-01…02. MCP Apps (MCP-03) thuộc extension, không ghép vào baseline chỉ để đủ ecosystem.
 
 **Các quyết định cần brainstorm:** per-run connection hay persistent client; auth/transport phù hợp server local; tools nào expose; database role/schema access; timeouts/cancellation/connection cleanup; service unavailable. Tool allowlist không thay thế quyền database.
 
 **Đầu ra/handoff:** một connector dùng Tool Registry của C03; service/config/run instructions riêng cho starter; không để frontend tự gọi unrestricted SQL.
 
-**Chốt được khi:** agent đọc dữ liệu local được phép; tool bị cấm không execute; server down/timeout rõ; không leak connections hoặc quyền giữa executions.
+**Chốt được khi:** agent đọc dữ liệu local được phép qua official SDK/bridge đã kiểm chứng; tool bị cấm không execute; server down/timeout rõ; không leak connections hoặc quyền giữa executions. Hiện chỉ ghi quyết định SDK, chưa cài packages hoặc triển khai connector.
 
 #### C05 — Domain Plug-in & Artifact Bridge
 
@@ -452,5 +459,6 @@ Mỗi lần chốt ghi tại đây: **ngày + phần + quyết định + lý do 
 | 2026-10-05 | Tổng thể | Chia core thành C01–C05; chat/history đi trước workflow; extensions mở theo nhu cầu | Roadmap đề xuất đã ghi theo yêu cầu, chưa là technical design đã review |
 | 2026-10-05 | C01 | Đã có mục tiêu app chat kiểu ChatGPT, dùng CopilotKit và repo starter riêng | Constraint đã được user xác nhận trong hội thoại |
 | 2026-10-05 | C01 | User chọn một người local trước, giữ boundary để thêm login sau. Lý do: thu hẹp bản đầu; acceptance C01 không yêu cầu multi-user login, vẫn cần server-owned scope | Đã được user xác nhận; chưa chọn auth/session implementation |
+| 2026-10-05 | C04 | User yêu cầu official modelcontextprotocol/typescript-sdk; ưu tiên stable v2 client, giữ pgEdge local server và CopilotKit agent loop. C04 acceptance bổ sung kiểm chứng SDK-to-tool bridge | SDK choice đã xác nhận; transport/lifecycle/bridge và exact versions chưa chốt; chưa cài SDK |
 
 Phiên tiếp theo bắt đầu tại **C01 — Chat Foundation**. Chỉ brainstorm phần đó, giữ các phần sau trong hàng chờ. Lần cập nhật roadmap này không tạo technical spec/plan mới hoặc triển khai product code.
