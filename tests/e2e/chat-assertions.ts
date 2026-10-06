@@ -25,7 +25,7 @@ export async function ready(page: Page) {
 export async function send(page: Page, text = "Xin chào") {
   await page.getByRole("textbox", { name: "Tin nhắn", exact: true }).fill(text);
   const send = page.getByRole("button", { name: "Gửi tin nhắn", exact: true });
-  await expect(send).toHaveCSS("background-color", "rgb(23, 23, 23)");
+  await expect(send).toHaveCSS("background-color", "rgb(0, 77, 232)");
   await expect(send).toHaveCSS("color", "rgb(255, 255, 255)");
   await send.click();
 }
@@ -38,11 +38,11 @@ export async function completed(page: Page) {
 
 export async function whiteShell(page: Page) {
   await expect(page.locator('[data-chat-theme="light"]')).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  await expect(page.locator('[data-chat-theme="light"]')).toHaveCSS("color", "rgb(23, 23, 23)");
+  await expect(page.locator('[data-chat-theme="light"]')).toHaveCSS("color", "rgb(26, 44, 78)");
   await expect(page.locator('[data-chat-theme="light"]')).toHaveCSS("color-scheme", "light");
   await expect(page.locator(".chat-header")).toHaveCSS("background-color", "rgb(255, 255, 255)");
-  await expect(page.locator(".chat-composer")).toHaveCSS("background-color", "rgb(244, 244, 244)");
-  await expect(page.getByRole("textbox", { name: "Tin nhắn", exact: true })).toHaveCSS("color", "rgb(23, 23, 23)");
+  await expect(page.locator(".chat-composer .copilotKitInput")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(page.getByRole("textbox", { name: "Tin nhắn", exact: true })).toHaveCSS("color", "rgb(6, 19, 42)");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
 }
