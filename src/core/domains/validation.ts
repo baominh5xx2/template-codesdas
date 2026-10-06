@@ -25,7 +25,10 @@ export function validateDomain(domain: DomainDefinition, catalog: DomainValidati
   const tools = domain.tools ?? [];
   const hasVersionedReferences = tools.length > 0 || bindings.length > 0;
   const isToolRegistered = (name: string, version: string): boolean => {
-    if (catalog.registeredTools) return catalog.registeredTools.has(`${name}@${version}`);
+    if (catalog.registeredTools) {
+      const registered = catalog.registeredTools.get(`${name}@${version}`);
+      return registered?.name === name && registered.version === version;
+    }
     return !hasVersionedReferences && catalog.toolNames.has(name);
   };
   for (const tool of tools) {
