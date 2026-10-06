@@ -8,6 +8,18 @@ export type SidebarShellProps = {
   pending: boolean;
 };
 
+function SidebarBrand(): ReactElement {
+  return (
+    <span className="chat-sidebar-brand" aria-hidden="true">
+      {/* eslint-disable-next-line @next/next/no-img-element -- tiny static brand mark inside the client sidebar */}
+      <img src="/brand/ai-thuc-chien.png" alt="" width={40} height={40} />
+      <span className="chat-sidebar-brand-text"><small>AI Thực chiến ×</small>TriplePeek</span>
+    </span>
+  );
+}
+
+const SIDEBAR_FOOTER = "Hội thoại chỉ được giữ trong phiên làm việc này.";
+
 export function SidebarShell({
   open,
   onClose,
@@ -77,7 +89,9 @@ export function SidebarShell({
     }
     return (
       <aside className="chat-sidebar" aria-label="Điều hướng">
+        <div className="chat-sidebar-header"><SidebarBrand /></div>
         {navContent}
+        <p className="chat-sidebar-footer">{SIDEBAR_FOOTER}</p>
       </aside>
     );
   }
@@ -112,7 +126,7 @@ export function SidebarShell({
       }}
     >
       <div className="chat-sidebar-header">
-        <span className="chat-header-title">Menu</span>
+        <SidebarBrand />
         <button
           type="button"
           aria-label="Đóng điều hướng"
@@ -135,6 +149,7 @@ export function SidebarShell({
         </button>
       </div>
       {navContent}
+      <p className="chat-sidebar-footer">{SIDEBAR_FOOTER}</p>
     </dialog>
   );
 }

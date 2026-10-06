@@ -101,7 +101,7 @@ describe("Sidebar and Navigation", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Hackathon Starter Kit" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "AI Thực chiến × TriplePeek" })).toBeVisible();
 
     const toggleBtn = screen.getByRole("button", { name: "Thu gọn điều hướng" });
     fireEvent.click(toggleBtn);
