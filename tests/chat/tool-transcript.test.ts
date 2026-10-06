@@ -119,4 +119,3 @@ describe("business protocol transcript", () => {
     h.finish(); await next;
   });
 });
-
