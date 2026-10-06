@@ -27,3 +27,11 @@ it("keeps backend configuration optional and masks internal credentials", () => 
 it("rejects malformed optional backend configuration", () => {
   expect(() => loadServerEnv({ SESSION_SECRET: "too-short" })).toThrow();
 });
+
+it("keeps Business MCP disabled in the parsed backend environment", () => {
+  expect(loadServerEnv({ MCP_AUTH_TOKEN: "pgedge-only-secret" })).toMatchObject({ businessMcp: { enabled: false } });
+});
+
+it("requires dedicated Business MCP credentials when enabled", () => {
+  expect(() => loadServerEnv({ BUSINESS_MCP_ENABLED: "true", MCP_AUTH_TOKEN: "pgedge-only-secret" })).toThrow("business_mcp_config_invalid");
+});

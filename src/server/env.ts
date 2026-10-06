@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { loadBusinessMcpConfig, type BusinessMcpConfig } from "./mcp/config";
 
 const serverEnvSchema = z
   .object({
@@ -9,8 +10,8 @@ const serverEnvSchema = z
     SESSION_SECRET: z.string().min(32).optional(),
   });
 
-export type ServerEnv = z.infer<typeof serverEnvSchema>;
+export type ServerEnv = z.infer<typeof serverEnvSchema> & { readonly businessMcp: BusinessMcpConfig };
 
 export function loadServerEnv(values: Record<string, string | undefined>): ServerEnv {
-  return serverEnvSchema.parse(values);
+  return { ...serverEnvSchema.parse(values), businessMcp: loadBusinessMcpConfig(values) };
 }
