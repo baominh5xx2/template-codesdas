@@ -35,7 +35,9 @@ export interface DomainResultPublicationInput {
   id: (kind: "business-run" | "artifact" | "publication" | "outbox") => string;
 }
 export interface DomainResultPublicationCandidate {
+  /** Exact storage key: workspaceId, userId, threadId, agentRunId, toolCallId, bindingId. */
   key: PublicationKey;
+  /** Canonical semantic fingerprint; generated IDs and timestamps are excluded. */
   fingerprint: string;
   pack: PinnedPackReference;
   packMetadata: Pick<DomainDefinition["manifest"], "id" | "version" | "title" | "branding">;
