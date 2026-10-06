@@ -2,8 +2,8 @@ import type {
   ChatClientPort,
   ChatRunRequest,
   ChatRunSink,
-  ChatTextMessage,
 } from "@/ui/chat/controller";
+import type { ChatTranscriptMessage } from "@/contracts/chat-tools";
 
 export interface ControlledChatPort {
   port: ChatClientPort;
@@ -11,7 +11,7 @@ export interface ControlledChatPort {
   readonly stopCount: number;
   resetThreads: string[];
   emitStarted(): void;
-  emitMessages(messages: ChatTextMessage[]): void;
+  emitMessages(messages: ChatTranscriptMessage[]): void;
   finish(status?: "completed" | "failed" | "interrupted"): void;
   reject(error?: unknown): void;
 }
@@ -51,7 +51,7 @@ export function createControlledChatPort(): ControlledChatPort {
     emitStarted() {
       currentSink?.started();
     },
-    emitMessages(messages: ChatTextMessage[]) {
+    emitMessages(messages: ChatTranscriptMessage[]) {
       currentSink?.messages(messages);
     },
     finish(status: "completed" | "failed" | "interrupted" = "completed") {

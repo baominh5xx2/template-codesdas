@@ -9,6 +9,7 @@ import { assertBusinessBytes, BusinessMcpFailure } from "@/adapters/mcp/results"
 import type { BusinessMcpConfig } from "@/server/mcp/config";
 import { emitChatDiagnostic, type ChatDiagnosticSink } from "@/server/chat/errors";
 import type { ChatExecutionGate } from "./chat-policy";
+import type { BusinessToolStatusEvent } from "@/contracts/chat-tools";
 
 type Scope = Pick<Awaited<ReturnType<typeof createBusinessRunScope>>, "provider" | "close">;
 type ScopeFactory = (options: Parameters<typeof createBusinessRunScope>[0]) => Promise<Scope>;
@@ -114,9 +115,18 @@ export class RunScopedAgent extends AbstractAgent {
       let inner: BuiltInAgent | undefined;
       let subscription: Subscription | undefined;
       let completedEvent: BaseEvent | undefined;
+      const descriptors: BaseEvent[] = [];
+      const activeTools = new Map<string, BusinessToolStatusEvent>();
+      const emitToolStatus = (value: BusinessToolStatusEvent) => {
+        if (terminal) return;
+        if (value.status === "running" || value.status === "pending") activeTools.set(value.toolCallId, value);
+        else activeTools.delete(value.toolCallId);
+        subscriber.next({ type: EventType.CUSTOM, name: "business_tool_status", value });
+      };
       const startedAt = Date.now();
       const finish = (status: NonNullable<typeof terminal>, code: "timeout" | "provider_failed" = "provider_failed") => {
         if (terminal) return;
+        if (status !== "completed") for (const value of activeTools.values()) emitToolStatus({ ...value, status, errorCode: status === "failed" ? "tool_failed" : "cancelled" });
         // Latch synchronously before abort, tool rejection, or buffered emissions.
         terminal = status; clearTimeout(timer); controller.abort(); inner?.abortRun(); subscription?.unsubscribe();
         void (async () => {
@@ -132,7 +142,7 @@ export class RunScopedAgent extends AbstractAgent {
       };
       const timer = setTimeout(() => finish("failed", "timeout"), this.options.deadlineMs ?? CHAT_LIMITS.deadlineMs);
       this.cancelActive = () => finish("interrupted");
-      const opening = Promise.resolve().then(() => (this.options.scopeFactory ?? createBusinessRunScope)({ config: this.options.config, threadId: input.threadId, runId: input.runId, signal: controller.signal, onFailure: () => finish("failed") }));
+      const opening = Promise.resolve().then(() => (this.options.scopeFactory ?? createBusinessRunScope)({ config: this.options.config, threadId: input.threadId, runId: input.runId, signal: controller.signal, onFailure: () => finish("failed"), onDescriptor: (value) => { if (!terminal) descriptors.push({ type: EventType.CUSTOM, name: "business_tool_descriptor", value }); }, onToolStatus: emitToolStatus }));
       void (async () => {
         try {
           const scope = await opening;
@@ -146,6 +156,7 @@ export class RunScopedAgent extends AbstractAgent {
               if (event.type === EventType.RUN_ERROR) { finish("failed"); return; }
               if (event.type === EventType.RUN_FINISHED) { completedEvent = event; finish("completed"); return; }
               subscriber.next(event);
+              if (event.type === EventType.RUN_STARTED) for (const descriptor of descriptors.splice(0)) subscriber.next(descriptor);
             },
             error: () => finish(controller.signal.aborted ? "interrupted" : "failed"),
             complete: () => { if (!terminal) finish("failed"); },

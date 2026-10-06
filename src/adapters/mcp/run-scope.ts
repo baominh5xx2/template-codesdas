@@ -2,6 +2,7 @@ import "server-only";
 import type { MCPClientProvider } from "@copilotkit/runtime/v2";
 import type { BusinessMcpConfig } from "@/server/mcp/config";
 import type { BusinessTool } from "@/core/tools/definition";
+import type { BusinessToolDescriptor, BusinessToolStatusEvent } from "@/contracts/chat-tools";
 import { createBusinessToolCatalog } from "@/server/mcp/catalog";
 import { calculateBudgetTool } from "@/server/mcp/tools/calculate-budget/definition";
 import { createBusinessClient } from "./business-client";
@@ -24,6 +25,8 @@ export async function createBusinessRunScope(options: {
   config: BusinessMcpConfig; threadId: string; runId: string; signal: AbortSignal;
   now?: () => number; fetch?: typeof fetch; definitions?: readonly BusinessTool<unknown, unknown>[];
   onFailure?: (failure: BusinessMcpFailure) => void;
+  onDescriptor?: (descriptor: BusinessToolDescriptor) => void;
+  onToolStatus?: (status: BusinessToolStatusEvent) => void;
 }) {
   if (!options.config.enabled) throw new BusinessMcpFailure("disabled");
   const now = options.now ?? Date.now;
@@ -67,7 +70,11 @@ export async function createBusinessRunScope(options: {
     if (listed.nextCursor) throw new BusinessMcpFailure("discovery_invalid");
     controller.signal.throwIfAborted();
     const catalog = createBusinessToolCatalog(options.definitions ?? [calculateBudgetTool], options.config.enabledTools);
+    for (const registration of catalog.list()) options.onDescriptor?.({ exposedName: registration.exposedName, toolName: registration.definition.name, toolVersion: registration.definition.version });
     const provider: MCPClientProvider = createBusinessToolProvider(catalog, listed.tools, async (registration, args, execution) => {
+      const emitStatus = (status: BusinessToolStatusEvent["status"], errorCode?: BusinessToolStatusEvent["errorCode"]) => {
+        try { options.onToolStatus?.({ threadId: options.threadId, runId: options.runId, toolCallId: execution.toolCallId, exposedName: registration.exposedName, status, ...(errorCode ? { errorCode } : {}) }); } catch { /* Status sinks cannot change tool execution or reveal sink errors. */ }
+      };
       const callAbort = new AbortController();
       const signal = AbortSignal.any([controller.signal, callAbort.signal, ...(execution.abortSignal ? [execution.abortSignal] : [])]);
       const remaining = Math.min(BUSINESS_RUN_LIMITS.callMs, deadline - now());
@@ -80,14 +87,19 @@ export async function createBusinessRunScope(options: {
         assertBusinessBytes(args);
         const input = registration.definition.input.safeParse(args);
         if (!input.success) throw new BusinessMcpFailure("input_invalid");
+        emitStatus("pending");
         const previous = tail;
         tail = new Promise<void>((resolve) => { release = resolve; });
         await waitForTurn(previous, signal);
+        emitStatus("running");
         const result = await client.callTool({ name: registration.definition.name, arguments: input.data as Record<string, unknown> }, { signal, timeout: Math.max(1, Math.min(remaining, deadline - now())) });
         signal.throwIfAborted();
-        return decodeBusinessResult(registration, result);
+        const output = decodeBusinessResult(registration, result);
+        emitStatus("completed");
+        return output;
       } catch (error) {
-        if (terminalReason === "cancelled" || options.signal.aborted || execution.abortSignal?.aborted) { await cancel(); throw new BusinessMcpFailure("cancelled"); }
+        if (terminalReason === "cancelled" || options.signal.aborted || execution.abortSignal?.aborted) { emitStatus("interrupted", "cancelled"); await cancel(); throw new BusinessMcpFailure("cancelled"); }
+        emitStatus("failed", "tool_failed");
         throw fail(error instanceof BusinessMcpFailure ? error : new BusinessMcpFailure(signal.aborted ? "cancelled" : "tool_failed"));
       } finally { clearTimeout(timer); release?.(); }
     });

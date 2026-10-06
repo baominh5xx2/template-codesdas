@@ -52,6 +52,9 @@ afterEach(() => vi.restoreAllMocks());
 describe("run-scoped BuiltInAgent tools", () => {
   it("executes a real handler and supplies validated output to the next model step", async () => {
     const s = setup(); const events = await run(s.agent);
+    const custom = events.filter((e) => e.type === EventType.CUSTOM);
+    expect(custom).toContainEqual({ type: EventType.CUSTOM, name: "business_tool_descriptor", value: { exposedName: "business__calculate_budget", toolName: "calculate_budget", toolVersion: "1.0.0" } });
+    expect(custom.filter((e) => "name" in e && e.name === "business_tool_status").map((e) => "value" in e && (e.value as { status: string }).status)).toEqual(["pending", "running", "completed"]);
     expect(events.some((e) => e.type === EventType.TOOL_CALL_RESULT && "content" in e && String(e.content).includes('"totalMinor":30'))).toBe(true);
     expect(events.some((e) => e.type === EventType.TEXT_MESSAGE_CHUNK && "delta" in e && e.delta === "Total 30; remaining 70")).toBe(true);
     expect(s.m.doStreamCalls).toHaveLength(2);
@@ -96,6 +99,7 @@ describe("run-scoped BuiltInAgent tools", () => {
     vi.spyOn(calculateBudgetTool, "execute").mockImplementation(async () => { if (kind === "throw") throw new Error("RAW_SECRET_TOKEN_STACK"); return { currency: "USD", totalMinor: -1, remainingMinor: 0, overBudget: false, itemCount: 0 }; });
     const s = setup(); const events = await run(s.agent);
     expect(s.m.doStreamCalls).toHaveLength(1);
+    expect(events.some((e) => e.type === EventType.CUSTOM && "name" in e && e.name === "business_tool_status" && "value" in e && (e.value as { status: string }).status === "failed")).toBe(true);
     expect(events.filter((e) => e.type === EventType.RUN_ERROR)).toEqual([{ type: EventType.RUN_ERROR, message: "Chưa kết nối" }]);
     expect(events.some((e) => e.type === EventType.TOOL_CALL_RESULT || e.type === EventType.RUN_FINISHED)).toBe(false);
     expect(JSON.stringify(events)).not.toContain("RAW_SECRET"); expect(s.close).toHaveBeenCalledTimes(1);
