@@ -39,10 +39,11 @@ export function validateDomain(domain: DomainDefinition, catalog: DomainValidati
     if (!isToolRegistered(binding.toolName, binding.toolVersion)) throw new Error("domain_tool_unregistered");
   }
   if (domain.tools && (domain.manifest.toolNames.length !== new Set(domain.manifest.toolNames).size ||
-    domain.manifest.toolNames.length !== tools.length || tools.some(tool => !domain.manifest.toolNames.includes(tool.name)) ||
-    bindings.some(binding => !tools.some(tool => tool.name === binding.toolName && tool.version === binding.toolVersion)))) {
+    domain.manifest.toolNames.length !== tools.length || tools.some(tool => !domain.manifest.toolNames.includes(tool.name)))) {
     throw new Error("domain_tool_unregistered");
   }
+  if (bindings.some(binding => !domain.tools?.some(tool => tool.name === binding.toolName && tool.version === binding.toolVersion) ||
+    !domain.manifest.toolNames.includes(binding.toolName))) throw new Error("domain_tool_unregistered");
   if (domain.manifest.toolNames.some(name => !catalog.toolNames.has(name) && !tools.some(tool => tool.name === name))) throw new Error("domain_tool_unregistered");
   const workflowProducers = new Set(workflow?.steps.map(step => step.artifactKind) ?? []);
   const bindingProducers = new Set(bindings.map(binding => binding.artifactKind));

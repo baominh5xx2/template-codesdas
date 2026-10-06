@@ -39,7 +39,11 @@ function validateReferences(blocks: UIBlock[], artifactId: string, provenanceInp
 export async function publishDomainToolResult(input: DomainResultPublicationInput, port: DomainResultPublicationPort): Promise<{ output: unknown; publication: DomainResultPublication | null }> {
   if (!input.binding) return { output: input.output, publication: null };
   const binding = input.binding;
-  if (binding.id !== input.bindingId || binding.toolName.length === 0 || input.domain.manifest.id !== input.pack.id || input.domain.manifest.version !== input.pack.version) throw new Error("domain_result_binding_invalid");
+  const registeredBinding = input.domain.resultBindings?.find(candidate => candidate.id === input.bindingId);
+  const exposedTool = input.domain.tools?.some(tool => tool.name === binding.toolName && tool.version === binding.toolVersion) ?? false;
+  const exposedByManifest = input.domain.manifest.toolNames.includes(binding.toolName);
+  if (binding.id !== input.bindingId || registeredBinding !== binding || !exposedTool || !exposedByManifest ||
+    input.domain.manifest.id !== input.pack.id || input.domain.manifest.version !== input.pack.version) throw new Error("domain_result_binding_invalid");
   const parsedOutput = JsonValueSchema.parse(binding.outputSchema.parse(input.output));
   if (jsonBytes(parsedOutput) > OUTPUT_LIMIT) throw new Error("domain_result_output_too_large");
   const parsedRunInput = JsonValueSchema.parse(binding.inputSchema.parse(binding.toRunInput(parsedOutput)));

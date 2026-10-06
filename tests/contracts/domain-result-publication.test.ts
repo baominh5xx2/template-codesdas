@@ -10,6 +10,7 @@ const registry = createArtifactRegistry();
 registry.register("budget.summary", 1, z.object({ total: z.number(), note: z.string().optional() }));
 const domain = {
   manifest: { id: "budget-review", version: 1, title: "Budget", description: "", branding: { name: "Budget", accent: "#123456" }, surface: "workspace" as const, inputFields: [], examples: [], toolNames: ["business__calculate"] },
+  tools: [{ name: "business__calculate", version: "1.0.0" }],
   inputSchema: outputSchema,
   requiredArtifactKinds: ["budget.summary"], systemPrompt: "", sources: [],
   resultBindings: [],
@@ -21,11 +22,16 @@ const binding = {
   inputSchema: outputSchema, toRunInput: (output: { total: number }) => output,
   toArtifactDraft: (output: { total: number }) => ({ kind: "budget.summary", version: 1, data: output, sourceIds: [], evidenceIds: [], provenance: { capabilityId: "tool.business.calculate", capabilityVersion: 1 } }),
 };
+const boundDomain = { ...domain, resultBindings: [binding] };
 const input: DomainResultPublicationInput = {
   scope: { userId: "user-1", workspaceId: "workspace-1", trustedOperator: false }, threadId: "thread-1", agentRunId: "agent-1", toolCallId: "call-1",
-  pack: { id: "budget-review", version: 1 }, bindingId: binding.id, binding, domain,
+  pack: { id: "budget-review", version: 1 }, bindingId: binding.id, binding, domain: boundDomain,
   output: { total: 10 }, artifactSchemas: registry,
   clock: () => new Date("2026-10-06T00:00:00.000Z"), id: (() => { let n = 0; return (kind: string) => `${kind}-${++n}`; })(),
+};
+const withBinding = (changes: Record<string, unknown>): DomainResultPublicationInput => {
+  const selected = { ...binding, ...changes } as typeof binding;
+  return { ...input, binding: selected, domain: { ...boundDomain, resultBindings: [selected] } };
 };
 
 function fakePort(): DomainResultPublicationPort & { calls: unknown[] } {
@@ -82,7 +88,7 @@ describe("publishDomainToolResult", () => {
 
   it("delegates same-payload idempotency to the atomic port", async () => {
     const port = fakePort();
-    const selfReferencing = { ...input, domain: { ...domain, present: ({ snapshot }: { snapshot: { artifacts: { id: string }[] } }) => [{ id: "open", type: "action" as const, props: { label: "Open result", actionId: "focus-artifact" as const, artifactId: snapshot.artifacts[0].id } }] } };
+    const selfReferencing = { ...input, domain: { ...boundDomain, present: ({ snapshot }: { snapshot: { artifacts: { id: string }[] } }) => [{ id: "open", type: "action" as const, props: { label: "Open result", actionId: "focus-artifact" as const, artifactId: snapshot.artifacts[0].id } }] } };
     const first = await publishDomainToolResult(selfReferencing, port);
     const second = await publishDomainToolResult(selfReferencing, port);
     expect(first.publication).toEqual(second.publication);
@@ -96,21 +102,36 @@ describe("publishDomainToolResult", () => {
 
   it("rejects an invalid toRunInput result before calling the port", async () => {
     const port = fakePort();
-    const badInput = { ...input, binding: { ...binding, toRunInput: () => ({ total: "bad" }) } };
+    const badInput = withBinding({ toRunInput: () => ({ total: "bad" }) });
     await expect(publishDomainToolResult(badInput, port)).rejects.toThrow();
+    expect(port.calls).toHaveLength(0);
+  });
+
+  it("rejects a caller-created binding that is not registered on the domain", async () => {
+    const port = fakePort();
+    const forged = { ...binding };
+    await expect(publishDomainToolResult({ ...input, binding: forged }, port)).rejects.toThrow("domain_result_binding_invalid");
+    expect(port.calls).toHaveLength(0);
+  });
+
+  it("rejects a registered binding whose exact tool version is not exposed by the domain", async () => {
+    const port = fakePort();
+    const hiddenBinding = { ...binding, toolName: "business__hidden" };
+    const hiddenDomain = { ...boundDomain, resultBindings: [hiddenBinding] };
+    await expect(publishDomainToolResult({ ...input, domain: hiddenDomain, binding: hiddenBinding }, port)).rejects.toThrow("domain_result_binding_invalid");
     expect(port.calls).toHaveLength(0);
   });
 
   it("rejects an invalid artifact draft before calling the port", async () => {
     const port = fakePort();
-    const badInput = { ...input, binding: { ...binding, toArtifactDraft: () => ({ kind: "wrong", version: 1, data: { total: 10 }, sourceIds: [], evidenceIds: [], provenance: { capabilityId: "test", capabilityVersion: 1 } }) } };
+    const badInput = withBinding({ toArtifactDraft: () => ({ kind: "wrong", version: 1, data: { total: 10 }, sourceIds: [], evidenceIds: [], provenance: { capabilityId: "test", capabilityVersion: 1 } }) });
     await expect(publishDomainToolResult(badInput, port)).rejects.toThrow();
     expect(port.calls).toHaveLength(0);
   });
 
   it("rejects a source reference in the artifact draft before calling the port", async () => {
     const port = fakePort();
-    const badInput = { ...input, binding: { ...binding, toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), sourceIds: ["source-1"] }) } };
+    const badInput = withBinding({ toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), sourceIds: ["source-1"] }) });
     await expect(publishDomainToolResult(badInput, port)).rejects.toThrow("domain_result_reference_missing");
     expect(port.calls).toHaveLength(0);
   });
@@ -132,28 +153,28 @@ describe("publishDomainToolResult", () => {
 
   it("rejects unresolved inputArtifactIds in provenance before calling the port", async () => {
     const port = fakePort();
-    const badInput = { ...input, binding: { ...binding, toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), provenance: { capabilityId: "tool.business.calculate", capabilityVersion: 1, inputArtifactIds: ["artifact-input"] } }) } };
+    const badInput = withBinding({ toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), provenance: { capabilityId: "tool.business.calculate", capabilityVersion: 1, inputArtifactIds: ["artifact-input"] } }) });
     await expect(publishDomainToolResult(badInput, port)).rejects.toThrow("domain_result_reference_missing");
     expect(port.calls).toHaveLength(0);
   });
 
   it("rejects a workflow stepId in provenance for a chat-only run before calling the port", async () => {
     const port = fakePort();
-    const badInput = { ...input, binding: { ...binding, toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), provenance: { capabilityId: "tool.business.calculate", capabilityVersion: 1, stepId: "workflow-step" } }) } };
+    const badInput = withBinding({ toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), provenance: { capabilityId: "tool.business.calculate", capabilityVersion: 1, stepId: "workflow-step" } }) });
     await expect(publishDomainToolResult(badInput, port)).rejects.toThrow("domain_result_reference_missing");
     expect(port.calls).toHaveLength(0);
   });
 
   it("rejects an expanded toRunInput over 32 KiB before calling the port", async () => {
     const port = fakePort();
-    const badInput = { ...input, binding: { ...binding, inputSchema: z.object({ note: z.string() }), toRunInput: () => ({ note: "x".repeat(33 * 1024) }) } };
+    const badInput = withBinding({ inputSchema: z.object({ note: z.string() }), toRunInput: () => ({ note: "x".repeat(33 * 1024) }) });
     await expect(publishDomainToolResult(badInput, port)).rejects.toThrow("domain_result_input_too_large");
     expect(port.calls).toHaveLength(0);
   });
 
   it("rejects expanded artifact data over 32 KiB before calling the port", async () => {
     const port = fakePort();
-    const badInput = { ...input, binding: { ...binding, toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), data: { ...output, note: "x".repeat(33 * 1024) } }) } };
+    const badInput = withBinding({ toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), data: { ...output, note: "x".repeat(33 * 1024) } }) });
     await expect(publishDomainToolResult(badInput, port)).rejects.toThrow("domain_result_artifact_too_large");
     expect(port.calls).toHaveLength(0);
   });
@@ -161,7 +182,7 @@ describe("publishDomainToolResult", () => {
   it("conflicts when the same output uses changed binding semantics", async () => {
     const port = fakePort();
     await publishDomainToolResult(input, port);
-    const changed = { ...input, binding: { ...binding, toRunInput: (output: { total: number }) => ({ total: output.total + 1 }) } };
+    const changed = withBinding({ toRunInput: (output: { total: number }) => ({ total: output.total + 1 }) });
     await expect(publishDomainToolResult(changed, port)).rejects.toThrow("domain_result_publication_conflict");
   });
 
@@ -180,7 +201,7 @@ describe("publishDomainToolResult", () => {
 
   it("allows report sections that reference blocks in the candidate ResultView", async () => {
     const port = fakePort();
-    const localReferences = { ...input, domain: { ...domain, present: () => [
+    const localReferences = { ...input, domain: { ...boundDomain, present: () => [
       { id: "total", type: "metric" as const, props: { label: "Total", value: 10, sourceIds: [] } },
       { id: "summary", type: "report-section" as const, props: { title: "Summary", blockIds: ["total"] } },
     ] } };
@@ -190,7 +211,7 @@ describe("publishDomainToolResult", () => {
 
   it("rejects a report section with a missing local block reference before calling the port", async () => {
     const port = fakePort();
-    const missingReference = { ...input, domain: { ...domain, present: () => [
+    const missingReference = { ...input, domain: { ...boundDomain, present: () => [
       { id: "summary", type: "report-section" as const, props: { title: "Summary", blockIds: ["missing"] } },
     ] } };
     await expect(publishDomainToolResult(missingReference, port)).rejects.toThrow("report_reference_missing");

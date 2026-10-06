@@ -14,7 +14,7 @@ const manifest = (id = "chat-pack", version = 1, toolNames = ["business__calcula
   inputFields: [], examples: [], toolNames,
 });
 const catalog = (): DomainValidationCatalog => {
-  return { sourceProfileIds: new Set(["approved-source"]), toolNames: new Set(), registeredTools: new Map([["business__calculate@1.0.0", { name: "business__calculate", version: "1.0.0" }]]), registeredDomainIdentities: new Set(), artifactSchemas: { has: (kind: string, version: number) => kind === "budget.summary" && version === 1, register: () => undefined, parse: (value: unknown) => value as Artifact<unknown> } };
+  return { sourceProfileIds: new Set(["approved-source"]), toolNames: new Set(["business__calculate"]), registeredTools: new Map([["business__calculate@1.0.0", { name: "business__calculate", version: "1.0.0" }]]), registeredDomainIdentities: new Set(), artifactSchemas: { has: (kind: string, version: number) => kind === "budget.summary" && version === 1, register: () => undefined, parse: (value: unknown) => value as Artifact<unknown> } };
 };
 const binding = (overrides: Partial<NonNullable<DomainDefinition["resultBindings"]>[number]> = {}) => ({
   id: "calculate-result", toolName: "business__calculate", toolVersion: "1.0.0", outputSchema: registeredSchema,
@@ -26,6 +26,10 @@ const pack = (overrides: Partial<DomainDefinition> = {}): DomainDefinition => ({
 
 it("validates a chat-only pack with registered tool and artifact schema", () => {
   expect(() => validateDomain(pack(), catalog())).not.toThrow();
+});
+
+it("rejects result bindings when domain.tools is omitted", () => {
+  expect(() => validateDomain(pack({ tools: undefined }), catalog())).toThrow("domain_tool_unregistered");
 });
 
 it("rejects duplicate binding IDs and duplicate tool/version bindings", () => {
