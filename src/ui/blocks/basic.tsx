@@ -3,6 +3,8 @@
 import type { UIBlock } from "@/contracts/ui/blocks";
 import { Badge, Button, EmptyState, Icon, Notice, type IconName } from "../primitives";
 import { formatCompact, formatDateTime, formatNumber, formatPercent } from "../format";
+import { Counter } from "../kit/Counter";
+import { RevealItem } from "../kit/Reveal";
 import { renderMarkdown } from "../markdown";
 import { useResult, type ActionId } from "./context";
 import { ClaimLine, Citations, describeLocator, PRIORITY, SEVERITY, SOURCE_KIND, SupportBadge } from "./shared";
@@ -15,7 +17,7 @@ export function MetricBlock({ props }: { props: Props<"metric"> }) {
   const direction = delta === undefined ? null : delta > 0 ? "up" : delta < 0 ? "down" : "flat";
   return <div className="vn-metric">
     <span className="vn-metric__label">{props.label}</span>
-    <span className="vn-metric__value" title={props.value === null ? undefined : `${formatNumber(props.value)}${props.unit ? ` ${props.unit}` : ""}`}>{props.value === null ? "—" : Math.abs(props.value) >= 1_000_000 ? formatCompact(props.value) : formatNumber(props.value)}{props.unit && props.value !== null ? <span className="vn-metric__unit">{props.unit}</span> : null}</span>
+    <span className="vn-metric__value" title={props.value === null ? undefined : `${formatNumber(props.value)}${props.unit ? ` ${props.unit}` : ""}`}>{props.value === null ? "—" : <Counter value={Math.abs(props.value) >= 1_000_000 ? formatCompact(props.value) : formatNumber(props.value)} />}{props.unit && props.value !== null ? <span className="vn-metric__unit">{props.unit}</span> : null}</span>
     <span className="vn-row" style={{ gap: 8, minHeight: 20 }}>
       {direction ? <span className={`vn-delta vn-delta--${direction}`}><Icon name={direction === "up" ? "trending-up" : direction === "down" ? "trending-down" : "minus"} size={15} />{delta! > 0 ? "+" : ""}{formatPercent(delta!)}</span> : null}
       {props.value === null ? <span className="vn-caption">Chưa có dữ liệu</span> : null}
@@ -66,19 +68,19 @@ export function WarningBlock({ props }: { props: Props<"warning"> }) {
 export function SourceBlock({ props }: { props: Props<"source"> }) {
   const { source, inspect, evidence } = useResult();
   if (!props.sourceIds.length) return <EmptyState icon="book" title="Chưa có nguồn">Kết quả này không trích dẫn nguồn nào.</EmptyState>;
-  return <ul className="vn-list">{props.sourceIds.map(id => {
+  return <ul className="vn-list">{props.sourceIds.map((id, index) => {
     const item = source(id);
     if (!item) return <li key={id} className="vn-muted">Nguồn “{id}” không tồn tại.</li>;
     const kind = SOURCE_KIND[item.kind];
     const count = evidence.filter(e => e.sourceId === id).length;
-    return <li key={id} className="vn-source">
+    return <RevealItem key={id} index={index} className="vn-source">
       <span className="vn-source__icon"><Icon name={kind.icon} size={18} /></span>
       <div className="vn-stack vn-stack--s" style={{ gap: 4, minWidth: 0 }}>
         <button type="button" className="vn-linkish vn-source__title" style={{ textDecoration: "none", color: "var(--text-strong)" }} onClick={() => inspect({ kind: "source", id })}>{item.title}</button>
         <span className="vn-caption">{kind.label} · truy xuất {formatDateTime(item.retrievedAt)}{item.publishedAt ? ` · xuất bản ${formatDateTime(item.publishedAt)}` : ""}{count ? ` · ${count} trích dẫn` : ""}</span>
         {item.url ? <a href={item.url} target="_blank" rel="noreferrer noopener" className="vn-caption" style={{ wordBreak: "break-all" }}>{item.url}</a> : null}
       </div>
-    </li>;
+    </RevealItem>;
   })}</ul>;
 }
 
@@ -86,17 +88,17 @@ export function EvidenceBlock({ props }: { props: Props<"evidence"> }) {
   const { evidenceById, source, inspect, citation } = useResult();
   return <div className="vn-stack vn-stack--s">
     <ClaimLine claimId={props.claimId} />
-    {props.evidenceIds.length ? props.evidenceIds.map(id => {
+    {props.evidenceIds.length ? props.evidenceIds.map((id, index) => {
       const item = evidenceById(id);
       if (!item) return <p key={id} className="vn-caption">Bằng chứng “{id}” không tồn tại.</p>;
-      return <figure key={id} style={{ margin: 0, display: "grid", gap: 6 }}>
+      return <RevealItem as="figure" key={id} index={index} style={{ margin: 0, display: "grid", gap: 6 }}>
         <blockquote className="vn-quote">“{item.excerpt}”</blockquote>
         <figcaption className="vn-caption vn-row" style={{ gap: 6 }}>
           <span className="vn-cite" aria-hidden>{citation(id)}</span>
           <button type="button" className="vn-linkish" style={{ fontWeight: 500 }} onClick={() => inspect({ kind: "source", id: item.sourceId })}>{source(item.sourceId)?.title ?? item.sourceId}</button>
           <span>· {describeLocator(item.locator)}</span>
         </figcaption>
-      </figure>;
+      </RevealItem>;
     }) : <Notice tone="warning" title="Chưa có bằng chứng">Nhận định này chưa được liên kết với đoạn trích nào.</Notice>}
   </div>;
 }
@@ -115,14 +117,14 @@ export function VerdictBlock({ props }: { props: Props<"verdict"> }) {
 
 export function TimelineBlock({ props }: { props: Props<"timeline"> }) {
   if (!props.items.length) return <EmptyState icon="calendar" title="Chưa có mốc thời gian" />;
-  return <ol className="vn-timeline">{props.items.map(item => <li key={item.id} className="vn-timeline__item">
+  return <ol className="vn-timeline">{props.items.map((item, index) => <RevealItem key={item.id} index={index} className="vn-timeline__item">
     <span className="vn-timeline__dot" aria-hidden />
     <div className="vn-stack vn-stack--s" style={{ gap: 4 }}>
       {item.at ? <span className="vn-timeline__at">{/^\d{4}-\d{2}-\d{2}/.test(item.at) ? formatDateTime(item.at) : item.at}</span> : null}
       <strong className="vn-strong">{item.title}</strong>
       {item.description ? <p className="vn-small vn-muted">{item.description}</p> : null}
     </div>
-  </li>)}</ol>;
+  </RevealItem>)}</ol>;
 }
 
 const STEP_STATUS = {
