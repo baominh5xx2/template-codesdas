@@ -20,7 +20,7 @@ export interface DomainResultBinding {
   toRunInput(output: JsonValue): JsonValue;
   toArtifactDraft(output: JsonValue): ArtifactDraft<JsonValue>;
 }
-export interface DomainToolReference { name: string; version: number }
+export interface DomainToolReference { name: string; version: number; optional?: boolean }
 export interface DomainDefinition {
   manifest: DomainManifest;
   inputSchema: Schema<JsonValue>;

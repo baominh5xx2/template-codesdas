@@ -46,7 +46,7 @@ it("rejects a binding whose tool version is not registered", () => {
 it("requires a versioned registry for tool references and result bindings", () => {
   const withoutVersionedRegistry = catalog();
   withoutVersionedRegistry.registeredTools = undefined;
-  withoutVersionedRegistry.toolNames.add("business__calculate");
+  withoutVersionedRegistry.toolNames = new Set([...withoutVersionedRegistry.toolNames, "business__calculate"]);
   expect(() => validateDomain(pack({ resultBindings: [], requiredArtifactKinds: [] }), withoutVersionedRegistry)).toThrow("domain_tool_unregistered");
   expect(() => validateDomain(pack(), withoutVersionedRegistry)).toThrow("domain_tool_unregistered");
 });
@@ -54,7 +54,7 @@ it("requires a versioned registry for tool references and result bindings", () =
 it("preserves name-only validation for a legacy workflow pack", () => {
   const legacyCatalog = catalog();
   legacyCatalog.registeredTools = undefined;
-  legacyCatalog.toolNames.add("business__calculate");
+  legacyCatalog.toolNames = new Set([...legacyCatalog.toolNames, "business__calculate"]);
   const workflowPack = pack({ tools: undefined, resultBindings: [], workflow: { steps: [], requiredArtifactKinds: [] }, requiredArtifactKinds: [] });
   expect(() => validateDomain(workflowPack, legacyCatalog)).not.toThrow();
 });

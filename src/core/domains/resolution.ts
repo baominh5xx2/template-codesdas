@@ -12,7 +12,8 @@ const activeReference = (active: ActiveDomainConfig): DomainReference | null => 
   const hasId = active.id !== undefined && active.id !== "";
   const hasVersion = active.version !== undefined && active.version !== "";
   if (!hasId && !hasVersion) return null;
-  if (!hasId || !hasVersion || !/^\d+$/.test(active.version!) || Number(active.version) < 1) throw new Error("domain_config_partial");
+  if (!hasId || !hasVersion) throw new Error("domain_config_partial");
+  if (!/^\d+$/.test(active.version!) || !Number.isSafeInteger(Number(active.version)) || Number(active.version) < 1) throw new Error("domain_config_invalid");
   return { id: active.id!, version: Number(active.version) };
 };
 export function resolveDomainForNewThread({ active, catalog }: { active: ActiveDomainConfig; catalog: DomainCatalog }): NewThreadDomainResolution {
