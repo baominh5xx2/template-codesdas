@@ -20,7 +20,7 @@ function extractMessageContent(message: { content?: unknown } | undefined): stri
         if (
           part &&
           typeof part === "object" &&
-          "text" in part &&
+          "type" in part && part.type === "text" && "text" in part &&
           typeof (part as { text: unknown }).text === "string"
         ) {
           return (part as { text: string }).text;
@@ -29,7 +29,7 @@ function extractMessageContent(message: { content?: unknown } | undefined): stri
       })
       .join("");
   }
-  return String(message.content);
+  return "";
 }
 
 function WhiteAssistantMessageImpl(

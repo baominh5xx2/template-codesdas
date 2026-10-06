@@ -1,14 +1,12 @@
 import { CHAT_LIMITS, type ChatExecutionStatus } from "@/contracts/chat";
 
-export type ChatTextMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
+import { settleToolCalls, transcriptText, trimTranscript, type ChatTranscriptMessage, type ChatTextMessage } from "@/contracts/chat-tools";
+export type { ChatTextMessage } from "@/contracts/chat-tools";
 
 export type ChatSnapshot = {
   threadId: string;
   messages: ChatTextMessage[];
+  transcript: ChatTranscriptMessage[];
   draft: string;
   available: boolean;
   status: ChatExecutionStatus;
@@ -19,12 +17,12 @@ export type ChatSnapshot = {
 export type ChatRunRequest = {
   threadId: string;
   runId: string;
-  messages: ChatTextMessage[];
+  messages: ChatTranscriptMessage[];
 };
 
 export type ChatRunSink = {
   started(): void;
-  messages(messages: ChatTextMessage[]): void;
+  messages(messages: ChatTranscriptMessage[]): void;
   terminal(status: "completed" | "failed" | "interrupted"): void;
 };
 
@@ -51,9 +49,10 @@ export function createChatController(options: {
   port: ChatClientPort;
   uuid: () => string;
   available: boolean;
+  maxContextMessages?: number;
 }): ChatController {
   let threadId = options.uuid();
-  let messages: ChatTextMessage[] = [];
+  let messages: ChatTranscriptMessage[] = [];
   let draft = "";
   let available = options.available;
   let status: ChatExecutionStatus = "idle";
@@ -65,15 +64,16 @@ export function createChatController(options: {
   let activeGeneration = 0;
   let activeRunPromise: Promise<void> | null = null;
   let retryCheckpoint: {
-    preTurnMessages: ChatTextMessage[];
-    userMessage: ChatTextMessage;
+    preTurnMessages: ChatTranscriptMessage[];
+    userMessage: Extract<ChatTranscriptMessage, { role: "user" }>;
   } | null = null;
 
   const subscribers = new Set<() => void>();
 
   let snapshot: ChatSnapshot = {
     threadId,
-    messages,
+    messages: transcriptText(messages),
+    transcript: messages,
     draft,
     available,
     status,
@@ -84,7 +84,8 @@ export function createChatController(options: {
   function notify(): void {
     snapshot = {
       threadId,
-      messages,
+      messages: transcriptText(messages),
+      transcript: messages,
       draft,
       available,
       status,
@@ -152,7 +153,7 @@ export function createChatController(options: {
     status = "running";
     notice = false;
 
-    const userMessage: ChatTextMessage = {
+    const userMessage: Extract<ChatTranscriptMessage, { role: "user" }> = {
       id: options.uuid(),
       role: "user",
       content: draft,
@@ -169,7 +170,7 @@ export function createChatController(options: {
     let terminalSeen = false;
     let terminalStatus: "completed" | "failed" | "interrupted" | null = null;
 
-    function acceptMessages(nextMsgs: ChatTextMessage[]): void {
+    function acceptMessages(nextMsgs: ChatTranscriptMessage[]): void {
       messages = nextMsgs;
       notify();
     }
@@ -179,6 +180,7 @@ export function createChatController(options: {
       if (failed) termStatus = "failed";
       terminalStatus = termStatus;
       status = termStatus;
+      if (termStatus !== "completed") messages = settleToolCalls(messages, termStatus);
       if (termStatus === "failed") {
         notice = true;
         if (accepted) {
@@ -207,7 +209,7 @@ export function createChatController(options: {
         }
       },
       messages: (msgs) => {
-        if (generation === activeGeneration && !terminalSeen) {
+        if (generation === activeGeneration && !terminalSeen && !stopping) {
           acceptMessages(msgs);
         }
       },
@@ -222,7 +224,7 @@ export function createChatController(options: {
     const request: ChatRunRequest = {
       threadId,
       runId: options.uuid(),
-      messages: [...preTurnMessages, userMessage],
+      messages: [...trimTranscript(preTurnMessages, options.maxContextMessages ?? Number.MAX_SAFE_INTEGER), userMessage],
     };
 
     notify();
@@ -272,7 +274,7 @@ export function createChatController(options: {
     let terminalSeen = false;
     let retryTerminalStatus: "completed" | "failed" | "interrupted" | null = null;
 
-    function acceptMessages(nextMsgs: ChatTextMessage[]): void {
+    function acceptMessages(nextMsgs: ChatTranscriptMessage[]): void {
       messages = nextMsgs;
       notify();
     }
@@ -281,6 +283,7 @@ export function createChatController(options: {
       if (failed) termStatus = "failed";
       retryTerminalStatus = termStatus;
       status = termStatus;
+      if (termStatus !== "completed") messages = settleToolCalls(messages, termStatus);
       if (termStatus === "failed") {
         notice = true;
       } else if (termStatus === "completed") {
@@ -295,7 +298,7 @@ export function createChatController(options: {
     const sink: ChatRunSink = {
       started: () => {},
       messages: (msgs) => {
-        if (generation === activeGeneration && !terminalSeen) {
+        if (generation === activeGeneration && !terminalSeen && !stopping) {
           acceptMessages(msgs);
         }
       },
@@ -310,7 +313,7 @@ export function createChatController(options: {
     const request: ChatRunRequest = {
       threadId,
       runId: options.uuid(),
-      messages: [...preTurnMessages, userMessage],
+      messages: [...trimTranscript(preTurnMessages, options.maxContextMessages ?? Number.MAX_SAFE_INTEGER), userMessage],
     };
 
     notify();
@@ -346,6 +349,8 @@ export function createChatController(options: {
       return;
     }
     stopping = true;
+    messages = settleToolCalls(messages, "interrupted");
+    notify();
     options.port.stop();
     try {
       await activeRunPromise;

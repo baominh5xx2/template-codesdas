@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { EventType } from "@ag-ui/client";
 import type {
   AgentSubscriber,
   Message,
@@ -6,13 +7,15 @@ import type {
   RunFinishedEvent,
   RunStartedEvent,
   TextMessageContentEvent,
+  BaseEvent,
 } from "@ag-ui/client";
 import {
   createChatClientBinding,
   createCopilotChatClient,
   type CopilotChatBindings,
 } from "@/adapters/agents/chat-client";
-import { createChatController, type ChatRunRequest, type ChatRunSink, type ChatTextMessage } from "@/ui/chat/controller";
+import type { ChatTranscriptMessage } from "@/contracts/chat-tools";
+import { createChatController, type ChatRunRequest, type ChatRunSink } from "@/ui/chat/controller";
 
 function createMockSdk() {
   let currentSubscriber: AgentSubscriber | null = null;
@@ -61,10 +64,10 @@ function createMockSdk() {
 
 function createMockSink(): ChatRunSink & {
   startedCalls: number;
-  messagesHistory: ChatTextMessage[][];
+  messagesHistory: ChatTranscriptMessage[][];
   terminalCalls: Array<"completed" | "failed" | "interrupted">;
 } {
-  const messagesHistory: ChatTextMessage[][] = [];
+  const messagesHistory: ChatTranscriptMessage[][] = [];
   const terminalCalls: Array<"completed" | "failed" | "interrupted"> = [];
   let startedCalls = 0;
 
@@ -72,7 +75,7 @@ function createMockSink(): ChatRunSink & {
     started() {
       startedCalls++;
     },
-    messages(msgs: ChatTextMessage[]) {
+    messages(msgs: ChatTranscriptMessage[]) {
       messagesHistory.push(msgs);
     },
     terminal(status: "completed" | "failed" | "interrupted") {
@@ -87,6 +90,50 @@ function createMockSink(): ChatRunSink & {
 }
 
 describe("createCopilotChatClient bridge", () => {
+  it("projects a new generic business tool from server descriptors and keeps its pair in the next protocol prefix", async () => {
+    const sdk = createMockSdk(); const sink = createMockSink();
+    const messages: Message[] = [
+      { id: "u", role: "user", content: "Read" },
+      { id: "a", role: "assistant", toolCalls: [{ id: "call", type: "function", function: { name: "business__read_summary", arguments: '{"key":"one"}' } }] },
+      { id: "result", role: "tool", toolCallId: "call", content: '{"summary":"found"}' },
+    ];
+    sdk.copilotkit.runAgent.mockImplementationOnce(async () => {
+      const subscriber = sdk.getSubscriber();
+      const emit = (event: BaseEvent, protocol: Message[]) => subscriber?.onEvent?.({ event, messages: protocol, state: {}, agent: sdk.bindings.agent, input: {} as RunAgentInput });
+      emit({ type: EventType.CUSTOM, name: "business_tool_descriptor", value: { exposedName: "business__read_summary", toolName: "read_summary", toolVersion: "2.1.0" } }, [messages[0]]);
+      emit({ type: EventType.CUSTOM, name: "business_tool_status", value: { threadId: "thread", runId: "run", toolCallId: "call", exposedName: "business__read_summary", status: "running" } }, messages.slice(0, 2));
+      emit({ type: EventType.CUSTOM, name: "business_tool_status", value: { threadId: "thread", runId: "run", toolCallId: "call", exposedName: "business__read_summary", status: "completed" } }, messages);
+      // Duplicate running update after terminal status cannot regress a call.
+      emit({ type: EventType.CUSTOM, name: "business_tool_status", value: { threadId: "thread", runId: "run", toolCallId: "call", exposedName: "business__read_summary", status: "running" } }, messages);
+      sdk.agent.messages = messages;
+      return { runId: "run" };
+    });
+    const client = createCopilotChatClient(sdk.bindings);
+    await client.run({ threadId: "thread", runId: "run", messages: [messages[0] as Extract<ChatTranscriptMessage, { role: "user" }>] }, sink);
+    const transcript = sink.messagesHistory.at(-1)!;
+    expect(transcript[1].role === "assistant" && transcript[1].toolCalls?.[0]).toMatchObject({ toolName: "read_summary", toolVersion: "2.1.0", status: "completed", input: { key: "one" }, runId: "run" });
+    expect(transcript[2]).toMatchObject({ role: "tool", output: { summary: "found" }, toolCallId: "call" });
+    await client.run({ threadId: "thread", runId: "next", messages: transcript }, createMockSink());
+    expect(sdk.agent.setMessages).toHaveBeenLastCalledWith(messages.map((m) => m.id === "a" ? { ...m, content: "" } : m));
+  });
+
+  it("maps synthetic stopped result/cancelled terminal to interrupted without a business result", async () => {
+    const sdk = createMockSdk(); const sink = createMockSink();
+    sdk.copilotkit.runAgent.mockImplementationOnce(async () => {
+      const subscriber = sdk.getSubscriber();
+      subscriber?.onEvent?.({ event: { type: EventType.CUSTOM, name: "business_tool_descriptor", value: { exposedName: "business__any_tool", toolName: "any_tool", toolVersion: "1.0.0" } }, messages: [], state: {}, agent: sdk.bindings.agent, input: {} as RunAgentInput });
+      subscriber?.onRunFinishedEvent?.({ event: {} as RunFinishedEvent, outcome: "cancelled", messages: [
+        { id: "a", role: "assistant", toolCalls: [{ id: "call", type: "function", function: { name: "business__any_tool", arguments: '{"ok":true}' } }] },
+        { id: "result", role: "tool", toolCallId: "call", content: '{"status":"stopped","reason":"stop_requested"}' },
+      ], state: {}, agent: sdk.bindings.agent, input: {} as RunAgentInput });
+      return { runId: "run" };
+    });
+    await createCopilotChatClient(sdk.bindings).run({ threadId: "thread", runId: "run", messages: [] }, sink);
+    expect(sink.terminalCalls).toEqual(["interrupted"]);
+    const transcript = sink.messagesHistory.at(-1)!;
+    expect(transcript.some((m) => m.role === "tool")).toBe(false);
+    expect(transcript[0].role === "assistant" && transcript[0].toolCalls?.[0].status).toBe("interrupted");
+  });
   it("sets full message prefix, uses explicit runId, and does NOT call addMessage second time", async () => {
     const { bindings, agent, copilotkit } = createMockSdk();
     const client = createCopilotChatClient(bindings);

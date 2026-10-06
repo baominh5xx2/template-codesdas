@@ -152,6 +152,7 @@ export function ChatWorkspace(): ReactElement {
       useSingleEndpoint={false}
       enableInspector={false}
       debug={false}
+      showDevConsole={false}
       onError={({ code }) => {
         if (code === "runtime_info_fetch_failed") {
           setReadiness({ available: false });

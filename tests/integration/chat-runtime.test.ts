@@ -1,4 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { randomUUID } from "node:crypto";
+import { InMemoryAgentRunner } from "@copilotkit/runtime/v2";
+import { PROTOCOL_VERSION } from "@ag-ui/client";
+import type { BusinessMcpConfig } from "@/server/mcp/config";
 import { createChatRequestHandler } from "@/server/chat/http";
 import { loadChatConfig } from "@/server/chat/config";
 import { CHAT_NOTICE, CHAT_LIMITS } from "@/contracts/chat";
@@ -12,7 +16,49 @@ describe("createChatRequestHandler integration", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await fixture.close();
+  });
+
+  function runRequest(signal?: AbortSignal) {
+    return new Request("http://127.0.0.1:3000/api/copilotkit/agent/default/run", { method: "POST", headers: { "Content-Type": "application/json", Origin: "http://127.0.0.1:3000" }, signal,
+      body: JSON.stringify({ protocolVersion: PROTOCOL_VERSION, threadId: randomUUID(), runId: randomUUID(), messages: [{ id: randomUUID(), role: "user", content: "hello" }], state: {}, tools: [], context: [], forwardedProps: {} }),
+    });
+  }
+  it("accepts the native Host origin when Next normalizes a loopback request URL", async () => {
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {});
+    const request = runRequest();
+    const normalized = new Request(request.url.replace("127.0.0.1", "localhost"), { method: "POST", headers: { ...Object.fromEntries(request.headers), host: "127.0.0.1:3000", "x-forwarded-host": "attacker.example" }, body: await request.text() });
+    const response = await handler(normalized);
+    expect(response.status).toBe(200); expect(await response.text()).toContain("Xin chào");
+    expect(fixture.requests).toHaveLength(1);
+  });
+  it.each(["attacker.example:3000", "127.0.0.1:3000/path", "user@127.0.0.1:3000", "127.0.0.1:3000?query", "127.0.0.1:3000#fragment", "http://127.0.0.1:3000", "127.0.0.1\\:3000", "127.0.0.1:3000 other", "127%2e0%2e0%2e1:3000"])("rejects mismatched or malformed native Host %s without trusting forwarded headers", async (host) => {
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {});
+    const request = runRequest(); request.headers.set("host", host); request.headers.set("x-forwarded-host", "127.0.0.1:3000");
+    const response = await handler(request);
+    expect(response.status).toBe(403); expect(await response.json()).toMatchObject({ message: CHAT_NOTICE }); expect(fixture.requests).toHaveLength(0);
+  });
+  it("enabled unavailable MCP fails closed before calling the model", async () => {
+    const config: Extract<BusinessMcpConfig, { enabled: true }> = { enabled: true, url: new URL("http://127.0.0.1:3199/api/mcp/business"), token: "wrong-token", enabledTools: ["calculate_budget"], allowedHosts: ["127.0.0.1"], allowedOrigins: [] };
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("RAW_SECRET_MCP_TOKEN_ERROR", { status: 401 }));
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {}, { businessMcp: config });
+    const response = await handler(runRequest());
+    const text = await response.text();
+    expect(text).toContain(CHAT_NOTICE); expect(text).not.toContain("RAW_SECRET"); expect(text).not.toContain("RUN_FINISHED"); expect(fixture.requests).toHaveLength(0);
+  });
+  it.each(["request", "reader"])("%s cancellation stops the exact run and aborts provider execution", async (kind) => {
+    fixture.setScenario("slow");
+    const runner = new InMemoryAgentRunner(); const stop = vi.spyOn(runner, "stop");
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {}, { runner });
+    const abort = new AbortController(); const request = runRequest(abort.signal); const identity = await request.clone().json();
+    const response = await handler(request); const reader = response.body!.getReader();
+    await reader.read(); await vi.waitFor(() => expect(fixture.requests).toHaveLength(1));
+    if (kind === "request") abort.abort(); else await reader.cancel();
+    await vi.waitFor(() => expect(stop).toHaveBeenCalledWith({ threadId: identity.threadId, runId: identity.runId }));
+    await vi.waitFor(() => expect(fixture.requests[0].aborted).toBe(true));
+    if (kind === "request") await reader.cancel();
+    expect(stop).toHaveBeenCalledTimes(1); runner.clearThreads();
   });
 
   it("returns 503 with CHAT_NOTICE when config is unavailable", async () => {

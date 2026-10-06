@@ -1,6 +1,6 @@
 # C03 — Business MCP Tools, Context & Inline Results
 
-Ngày: 2026-10-06. Trạng thái: **spec đề xuất để user review; chưa implement, chưa có implementation plan C03**.
+Ngày: 2026-10-06. Trạng thái: **C03 P0 đã triển khai theo [implementation plan](../plans/2026-10-06-chat-tools-context-implementation-plan.md); deterministic agent/HTTP/browser acceptance và build đã kiểm chứng. Live-model smoke chưa chạy; durable history/replay chờ C02**.
 
 Repo: `E:/thucchienai/hackathon-starter-kit`. Đây là tài liệu thiết kế; file tree và contracts bên dưới là đề xuất, không phải code đã tồn tại.
 
@@ -107,9 +107,11 @@ Definition tối thiểu:
 | `execute(input, context)` | Handler trả output data; không trả MCP content blocks |
 | `context` | Server-resolved local scope, correlation IDs, AbortSignal và deadline |
 
-`threadId`, `runId`, `toolCallId` dùng để correlate, không cấp quyền. Owner lấy từ local identity trên server; không lấy từ model args, forwardedProps hay UI context. HTTP MCP requests dùng verified service credential của app và local identity; caller-provided IDs chỉ là trace metadata.
+`threadId`, `runId`, `toolCallId` dùng để correlate, không cấp quyền. App truyền các ID đã có trong server-side run scope qua MCP `_meta` có namespace; server chỉ nhận string có giới hạn độ dài và ký tự điều khiển. ID không lấy từ model args hoặc forwardedProps, và không tham gia quyết định quyền. Nếu thiếu/không hợp lệ thì handler sinh correlation ID mới.
 
 Server và bridge reuse cùng typed catalog cho connector business nội bộ. Server sinh JSON Schema từ validator; bridge đối chiếu discovered tool/schema với registration được phép trước khi expose cho agent. Tool/schema không khớp hoặc không hỗ trợ thì reject, không dùng fallback `any`. Không xây universal JSON-Schema converter cho mọi remote MCP trong P0.
+
+Catalog sinh input JSON Schema với Zod `io: "input"`, output với `io: "output"`, cùng semantics Standard Schema mà official SDK dùng khi discovery. Plain `z.object(...)` input vẫn được hỗ trợ; không áp đặt `.strict()` cho tất cả tools. Đối chiếu schemas vẫn là structural equality; unknown schemas không được nới lỏng. AI SDK nhận registered Zod Standard Schemas để tránh schema-brand mismatch giữa các peer dependency instances.
 
 Tên MCP gốc ví dụ `calculate_budget`; tên expose cho model/UI luôn `business__calculate_budget`. Namespace cố định theo connector ID, chỉ dùng chữ/số/underscore, tối đa 64 ký tự; reject collisions/reserved SDK names lúc load catalog. Không đổi tên tùy theo thứ tự discovery.
 
@@ -156,21 +158,21 @@ Budget bị vượt là **kết quả nghiệp vụ hợp lệ**, không phải 
 - URL do backend config chọn, không lấy từ browser/model args. Host dev có thể dùng `http://127.0.0.1:3100/api/mcp/business`; app container gọi endpoint cùng container `http://127.0.0.1:3000/api/mcp/business`. Port host phải theo dev config thực tế.
 - Token riêng tự sinh local, không phải provider API key, không reuse `MCP_AUTH_TOKEN` của pgEdge. Không có `NEXT_PUBLIC_` credential. App và business route dùng cùng business credential; missing/bad token bị từ chối trước handler.
 - Guard Host theo origins được cấu hình; Origin nếu có phải được phép. Internal requests không có Origin vẫn cần bearer hợp lệ. Không mở wildcard CORS hoặc forward browser auth/cookies tới MCP.
-- Body tối đa 256 KiB; validation trước dispatch. Giới hạn result cần áp dụng trước gửi kết quả và trong client response reader để không buffer vô hạn. Không cho token theo redirect sang host khác.
+- Request body tối đa 256 KiB. Tool output được preflight giới hạn ở 4 KiB compact JSON trước Zod output parsing/serialization; toàn bộ MCP response tối đa 32 KiB và được đọc theo stream có giới hạn ở HTTP boundary/client reader. Không cho token theo redirect sang host khác.
 - Catalog server chỉ advertise enabled/allowlisted `read`/`compute` tools. Unknown/disabled tools bị deny cả discovery lẫn direct call. Không suy ra quyền từ MCP annotations.
 
 App không connect trong import/build. Model chưa cấu hình vẫn dùng `Chưa kết nối`, không dựng assistant fixture. Live agent acceptance cần configured model hỗ trợ native tool calls; test protocol/handler/bridge dùng local deterministic tests không cần key.
 
 ## 8. SDK-to-agent bridge và run lifecycle
 
-Chọn official SDK v2 client/server stable. Exact patch pin khi lập plan/compatibility probe; không cài GitHub main hoặc prerelease. Repo hiện pin CopilotKit runtime/react-core `1.77.0` qua v2 subpaths và AI SDK `6.0.300`; C03 không yêu cầu upgrade toàn stack.
+Đã pin exact official SDK v2 client/server `2.3.1` sau compatibility probe. Repo giữ CopilotKit runtime/react-core `1.77.0` qua v2 subpaths và AI SDK `6.0.300`.
 
 Official MCP `Client` có `listTools`/`callTool`; CopilotKit `mcpClients` cần provider có `.tools()` trả AI SDK ToolSet. Viết thin provider dùng local input validator và executor gọi official client. Không truyền thẳng MCP Client vào `mcpClients`. Client do app sở hữu/đóng; CopilotKit vẫn chạy model loop. [MCP SDK client](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/get-started/first-client.md), [CopilotKit MCP providers](https://docs.copilotkit.ai/mcp-servers).
 
-Đề xuất per-run client trong bản đầu:
+Per-run client đã triển khai:
 
 1. Acquire existing execution gate, tạo run scope.
-2. Nếu business MCP enabled: connect/initialize/discover trong scope, verify schema/allowlist.
+2. Nếu business MCP enabled: connect/initialize/discover trong scope, verify schema/allowlist. Client dùng `versionNegotiation: { mode: "auto" }` và reject negotiated legacy era trước model/tool execution. Modern HTTP abort là điều kiện cancellation của stateless endpoint; legacy cancellation notification không dừng được request đang chạy ở server instance khác.
 3. Tạo inner BuiltInAgent cho execution với provider đã bind scope; lifecycle delegate trả AG-UI stream, không tự viết model loop.
 4. `toolChoice: "auto"`, `maxSteps: 4`, tối đa 3 tool executions tổng cộng mỗi run, tối đa 1 execution tool đồng thời. Requests song song từ model vào một queue của run scope; deadline tính cả thời gian chờ. Budget check atomic; vượt budget fail run, không tiếp tục tự gọi tool.
 5. Model chọn tool → input validate → `callTool` → output validate → tool result → model trả lời.
@@ -178,13 +180,13 @@ Official MCP `Client` có `listTools`/`callTool`; CopilotKit `mcpClients` cần 
 
 Wrapper gắn cancellation của outer AG-UI subscription với inner agent và MCP scope; phải thử với runner/clone semantics của version đã pin trước khi wire vào runtime. Không fallback sang agent loop tự viết nếu probe fail. AI SDK tool execute options có abort signal; ghép với run signal và call deadline, không giả định `defineTool.execute(args)` cung cấp execution context.
 
-Limits đề xuất: connect/discovery 5 giây; mỗi tool call 15 giây hoặc remaining run deadline, tùy cái nhỏ hơn; whole run giữ 120 giây; tool input/result tối đa 32 KiB mỗi call; không tự retry MCP call. Handlers có async I/O phải honor signal/deadline; không dùng Promise.race rồi bỏ request chạy ngầm. Client close không đóng shared business HTTP handler của app.
+Limits đã áp dụng: connect/discovery 5 giây; mỗi tool call 15 giây hoặc remaining run deadline, tùy cái nhỏ hơn; whole run giữ 120 giây; tool input tối đa 32 KiB mỗi call. Business handler output được preflight giới hạn 4 KiB compact JSON trước validation có thể clone dữ liệu hoặc serialization. Result limit 32 KiB đếm toàn bộ UTF-8 HTTP response sau SDK encoding/sanitization, gồm modern metadata, JSON-RPC envelope và request ID; payload gần limit có thể bị reject vì framing cũng dùng quota. HTTP sanitizer và client response reader đều giới hạn theo stream ở 32 KiB. Không tự retry MCP call. Handlers có async I/O phải honor signal/deadline; không dùng Promise.race rồi bỏ request chạy ngầm. Client close không đóng shared business HTTP handler của app.
 
 Khi MCP enabled nhưng connector không sẵn hoặc discovery thất bại: run fail bằng notice chung trước model call, không âm thầm bỏ tools rồi để assistant bịa kết quả. Khi feature disabled: chat text bình thường. Persistent clients/cache hot-reload/reconnect streams để sau.
 
 ## 9. Error, Stop và UI
 
-UI tối thiểu là tool status row và một result preview có text/field-value/table khi data phù hợp. Không yêu cầu ChartCard/RiskCard/ReportView/map hoặc full BlockRenderer. `useRenderTool` chỉ render server results theo tên exposed, không có browser executor. [CopilotKit server tool rendering](https://docs.copilotkit.ai/server-tools).
+UI dùng typed transcript projection và `ToolStatusView`/`ToolResultView`, render budget fields hoặc bounded JSON preview cho tool khác; không có browser executor. CopilotKit provider đặt `showDevConsole={false}` để SDK debug/error banner không tạo notice trùng hoặc hiện stack/details. Không yêu cầu ChartCard/RiskCard/ReportView/map hoặc full BlockRenderer.
 
 - `pending`: có call ID/name, đang nhận/validate arguments; không execute arguments chưa hoàn chỉnh.
 - `running`: backend bridge đã dispatch `tools/call`; UI hiện “Đang xử lý”. Không khẳng định handler đã tới một stage nội bộ hoặc phần trăm progress.
@@ -241,4 +243,15 @@ Không coi infrastructure pgEdge smoke là bằng chứng C03. Khi triển khai 
 4. Wire runtime; mở protocol messages/controller + inline result renderer.
 5. Agent-path acceptance, cancellation/failure limits, docs/env handoff và C02 replay contract.
 
-Đây là thứ tự kỹ thuật đề xuất, chưa phải implementation plan task-by-task. Chuyển sang writing-plans sau khi user review spec này; không tự triển khai product code.
+Thứ tự này đã được cụ thể hóa và thực hiện trong [implementation plan](../plans/2026-10-06-chat-tools-context-implementation-plan.md).
+
+## 14. Bằng chứng triển khai và giới hạn nghiệm thu
+
+- `tests/integration/business-mcp-http.test.ts`: official Client discover/list/call qua route POST thật; modern response cap và cooperative abort trên fixture HTTP socket adapter.
+- `tests/integration/business-mcp-agent.test.ts`: real TCP endpoint → per-run official Client/provider → BuiltInAgent → model continuation sử dụng exact validated output → transcript và renderer; plain-object tool thứ hai `multiply_value` chỉ đăng ký trong test, không sửa production catalog/chat transport/agent loop/UI.
+- `tests/integration/business-mcp-security.test.ts` cùng adapter/server/runtime suites: auth/deny/schema/output/timeout/call budget/oversize/cancel và suppression trước model/UI.
+- `bun run e2e --config playwright.business.config.ts` sau build: Chrome trên compiled Next app, synthetic local model, OS-assigned ports khác 3100; Send, budget inline, Copy chỉ text, follow-up context, failure Retry, Stop Retry không duplicate user message và New chat. Đây là deterministic browser smoke, chưa là live AI.
+- Browser acceptance phát hiện Next normalize loopback `Request.url` thành `localhost`; chat Origin boundary đối chiếu protocol + native Host authority đã validate, không dùng `x-forwarded-host`. Browser fetch không được tự đặt Host; Origin khác native request authority vẫn bị deny.
+- `bun install --frozen-lockfile`, `bun run check`, `bun run test`, `bun run build` đã pass. Windows standalone build cần host symlink privileges; sandbox run gặp EPERM, elevated retry pass.
+
+Live tool-capable model smoke **not run**; không đọc/copy credentials để chạy thử. Actual Next socket disconnect → `Request.signal` cho in-flight business handler vẫn **chưa kiểm chứng**; integration fixture tự nối socket abort vào Request.signal, còn browser Stop đã kiểm chứng qua runtime stop endpoint. Durable storage/reload replay **chưa triển khai**, handoff record thuộc C02.
