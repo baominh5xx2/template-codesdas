@@ -9,10 +9,10 @@ for (const viewport of viewports) test(`real SDK Markdown and white theme ${view
   await expect(assistant.getByRole("heading", { name: "Phản hồi tiếng Việt", exact: true })).toBeVisible();
   await expect(assistant).toContainText("Đã hoàn tất."); await completed(page);
   await whiteShell(page); await composerGeometry(page);
-  await expect(page.locator(".chat-user-message .copilotKitUserMessage > div").first()).toHaveCSS("background-color", "rgb(241, 241, 241)");
-  await expect(assistant.locator(".copilotKitAssistantMessage")).toHaveCSS("color", "rgb(23, 23, 23)");
-  await expect(assistant.locator("pre")).toHaveCSS("background-color", "rgb(244, 244, 244)");
-  await expect(assistant.locator("pre code")).toHaveCSS("color", "rgb(23, 23, 23)");
+  await expect(page.locator(".chat-user-message .copilotKitUserMessage > div").first()).toHaveCSS("background-color", "rgb(227, 236, 253)");
+  await expect(assistant.locator(".copilotKitAssistantMessage")).toHaveCSS("color", "rgb(26, 44, 78)");
+  await expect(assistant.locator("pre")).toHaveCSS("background-color", "rgb(6, 19, 42)");
+  await expect(assistant.locator("pre code")).toHaveCSS("color", "rgb(238, 247, 251)");
   await readableCode(page);
   await expect(assistant.locator("table")).toHaveCount(1);
   for (const block of [assistant.locator("pre"), assistant.locator("table")]) {
@@ -55,7 +55,9 @@ test("textarea caps height and input length without page overflow", async ({ pag
   await provider(request); await ready(page);
   const input = page.getByRole("textbox", { name: "Tin nhắn", exact: true });
   await input.fill("Dòng dài\n".repeat(100));
-  await expect(input).toHaveCSS("height", "200px");
+  // CopilotChatInput owns autosize: it grows to its five-line cap, then scrolls inside.
+  const height = await input.evaluate((el) => el.getBoundingClientRect().height);
+  expect(height).toBeGreaterThan(48); expect(height).toBeLessThanOrEqual(200);
   expect(await input.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
   await input.fill("x".repeat(8_000)); await input.press("End"); await input.press("x");
   await expect(input).toHaveValue("x".repeat(8_000));

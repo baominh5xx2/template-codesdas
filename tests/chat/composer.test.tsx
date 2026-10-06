@@ -110,14 +110,12 @@ describe("ChatComposer", () => {
     expect(screen.getAllByRole("button", { name: "Thử lại" })).toHaveLength(1);
   });
 
-  it("clamps autosizing from 48 to 200 pixels", () => {
+  it("renders CopilotKit's own textarea and send button so autosize/IME stay SDK-owned", () => {
     const { input } = setup();
-    expect(input.style.height).toBe("48px");
-    Object.defineProperty(input, "scrollHeight", { configurable: true, value: 260 });
-    fireEvent.change(input, { target: { value: "Long text" } });
-    expect(input.style.height).toBe("200px");
-    Object.defineProperty(input, "scrollHeight", { configurable: true, value: 20 });
-    fireEvent.change(input, { target: { value: "Short" } });
-    expect(input.style.height).toBe("48px");
+    expect(input).toHaveAttribute("data-testid", "copilot-chat-textarea");
+    expect(input).toHaveAttribute("placeholder", "Nhập tin nhắn…");
+    expect(screen.getByRole("button", { name: "Gửi tin nhắn" })).toHaveAttribute("data-testid", "copilot-send-button");
+    // C01 has no attachments: the SDK add-menu slot is hidden.
+    expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 });

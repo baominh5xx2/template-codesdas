@@ -21,7 +21,7 @@ test("Stop is keyboard accessible, white, and returns to the normal composer", a
   await ready(page); await send(page);
   const stop = page.getByRole("button", { name: "Dừng trả lời", exact: true });
   await expect(stop).toBeVisible(); await target44(stop);
-  await expect(stop).toHaveCSS("background-color", "rgb(23, 23, 23)");
+  await expect(stop).toHaveCSS("background-color", "rgb(6, 19, 42)");
   await expect(stop).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(page.locator(".chat-assistant-message")).toContainText("Một phần");
   await stop.focus(); await page.keyboard.press("Enter");

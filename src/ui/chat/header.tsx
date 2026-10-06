@@ -39,7 +39,7 @@ export function ChatHeader({
           </svg>
         </button>
       )}
-      <h1 className="chat-header-title">Hackathon Starter Kit</h1>
+      <h1 className="chat-header-title">AI Thực chiến × TriplePeek</h1>
     </header>
   );
 }
