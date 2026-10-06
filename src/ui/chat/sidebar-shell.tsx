@@ -87,6 +87,20 @@ export function SidebarShell({
       ref={dialogRef}
       aria-label="Điều hướng hội thoại"
       className="chat-mobile-dialog"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const controls = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+        if (!controls?.length) return;
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }}
       onCancel={(event) => {
         event.preventDefault();
         onClose();

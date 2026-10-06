@@ -4,6 +4,8 @@ import { CHAT_NOTICE } from "@/contracts/chat";
 export type ChatErrorBoundaryProps = {
   children: ReactNode;
   onRetry: () => void;
+  onFailure?: () => void;
+  fallback?: (retry: () => void) => ReactNode;
 };
 
 type ChatErrorBoundaryState = {
@@ -24,6 +26,7 @@ export class ChatErrorBoundary extends Component<
 
   override componentDidCatch(): void {
     // Mask error details completely to avoid leaking secrets
+    this.props.onFailure?.();
   }
 
   handleRetry = (): void => {
@@ -33,6 +36,9 @@ export class ChatErrorBoundary extends Component<
 
   override render(): ReactNode {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return <div className="chat-error-boundary-view chat-error-boundary-layout">{this.props.fallback(this.handleRetry)}</div>;
+      }
       return (
         <div className="chat-error-boundary-view">
           <section className="chat-notice-banner" aria-label="Thông báo lỗi">

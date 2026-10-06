@@ -135,6 +135,7 @@ export function createCopilotChatClient(bindings: CopilotChatBindings): ChatClie
       };
       const subscriber: AgentSubscriber = {
         onRunStartedEvent: () => { if (!terminalEmitted && !userAborted) sink.started(); },
+        onMessagesChanged: (p) => emitMessages(p.messages),
         onTextMessageContentEvent: (p) => emitMessages(p.messages),
         onTextMessageEndEvent: (p) => emitMessages(p.messages),
         onEvent: (p) => {
@@ -171,9 +172,24 @@ export function createCopilotChatClient(bindings: CopilotChatBindings): ChatClie
 
 export function createChatClientBinding(): ChatClientBinding {
   let activeClient: ChatClientPort | null = null;
+  const runningClients = new Set<ChatClientPort>();
   const port: ChatClientPort = {
-    async run(request, sink) { if (!activeClient) throw new Error("Chat client is not attached"); return activeClient.run(request, sink); },
+    async run(request, sink) {
+      if (!activeClient) throw new Error("Chat client is not attached");
+      const client = activeClient;
+      runningClients.add(client);
+      try { await client.run(request, sink); }
+      finally { runningClients.delete(client); }
+    },
     stop() { activeClient?.stop(); }, reset(threadId) { activeClient?.reset(threadId); },
   };
-  return { port, attach(client) { activeClient = client; return () => { if (activeClient === client) activeClient = null; }; } };
+  return { port, attach(client) {
+    activeClient = client;
+    return () => {
+      if (runningClients.has(client)) {
+        try { client.stop(); } catch { /* keep the pending run's settlement fence */ }
+      }
+      if (activeClient === client) activeClient = null;
+    };
+  } };
 }

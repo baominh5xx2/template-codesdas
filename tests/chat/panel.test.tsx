@@ -48,5 +48,6 @@ describe("ChatPanel", () => {
 
     // Send button is rendered
     expect(screen.getByRole("button", { name: "Gửi" })).toBeInTheDocument();
+    expect(controller.getSnapshot().available).toBe(false);
   });
 });

@@ -8,7 +8,7 @@ import {
   useState,
   type ReactElement,
 } from "react";
-import { CopilotKit } from "@copilotkit/react-core/v2";
+import { CopilotKitProvider } from "@copilotkit/react-core/v2";
 // eslint-disable-next-line no-restricted-imports
 import { createChatClientBinding } from "@/adapters/agents/chat-client";
 import { createChatController } from "./controller";
@@ -72,7 +72,7 @@ export function ChatWorkspace(): ReactElement {
       const data = (await res.json()) as { available?: boolean };
       const isAvailable = Boolean(data.available);
       setReadiness({ available: isAvailable });
-      controller.setAvailable(isAvailable);
+      controller.setAvailable(false);
       if (!isAvailable) {
         controller.fail();
       }
@@ -101,7 +101,7 @@ export function ChatWorkspace(): ReactElement {
         if (!active) return;
         const isAvailable = Boolean(data.available);
         setReadiness({ available: isAvailable });
-        controller.setAvailable(isAvailable);
+        controller.setAvailable(false);
         if (!isAvailable) {
           controller.fail();
         }
@@ -146,17 +146,25 @@ export function ChatWorkspace(): ReactElement {
   ) : null;
 
   const connectedChat = (
-    <CopilotKit
+    <CopilotKitProvider
       runtimeUrl="/api/copilotkit"
-      agent="default"
+      agentId="default"
       useSingleEndpoint={false}
       enableInspector={false}
       debug={false}
       showDevConsole={false}
-      onError={() => controller.fail()}
+      onError={({ code }) => {
+        if (code === "runtime_info_fetch_failed") {
+          setReadiness({ available: false });
+          controller.setAvailable(false);
+          controller.fail();
+        }
+        // Run errors are projected by the bridge's terminal sink. Discovery
+        // failure unmounts the unavailable SDK and Retry checks readiness again.
+      }}
     >
       <ChatPanel controller={controller} />
-    </CopilotKit>
+    </CopilotKitProvider>
   );
 
   const disconnectedChat = (
@@ -171,7 +179,6 @@ export function ChatWorkspace(): ReactElement {
   );
 
   return (
-    <ChatErrorBoundary onRetry={handleNoticeRetry}>
       <ChatShell
         sidebar={
           <SidebarShell
@@ -200,9 +207,23 @@ export function ChatWorkspace(): ReactElement {
           notice={noticeNode}
           binding={binding}
         >
-          {readiness.available ? connectedChat : disconnectedChat}
+          <ChatErrorBoundary
+            onRetry={handleNoticeRetry}
+            onFailure={() => {
+              setReadiness({ available: false });
+              controller.setAvailable(false);
+              controller.fail();
+            }}
+            fallback={(retry) => (
+              <ConversationLayout
+                transcript={<div className="chat-column"><h2 className="chat-welcome">Bạn muốn hỏi gì?</h2></div>}
+                composer={<ChatComposer controller={controller} notice={<ConnectionNotice visible onRetry={retry} />} />}
+              />
+            )}
+          >
+            {readiness.available ? connectedChat : disconnectedChat}
+          </ChatErrorBoundary>
         </ChatControllerProvider>
       </ChatShell>
-    </ChatErrorBoundary>
   );
 }

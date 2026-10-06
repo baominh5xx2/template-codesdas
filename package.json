@@ -13,6 +13,7 @@
     "domain:validate": "tsx scripts/validate-domains.ts",
     "build": "next build",
     "e2e": "playwright test",
+    "chat:smoke": "tsx scripts/chat-smoke.ts",
     "docker:setup": "node scripts/setup-docker.mjs",
     "docker:up": "node scripts/docker.mjs up -d --build --wait --wait-timeout 180",
     "docker:infra": "node scripts/docker.mjs up -d --wait --wait-timeout 120 db mcp",
