@@ -76,6 +76,12 @@ async function guardedModel(model: LanguageModel, provider: MCPClientProvider, s
             controller.enqueue(part);
           } catch { fail(); controller.error(new BusinessMcpFailure("model_tool_failed")); }
         },
+        flush(controller) {
+          if (partials.size) {
+            fail();
+            controller.error(new BusinessMcpFailure("model_tool_failed"));
+          }
+        },
       })) };
     },
   } });

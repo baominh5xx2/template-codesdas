@@ -77,6 +77,21 @@ describe("run-scoped BuiltInAgent tools", () => {
     expect(events.some((e) => [EventType.TOOL_CALL_ARGS, EventType.TOOL_CALL_RESULT, EventType.RUN_FINISHED].includes(e.type))).toBe(false);
     expect(JSON.stringify(events)).not.toContain("RAW_SECRET"); expect(s.close).toHaveBeenCalledTimes(1);
   });
+  it("fails closed when a stream ends after text and an unfinished tool call", async () => {
+    const m = new MockLanguageModelV3({ doStream: async () => ({ stream: simulateReadableStream({ chunks: [
+      { type: "stream-start", warnings: [] },
+      { type: "text-start", id: "text" },
+      { type: "text-delta", id: "text", delta: "partial answer" },
+      { type: "text-end", id: "text" },
+      { type: "tool-input-start", id: "unfinished", toolName: "business__calculate_budget" },
+      { type: "tool-input-delta", id: "unfinished", delta: "{\\\"currency\\\":" },
+    ] }) }) });
+    const execute = vi.spyOn(calculateBudgetTool, "execute");
+    const s = setup(m); const events = await run(s.agent);
+    expect(events.filter((e) => e.type === EventType.RUN_ERROR)).toEqual([{ type: EventType.RUN_ERROR, message: "Chưa kết nối" }]);
+    expect(events.some((e) => e.type === EventType.RUN_FINISHED)).toBe(false);
+    expect(execute).not.toHaveBeenCalled(); expect(m.doStreamCalls).toHaveLength(1);
+  });
   it.each(["throw", "output"])("latches %s failure before any tool result or next model step", async (kind) => {
     vi.spyOn(calculateBudgetTool, "execute").mockImplementation(async () => { if (kind === "throw") throw new Error("RAW_SECRET_TOKEN_STACK"); return { currency: "USD", totalMinor: -1, remainingMinor: 0, overBudget: false, itemCount: 0 }; });
     const s = setup(); const events = await run(s.agent);
@@ -134,7 +149,7 @@ describe("run-scoped BuiltInAgent tools", () => {
     await vi.waitFor(() => expect(signal).toBeDefined());
     expect(await runner.stop({ threadId: i.threadId, runId: i.runId })).toBe(true);
     const events = await eventsPromise; expect(signal?.aborted).toBe(true);
-    expect(events.some((e) => e.type === EventType.RUN_ERROR || e.type === EventType.TEXT_MESSAGE_CONTENT)).toBe(false);
+    expect(events.some((e) => e.type === EventType.RUN_ERROR || e.type === EventType.TEXT_MESSAGE_CONTENT || e.type === EventType.TEXT_MESSAGE_CHUNK)).toBe(false);
     if (stage !== "continuation") expect(events.some((e) => e.type === EventType.TOOL_CALL_RESULT && "content" in e && String(e.content).includes('"totalMinor"'))).toBe(false);
     expect(events.some((e) => e.type === EventType.RUN_FINISHED && (e as RunFinishedEvent).outcome?.type === "cancelled")).toBe(true);
     expect(s.close).toHaveBeenCalledTimes(stage === "connection" ? 0 : 1);
