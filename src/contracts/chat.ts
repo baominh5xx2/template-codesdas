@@ -7,6 +7,7 @@ export const CHAT_LIMITS = {
   outputTokens: 2_048,
   retries: 0,
   steps: 1,
+  toolSteps: 4,
 } as const;
 
 export type ChatReadiness = {

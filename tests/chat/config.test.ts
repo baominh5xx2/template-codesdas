@@ -176,6 +176,7 @@ describe("Chat contracts constants", () => {
       outputTokens: 2_048,
       retries: 0,
       steps: 1,
+      toolSteps: 4,
     });
   });
 });
