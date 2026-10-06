@@ -1,0 +1,970 @@
+/*
+ * Chat workspace — ChatGPT layout dressed in the team design system (design/visit-norway-design):
+ * navy navigation, Norway-blue actions, ice callouts, Manrope type. Light scheme is fixed.
+ */
+[data-chat-theme="light"] {
+  color-scheme: light;
+  /* Brand palette */
+  --chat-blue: #004de8;
+  --chat-blue-700: #003cb8;
+  --chat-blue-100: #e3ecfd;
+  --chat-navy: #06132a;
+  --chat-navy-700: #1a2c4e;
+  --chat-ice: #a2d4ec;
+  --chat-ice-200: #cfe8f4;
+  --chat-ice-50: #eef7fb;
+  /* Semantic tokens */
+  --chat-canvas: #ffffff;
+  --chat-sidebar: var(--chat-navy);
+  --chat-sidebar-text: #ffffff;
+  --chat-sidebar-muted: var(--chat-ice-200);
+  --chat-sidebar-hover: rgba(255, 255, 255, 0.12);
+  --chat-surface: #ffffff;
+  --chat-subtle: #f5f7fa;
+  --chat-user-bubble: var(--chat-blue-100);
+  --chat-hover: #ebeff4;
+  --chat-text: var(--chat-navy-700);
+  --chat-strong: var(--chat-navy);
+  --chat-muted: #5b6679;
+  --chat-border: #dce2ea;
+  --chat-focus: var(--chat-blue);
+  --chat-send: var(--chat-blue);
+  --chat-send-hover: var(--chat-blue-700);
+  --chat-stop: var(--chat-navy);
+  --chat-on-send: #ffffff;
+  --chat-code-bg: var(--chat-navy);
+  --chat-code-text: var(--chat-ice-50);
+  --chat-inline-code-bg: #ebeff4;
+  --chat-radius-card: 16px;
+  --chat-ease: cubic-bezier(0.2, 0, 0, 1);
+  --chat-font: var(--font-manrope, "Manrope"), system-ui, "Segoe UI", sans-serif;
+  color: var(--chat-text);
+  background: var(--chat-canvas);
+  font-family: var(--chat-font);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-chat-theme="light"] [data-copilotkit] {
+  color-scheme: light;
+  --background: var(--chat-canvas);
+  --foreground: var(--chat-text);
+  --card: var(--chat-canvas);
+  --card-foreground: var(--chat-text);
+  --popover: var(--chat-canvas);
+  --popover-foreground: var(--chat-text);
+  --primary: var(--chat-send);
+  --primary-foreground: var(--chat-on-send);
+  --secondary: var(--chat-subtle);
+  --secondary-foreground: var(--chat-text);
+  --muted: var(--chat-subtle);
+  --muted-foreground: var(--chat-muted);
+  --accent: var(--chat-hover);
+  --accent-foreground: var(--chat-text);
+  --border: var(--chat-border);
+  --input: var(--chat-border);
+  --ring: var(--chat-focus);
+  font-family: var(--chat-font);
+}
+
+.chat-shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.chat-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--chat-canvas);
+}
+
+.chat-conversation {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.chat-transcript {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+/* ---------- Messages ---------- */
+.chat-assistant-message,
+.chat-user-message {
+  min-width: 0;
+  margin-block: 0 28px;
+  overflow-wrap: anywhere;
+}
+
+.chat-assistant-message .copilotKitAssistantMessage {
+  background: transparent;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--chat-text);
+}
+
+.chat-assistant-message [class~="cpk:prose"] {
+  --tw-prose-body: var(--chat-text);
+  --tw-prose-headings: var(--chat-strong);
+  --tw-prose-links: var(--chat-blue);
+  --tw-prose-bold: var(--chat-strong);
+  --tw-prose-quotes: var(--chat-text);
+  --tw-prose-code: var(--chat-strong);
+  --tw-prose-pre-code: var(--chat-code-text);
+  --tw-prose-pre-bg: var(--chat-code-bg);
+  --tw-prose-lead: var(--chat-muted);
+  --tw-prose-counters: var(--chat-muted);
+  --tw-prose-bullets: var(--chat-blue);
+  --tw-prose-captions: var(--chat-muted);
+  --tw-prose-hr: var(--chat-border);
+  --tw-prose-quote-borders: var(--chat-blue);
+  --tw-prose-th-borders: var(--chat-navy);
+  --tw-prose-td-borders: var(--chat-border);
+  --tw-prose-invert-body: var(--chat-text);
+  --tw-prose-invert-headings: var(--chat-strong);
+  --tw-prose-invert-links: var(--chat-blue);
+  --tw-prose-invert-bold: var(--chat-strong);
+  --tw-prose-invert-quotes: var(--chat-text);
+  --tw-prose-invert-code: var(--chat-strong);
+  --tw-prose-invert-pre-code: var(--chat-code-text);
+  --tw-prose-invert-pre-bg: var(--chat-code-bg);
+  --tw-prose-invert-lead: var(--chat-muted);
+  --tw-prose-invert-counters: var(--chat-muted);
+  --tw-prose-invert-bullets: var(--chat-blue);
+  --tw-prose-invert-captions: var(--chat-muted);
+  --tw-prose-invert-hr: var(--chat-border);
+  --tw-prose-invert-quote-borders: var(--chat-blue);
+  --tw-prose-invert-th-borders: var(--chat-navy);
+  --tw-prose-invert-td-borders: var(--chat-border);
+  color: var(--chat-text);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.chat-assistant-message :where(h1, h2, h3, h4) {
+  color: var(--chat-strong);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.chat-assistant-message a {
+  color: var(--chat-blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chat-assistant-message blockquote {
+  margin-inline: 0;
+  padding: 4px 0 4px 16px;
+  border-left: 3px solid var(--chat-blue);
+  color: var(--chat-text);
+  font-style: normal;
+}
+
+.chat-user-message {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.chat-user-message .copilotKitUserMessage {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+}
+
+.chat-user-message .copilotKitUserMessage > div {
+  max-width: min(85%, 640px);
+  padding: 12px 18px;
+  border-radius: 20px 20px 6px 20px;
+  background: var(--chat-user-bubble);
+  color: var(--chat-strong);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-assistant-message :where(p, ul, ol) {
+  margin-block: 0 12px;
+}
+
+.chat-assistant-message :where(code) {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--chat-inline-code-bg);
+  color: var(--chat-strong);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 0.92em;
+}
+
+.chat-assistant-message pre {
+  /* Streamdown sets an inline transparent background on highlighted blocks. */
+  background-color: var(--chat-code-bg) !important;
+  color: var(--chat-code-text) !important;
+  max-width: 100%;
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 12px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Shiki can replace inline token colors after its asynchronous highlighting. */
+.chat-assistant-message pre code,
+.chat-assistant-message pre code span {
+  padding: 0;
+  color: var(--chat-code-text) !important;
+  background-color: transparent !important;
+  font-size: 14px;
+}
+
+.chat-assistant-message table {
+  display: block;
+  max-width: 100%;
+  border-collapse: collapse;
+  overflow-x: auto;
+  font-size: 15px;
+}
+
+.chat-assistant-message th {
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--chat-navy);
+  color: var(--chat-strong);
+  text-align: left;
+}
+
+.chat-assistant-message td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--chat-border);
+}
+
+/* ---------- Copy action (CopilotKit CopyButton) ---------- */
+.chat-copy-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 4px;
+  color: var(--chat-muted);
+}
+
+.chat-user-message .chat-copy-wrapper {
+  justify-content: flex-end;
+}
+
+.chat-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--chat-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 150ms var(--chat-ease), color 150ms var(--chat-ease);
+}
+
+.chat-copy-btn:hover {
+  background: var(--chat-hover);
+  color: var(--chat-strong);
+}
+
+.chat-copy-btn:focus-visible {
+  outline: 2px solid var(--chat-focus);
+  outline-offset: 2px;
+}
+
+.chat-copy-feedback {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chat-blue);
+  overflow-wrap: anywhere;
+}
+
+.chat-messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding-bottom: 24px;
+}
+
+.chat-messages-container > .chat-assistant-message,
+.chat-messages-container > .chat-user-message {
+  margin: 0;
+}
+
+/* ---------- Harness tool calls: one inline card per call ---------- */
+.chat-tool-card {
+  align-self: stretch;
+  min-width: 0;
+  padding: 16px 20px;
+  border: 1px solid var(--chat-border);
+  border-left: 4px solid var(--chat-blue);
+  border-radius: var(--chat-radius-card);
+  background: var(--chat-ice-50);
+  color: var(--chat-strong);
+  font-size: 15px;
+}
+
+.chat-tool-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-tool-status strong {
+  font-weight: 800;
+}
+
+.chat-tool-status span {
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--chat-blue);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chat-tool-result {
+  margin-top: 12px;
+}
+
+.chat-tool-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.chat-tool-fields div {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.chat-tool-fields dt {
+  color: var(--chat-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.chat-tool-fields dd {
+  margin: 4px 0 0;
+  color: var(--chat-strong);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.chat-tool-result p {
+  margin: 12px 0 0;
+  font-weight: 700;
+}
+
+.chat-tool-result small {
+  color: var(--chat-muted);
+}
+
+.chat-tool-result pre {
+  max-height: 240px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  overflow-y: auto;
+  background: var(--chat-code-bg);
+  color: var(--chat-code-text);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Connection notice (brand Notice callout) ---------- */
+.chat-composer-wrapper {
+  display: grid;
+  gap: 12px;
+}
+
+.chat-notice-banner,
+.chat-composer-retry {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 12px 12px 14px;
+  border-radius: var(--chat-radius-card);
+  background: var(--chat-ice-50);
+  color: var(--chat-strong);
+  font-size: 15px;
+}
+
+.chat-composer-retry span {
+  flex: 1;
+  font-weight: 600;
+}
+
+.chat-notice-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--chat-blue);
+}
+
+.chat-notice-status {
+  flex: 1;
+  margin: 0;
+  font-weight: 600;
+}
+
+.chat-notice-retry-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1.5px solid var(--chat-navy);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--chat-navy);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms var(--chat-ease), color 150ms var(--chat-ease);
+}
+
+.chat-notice-retry-btn:hover {
+  background: var(--chat-navy);
+  color: #ffffff;
+}
+
+.chat-notice-retry-btn:focus-visible {
+  outline: 2px solid var(--chat-focus);
+  outline-offset: 2px;
+}
+
+.chat-error-boundary-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.chat-error-boundary-layout {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+  justify-content: initial;
+  gap: 0;
+  padding: 0;
+  text-align: initial;
+}
+
+@media (max-width: 1023px) {
+  .chat-column {
+    padding-inline: 16px;
+  }
+  .chat-composer-row {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ---------- Column, welcome ---------- */
+.chat-column {
+  width: 100%;
+  max-width: 768px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+.chat-composer-row {
+  flex: none;
+  padding-bottom: 24px;
+}
+
+/* ScrollView supplies its scroller; the app column owns horizontal padding. */
+.chat-transcript [class~="cpk:overflow-y-auto"] > [class~="cpk:px-4"] {
+  padding-inline: 0;
+}
+
+.chat-transcript [class~="cpk:overflow-y-auto"] {
+  padding-top: 32px;
+}
+
+.chat-welcome-block {
+  display: grid;
+  gap: 40px;
+  padding-block: 8px 32px;
+}
+
+/* Hero banner, as on the website: photo, navy scrim, uppercase display type. */
+.chat-welcome-hero {
+  position: relative;
+  display: grid;
+  align-content: end;
+  gap: 12px;
+  min-height: clamp(240px, 38vh, 360px);
+  padding: 32px;
+  border-radius: var(--chat-radius-card);
+  overflow: hidden;
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(6, 19, 42, 0.15) 0%, rgba(6, 19, 42, 0.25) 40%, rgba(6, 19, 42, 0.78) 100%),
+    url("/images/home-hero.jpg") center / cover no-repeat,
+    var(--chat-navy);
+}
+
+.chat-welcome-kicker {
+  margin: 0;
+  color: var(--chat-ice);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.chat-shell .chat-welcome {
+  margin: 0;
+  padding: 0;
+  color: #ffffff;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-wrap: balance;
+  max-width: none;
+}
+
+.chat-welcome-lead {
+  margin: 0;
+  max-width: 48ch;
+  color: var(--chat-ice-200);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* Starter cards: ArticleCard anatomy (photo above, bold title, muted excerpt). */
+.chat-suggestions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 760px) {
+  .chat-suggestions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .chat-welcome-hero { padding: 24px; }
+}
+
+.chat-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-suggestion-frame {
+  display: block;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chat-navy);
+}
+
+.chat-suggestion-media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-position: center;
+  background-size: cover;
+  transition: transform 700ms var(--chat-ease);
+}
+
+.chat-suggestion:hover .chat-suggestion-media {
+  transform: scale(1.05);
+}
+
+.chat-suggestion-title {
+  margin-top: 4px;
+  color: var(--chat-strong);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  transition: color 150ms var(--chat-ease);
+}
+
+.chat-suggestion:hover .chat-suggestion-title {
+  color: var(--chat-blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chat-suggestion-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--chat-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.chat-suggestion:focus-visible {
+  outline: 2px solid var(--chat-focus);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* ---------- Composer: CopilotKit's CopilotChatInput, restyled through its own classes ---------- */
+.chat-composer {
+  pointer-events: auto;
+}
+
+/* The SDK centres the input in a 3xl column with its own gutter; the app column already does that. */
+.chat-composer > div {
+  max-width: none;
+  padding-inline: 0;
+}
+
+.chat-composer .copilotKitInput {
+  border: 1.5px solid var(--chat-border);
+  border-radius: 28px;
+  background: var(--chat-surface);
+  box-shadow: 0 6px 20px rgba(6, 19, 42, 0.08);
+  transition: border-color 150ms var(--chat-ease), box-shadow 250ms var(--chat-ease);
+}
+
+.chat-composer .copilotKitInput:focus-within {
+  border-color: var(--chat-blue);
+  box-shadow: 0 0 0 4px var(--chat-blue-100), 0 6px 20px rgba(6, 19, 42, 0.08);
+}
+
+.chat-composer textarea {
+  color: var(--chat-strong);
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.chat-composer textarea::placeholder {
+  color: var(--chat-muted);
+}
+
+/* Focus is shown by the input ring above. */
+.chat-composer textarea:focus-visible {
+  outline: 2px solid transparent;
+}
+
+.chat-composer .chat-send-button,
+.chat-send-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--chat-send);
+  color: var(--chat-on-send);
+  cursor: pointer;
+  transition: background-color 150ms var(--chat-ease), transform 150ms var(--chat-ease);
+}
+
+.chat-composer .chat-send-button:hover:not(:disabled),
+.chat-send-button:hover:not(:disabled) {
+  background: var(--chat-send-hover);
+}
+
+.chat-send-button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.chat-composer .chat-send-button[aria-label="Dừng"],
+.chat-composer .chat-send-button[aria-label="Dừng"]:hover:not(:disabled) {
+  background: var(--chat-stop);
+}
+
+.chat-composer .chat-send-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.chat-send-button:focus-visible {
+  outline: 2px solid var(--chat-focus);
+  outline-offset: 2px;
+}
+
+/* Scroll-to-bottom: round navy outline control, as on the brand's carousels. */
+.chat-scroll-bottom-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1.5px solid var(--chat-navy) !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  color: var(--chat-navy) !important;
+  box-shadow: 0 6px 20px rgba(6, 19, 42, 0.12) !important;
+}
+
+.chat-scroll-bottom-button:hover {
+  background: var(--chat-navy) !important;
+  color: #ffffff !important;
+}
+
+/* ---------- Header ---------- */
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  min-height: 56px;
+  padding-inline: 16px 24px;
+  border-bottom: 1px solid var(--chat-border);
+  background: var(--chat-canvas);
+  flex: none;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1023px) {
+  .chat-header {
+    height: 52px;
+    min-height: 52px;
+    padding-inline: 12px;
+  }
+}
+
+.chat-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--chat-strong);
+  cursor: pointer;
+  transition: background-color 150ms var(--chat-ease);
+}
+
+.chat-icon-button:hover {
+  background: var(--chat-hover);
+}
+
+.chat-icon-button:focus-visible {
+  outline: 2px solid var(--chat-focus);
+  outline-offset: 2px;
+}
+
+.chat-shell .chat-header-title {
+  margin: 0;
+  color: var(--chat-strong);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ---------- Sidebar (desktop) — navy, as the brand's menu/footer surfaces ---------- */
+.chat-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--chat-sidebar);
+  color: var(--chat-sidebar-text);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px 16px 20px;
+  box-sizing: border-box;
+}
+
+.chat-sidebar[hidden] {
+  display: none;
+}
+
+/* Mobile dialog (drawer) */
+.chat-mobile-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 85vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: var(--chat-sidebar);
+  color: var(--chat-sidebar-text);
+  box-shadow: 0 18px 48px rgba(6, 19, 42, 0.22);
+  overflow-y: auto;
+  z-index: 50;
+  box-sizing: border-box;
+}
+
+.chat-mobile-dialog::backdrop {
+  background: rgba(6, 19, 42, 0.45);
+}
+
+.chat-mobile-dialog[hidden] {
+  display: none;
+}
+
+.chat-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 20px;
+}
+
+.chat-sidebar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #ffffff;
+}
+
+.chat-sidebar-brand img {
+  display: block;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.chat-sidebar-brand-text {
+  display: grid;
+  gap: 3px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chat-sidebar-brand-text small {
+  color: var(--chat-ice);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.chat-new-chat-button:focus-visible {
+  outline: 2px solid var(--chat-ice);
+  outline-offset: 2px;
+}
+
+.chat-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.chat-new-chat-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--chat-navy);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 150ms var(--chat-ease), border-color 150ms var(--chat-ease), transform 150ms var(--chat-ease);
+}
+
+.chat-new-chat-button:hover {
+  background: var(--chat-ice-200);
+  border-color: var(--chat-ice-200);
+}
+
+.chat-new-chat-button:active {
+  transform: scale(0.97);
+}
+
+.chat-sidebar-footer {
+  margin: 0;
+  padding: 16px 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--chat-sidebar-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+/* The drawer holds the same brand header, nav and footer as the desktop sidebar. */
+.chat-mobile-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 20px;
+}
+
+.chat-mobile-dialog .chat-icon-button {
+  color: var(--chat-sidebar-text);
+}
+
+.chat-mobile-dialog .chat-icon-button:hover {
+  background: var(--chat-sidebar-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-icon-button,
+  .chat-new-chat-button,
+  .chat-send-button,
+  .chat-copy-btn,
+  .chat-notice-retry-btn,
+  .chat-composer {
+    transition: none;
+  }
+}

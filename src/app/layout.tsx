@@ -3,9 +3,11 @@ import localFont from "next/font/local";
 import { loadSite } from "@/site/load";
 import "@/ui/styles/tokens.css";
 import "@/ui/styles/ui.css";
+import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
+import "@/ui/chat/chat-theme.css";
 
-// Manrope — the typeface used on vietcombank.com.vn (SIL OFL 1.1, includes Vietnamese).
+// Manrope (SIL OFL 1.1, Vietnamese coverage), bundled locally so the app boots offline.
 const manrope = localFont({
   src: [{ path: "./fonts/Manrope.ttf", weight: "200 800", style: "normal" }],
   variable: "--font-manrope",

@@ -6,7 +6,7 @@
 
 **Architecture:** App shell sở hữu sidebar/header và layout; CopilotChat cung cấp agent/chat integration, custom chatView dùng SDK message/scroll renderers và app composer. Một controller C01 sở hữu transcript/draft/notice; UI không gọi model hoặc tạo agent loop mới. Sidebar C01 chỉ navigation shell, history có dữ liệu thuộc C02.
 
-**Tech Stack:** Baseline Next.js 16.3.8/React 19.3.0/TypeScript 6.0.3, plain scoped CSS, CopilotKit 1.77.0 imports v2 từ C01 Task 2; existing Vitest/Testing Library/Playwright. Không thêm Tailwind, icon library, font CDN hoặc component framework chỉ cho UI này.
+**Tech Stack:** Bun 1.4.2 package manager, Node 24 LTS runtime, baseline Next.js 16.3.8/React 19.3.0/TypeScript 6.0.3, plain scoped CSS, CopilotKit 1.77.0 imports v2 từ C01 Task 2; existing Vitest/Testing Library/Playwright. Không thêm Tailwind, icon library, font CDN hoặc component framework chỉ cho UI này.
 
 **Spec:** [Chat white UI design](../specs/2026-10-05-chat-white-ui-design.md), [C01 technical spec](../specs/2026-10-05-chat-foundation-design.md), [C01 implementation plan](2026-10-05-chat-foundation-implementation-plan.md). User yêu cầu viết plan ngày 2026-10-05; **user tự handle code, mình chỉ viết docs**.
 
@@ -85,7 +85,7 @@ expect(screen.getByRole("heading", { name: "Hackathon Starter Kit" })).toBeVisib
 
 Imports test: React JSX, `render/screen` từ Testing Library, `expect/test` từ Vitest và `@testing-library/jest-dom/vitest`; production imports đúng files trên. Computed geometry/theme thuộc Task 5 browser tests, không assert stylesheet strings bằng unit test.
 
-- [ ] **Step 2: Run RED.** `pnpm test -- tests/chat/layout.test.tsx`; fail vì missing UI exports, không accept zero tests found.
+- [ ] **Step 2: Run RED.** `bun run test -- tests/chat/layout.test.tsx`; fail vì missing UI exports, không accept zero tests found.
 - [ ] **Step 3: Implement shell và stylesheet.** Root `data-chat-theme="light"`; slot roots stable để readiness change không đổi layout.
 
 ```css
@@ -123,7 +123,7 @@ Imports test: React JSX, `render/screen` từ Testing Library, `expect/test` t�
 
 Implement JSX wrappers using these classes, main landmark only once. Import order in layout: SDK v2 styles → existing globals → chat-theme.css; `lang="vi"`, title starter. Existing global `h1`/`.page-shell` landing rules không được áp typography lớn vào header; scope landing styles hoặc reset header trong chat-theme. Giữ `/playground` và fixture pages đọc được, không xóa unrelated CSS.
 
-- [ ] **Step 4: GREEN.** `pnpm test -- tests/chat/layout.test.tsx` và `pnpm check`; browser geometry được kiểm tra ở Task 5.
+- [ ] **Step 4: GREEN.** `bun run test -- tests/chat/layout.test.tsx` và `bun run check`; browser geometry được kiểm tra ở Task 5.
 - [ ] **Step 5: Commit exact Task 1 files.** `git commit -m "feat: add white chat theme and viewport layout"` sau stage đúng files.
 
 ## Task 2: Sidebar/header và mobile dialog
@@ -156,7 +156,7 @@ expect(screen.queryByText("Library")).not.toBeInTheDocument();
 
 Imports `render/screen/fireEvent` từ existing Testing Library, `vi/expect/test` từ Vitest và jest-dom/vitest; không thêm user-event package. Kiểm tra desktop nav có label, mobile modal không đồng thời render một nav duplicate, no fake history. `pending=true` không disable New chat chỉ vì model đang running.
 
-- [ ] **Step 2: Run RED.** `pnpm test -- tests/chat/navigation.test.tsx`.
+- [ ] **Step 2: Run RED.** `bun run test -- tests/chat/navigation.test.tsx`.
 - [ ] **Step 3: Implement nav với native dialog.** Desktop dùng aside/nav 280px; mobile dùng `<dialog aria-label="Điều hướng hội thoại">`, showModal/close trong effect khi open/breakpoint đổi. Một instance sidebar content cho breakpoint hiện tại; desktop hidden không để tabbable controls. Native cancel/backdrop gọi onClose; đóng desktop transition không làm mất focus tới hidden child.
 
 ```tsx
@@ -168,7 +168,7 @@ Imports `render/screen/fireEvent` từ existing Testing Library, `vi/expect/test
 
 `desktop = useDesktopViewport()` trong SidebarShell; props được destructure ở component. Mobile trigger giữ ref ở workspace/header; sau dialog close trả focus trigger nếu còn mounted. Đóng drawer khi sang desktop; từ desktop xuống mobile mặc định closed. Escape là UI close, không gửi message. Toggle/open/close buttons SVG outline + labels, 44px targets; header 56/52px, no dropdown không có behavior.
 
-- [ ] **Step 4: GREEN + types.** Test command trên + `pnpm check`; drawer browser behavior thuộc Task 5.
+- [ ] **Step 4: GREEN + types.** Test command trên + `bun run check`; drawer browser behavior thuộc Task 5.
 - [ ] **Step 5: Commit.** `git commit -m "feat: add responsive chat navigation and drawer"`.
 
 ## Task 3: SDK chatView, transcript và message actions
@@ -207,7 +207,7 @@ expect(screen.queryByText("RAW_SECRET_ERROR")).not.toBeInTheDocument();
 
 Test literal user text không render HTML executable; SDK Markdown/code còn đọc được; Copy truyền content thật, feedback không thêm message. Hide edit/regenerate/Inspector/thumbs/voice controls; streaming update không remount input hoặc nhân đôi messages.
 
-- [ ] **Step 2: RED.** `pnpm test -- tests/chat/transcript.test.tsx tests/chat/copy-action.test.tsx`.
+- [ ] **Step 2: RED.** `bun run test -- tests/chat/transcript.test.tsx tests/chat/copy-action.test.tsx`.
 - [ ] **Step 3: Implement stable message projection/context/Copy.** Module-level message components giữ identity qua streaming renders. Reuse SDK Markdown/user renderer, own toolbar chỉ Copy; không giữ message state riêng.
 
 ```tsx
@@ -224,7 +224,7 @@ Content white/gray, user căn phải; no avatar/bubble lớn cho assistant. Copy
 
 Create CSS user/assistant wrappers theo constraints: message gap 24px, user bubble width/padding/radius, long tokens overflow-wrap anywhere; assistant text không rounded bubble. Toolbar hit targets 44px, visible keyboard focus; copy feedback không nới conversation width.
 
-- [ ] **Step 4: GREEN.** Commands RED trên + `pnpm check`; Task 3 không import ChatComposer/WhiteChatView của Task 4, nên kiểm chứng độc lập được.
+- [ ] **Step 4: GREEN.** Commands RED trên + `bun run check`; Task 3 không import ChatComposer/WhiteChatView của Task 4, nên kiểm chứng độc lập được.
 - [ ] **Step 5: Commit self-contained files.** `git commit -m "feat: customize chat message presentation and copy actions"`.
 
 ## Task 4: Composer, notice và workspace readiness
@@ -259,7 +259,7 @@ expect(port.requests).toHaveLength(1);
 
 `port = createControlledChatPort()` và `controller = createChatController({port:port.port,uuid:()=>crypto.randomUUID(),available:true})` đầu test; imports C01 helper/controller. Thêm Shift+Enter giữ newline, >8000 input/blank không dispatch, pending Send lock/Stop, repeated provider+chat errors vẫn một status notice, readiness Retry không gọi run, New chat abort/wait/reset theo controller.
 
-- [ ] **Step 2: RED.** `pnpm test -- tests/chat/composer.test.tsx tests/chat/workspace.test.tsx`.
+- [ ] **Step 2: RED.** `bun run test -- tests/chat/composer.test.tsx tests/chat/workspace.test.tsx`.
 - [ ] **Step 3: Implement composer bằng native textarea/buttons.** Controlled value từ snapshot, autosize sau input/layout effect (set height auto, clamp scrollHeight 48..200), stable element key. maxLength/input validation 8000 từ CHAT_LIMITS; không clear draft thủ công sau submit. IME ref từ composition start/end cộng nativeEvent.isComposing; disabled Send khi !available/pending/blank. While running render Stop, khi stop teardown disable repeated Stop; New chat vẫn có thể abort run.
 
 ```tsx
@@ -324,7 +324,7 @@ const connectedChat = <CopilotKit runtimeUrl="/api/copilotkit" agent="default" u
 
 Actual useAgent/useCopilotKit hooks và bridge attachment nằm dưới provider; SDK discovery ready mới attach port/setAvailable, không đọc agent từ browser env. Readiness fetch có AbortController/stale-request fence; controller UUID khởi tạo client-safe, không hydrate mismatch. No-env transcript dùng noninteractive scroller wrapper; không gọi SDK hooks ngoài provider. ErrorBoundary fallback đi qua cùng shell/notice owner, không render hai copies của notice. Workspace caller New chat giữ UI action fence trong lúc await controller.newChat; chạy model vẫn cho New chat, chỉ chặn reset lặp. Unmount abort/readiness cleanup theo C01.
 
-- [ ] **Step 6: GREEN + check.** Unit commands trên, transcript/copy tests Task 3 và `pnpm check`; chưa claim browser keyboard/mobile geometry đã pass.
+- [ ] **Step 6: GREEN + check.** Unit commands trên, transcript/copy tests Task 3 và `bun run check`; chưa claim browser keyboard/mobile geometry đã pass.
 - [ ] **Step 7: Commit Task 4/integration.** `git commit -m "feat: integrate white chat composer and connection states"`.
 
 ## Task 5: Actual SDK visual/interaction acceptance và handoff
@@ -350,7 +350,7 @@ await expect(page.getByRole("button", { name: "Mở điều hướng" })).toBeFo
 
 Đặt accessible toggle label **`Mở điều hướng`**, close **`Đóng điều hướng`** và desktop collapse **`Thu gọn điều hướng`** ở Task 2; không regex tùy tiện chọn nhầm New chat. Assert textarea/Send/Stop contrast và computed theme surfaces sau gửi message, bao gồm code block; snapshot chưa mount SDK không đủ chứng minh CSS overrides.
 
-- [ ] **Step 2: Run RED browser suite.** Build và harness theo C01: `pnpm build`, rồi `pnpm exec playwright test --project=chat-no-env --project=chat-live --project=chat-production`. Failure đúng missing UI behaviors, không accept no tests.
+- [ ] **Step 2: Run RED browser suite.** Build và harness theo C01: `bun run build`, rồi `bun run playwright test --project=chat-no-env --project=chat-live --project=chat-production`. Failure đúng missing UI behaviors, không accept no tests.
 - [ ] **Step 3: Sửa acceptance failures trong UI boundaries.** Check drawer Tab/Shift+Tab trap và restore, collapse cột main vẫn center, notice single, last message trước composer top, long text/code local scroll, clipboard/IME/Enter/Shift+Enter, streaming scroll detach không giật/focus không nhảy. Add screenshots khi failure để reviewer thấy geometry; test pass không cần ghi screenshots fixture vào product.
 
 ```ts
@@ -368,12 +368,12 @@ Kiểm tra keyboard-on-mobile không bằng desktop viewport một mình: Playwr
 - [ ] **Step 4: Run release checks một lần sau sửa.**
 
 ```powershell
-pnpm check
-pnpm test
-pnpm domain:validate
-pnpm build
-pnpm exec playwright test --project=chat-no-env --project=chat-live --project=chat-production
-pnpm e2e --project=baseline
+bun run check
+bun run test
+bun run domain:validate
+bun run build
+bun run playwright test --project=chat-no-env --project=chat-live --project=chat-production
+bun run e2e --project=baseline
 git diff --check
 ```
 

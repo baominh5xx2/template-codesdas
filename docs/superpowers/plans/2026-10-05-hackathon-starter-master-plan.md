@@ -1,5 +1,7 @@
 # Hackathon Starter Kit — Master Implementation Plan
 
+> **Scope update — 2026-10-06:** pgEdge MCP chỉ dành cho coding agent khi phát triển; app không kết nối, đăng ký DB tools hoặc nhận token pgEdge. Mọi bước/gate/adapter app-to-pgEdge trong tài liệu cũ này hết hiệu lực, không triển khai. App dùng Drizzle/repositories cho DB; C03 là custom business MCP server trong Next.js tại `/api/mcp/business`. Theo [PRD hiện hành](../../platform-build-spec.md), business MCP và coding-agent pgEdge là hai luồng riêng.
+
 **Execution update — user directive 2026-10-05:** Starter độc lập. Build/test/demo không cần API key hoặc tài liệu của BTC; không đọc repo thi hay cấu hình của họ. Demo adapter là default rõ nhãn cho local development; optional generic gateway adapter để cắm sau, không có live-AI gate bắt buộc trong baseline. Thiếu external gateway là unavailable, không phải lý do dừng triển khai. Production vẫn không tự bật fixture.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -34,7 +36,7 @@
 
 ### Quy ước execution chung
 
-Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies npm cài bằng --save-exact, commit pnpm-lock.yaml; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
+Mọi đường dẫn Files bên dưới tương đối với repo root trên. Chạy PowerShell tại root đó. Đọc master plan và spec trước mỗi phase. Dependencies từ npm registry cài bằng bun add --exact, commit bun.lock; version SDK và image được ghi sau khi compatibility checks thật pass, không coi version latest là compatibility guarantee.
 
 Test red phải thất bại vì behavior/import chưa triển khai, không phải vì thiếu Docker/env ngoài task. Unit tests dùng fakes có nhãn fixture; integration tests cần services được khởi động rõ ràng. Baseline chạy bằng demo/fixture adapter, không cần external AI credentials hoặc tài liệu BTC. Generic gateway config là optional extension; không có live-AI acceptance gate bắt buộc. Không đọc .env/key files ở repo thi, không ghi secret vào output.
 
@@ -181,7 +183,7 @@ UIBlock has {id,type,props}; z.discriminatedUnion("type", schemas) is canonical.
 ## Build decisions that fill design details
 
 - Dataset P0 resource limits: 50000 rows, 100 columns, 1000000 nonempty cells; larger imports return resource_limit. Analytics gathers the complete immutable dataset before computing globals.
-- Node version must meet Next.js and pinned SDK engines; record actual Node/pnpm versions in docs/dependencies.md. No package version guessed from this plan.
+- Node version must meet Next.js and pinned SDK engines; record actual Node/Bun versions in docs/dependencies.md. No package version guessed from this plan.
 - Vitest for pure/integration behavior; Playwright for end-to-end user flows. Import-boundary lint runs in check; tests do not mirror file layout.
 - Postgres tables use text IDs generated server-side, UTC timestamps and indexed workspace_id. Sessions store token hashes; trusted-operator flag is server-owned.
 - P0 extraction initially implements OpenAI chat-compatible AI transport only after doctor verifies that protocol. Unsupported protocol produces a typed unsupported error; implement another AI transport only if official gateway documentation confirms it is needed. Do not enable a fallback provider.

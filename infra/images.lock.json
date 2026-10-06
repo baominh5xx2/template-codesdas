@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-10-06",
+  "platformTested": "linux/amd64",
+  "postgres": {
+    "version": "18.6",
+    "image": "postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722"
+  },
+  "pgedgeMcp": {
+    "version": "1.1.0",
+    "discoveryTag": "ghcr.io/pgedge/postgres-mcp:latest",
+    "image": "ghcr.io/pgedge/postgres-mcp@sha256:38c1c7b7c1ec5b1b64a1da4a2f24be3efef2ac235503bd2e6ff129954e471efd"
+  },
+  "node": {
+    "version": "24.21.0",
+    "image": "node:24-bookworm-slim@sha256:0e0ff40c39bc087845bfb27465a0df4ea419520094bc35842ff83dd8cbe6f9b6"
+  },
+  "bun": {
+    "version": "1.4.2",
+    "image": "oven/bun:1.4.2@sha256:9114c058aeae42162ee16dd5084b95fe9473970bb6bcb5b232ab1630f0546895"
+  }
+}

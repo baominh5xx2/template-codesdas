@@ -4,3 +4,5 @@ export const InputFieldSchema = z.object({ name: z.string(), label: z.string(), 
 export type InputField = z.infer<typeof InputFieldSchema>;
 export const DomainManifestSchema = z.object({ id: z.string(), version: z.number().int().positive(), title: z.string(), description: z.string(), branding: z.object({ name: z.string(), accent: z.string(), logoUrl: HttpUrlSchema.optional() }), surface: z.literal("workspace"), inputFields: z.array(InputFieldSchema), examples: z.array(z.object({ label: z.string(), input: JsonValueSchema })), toolNames: z.array(z.string()) });
 export type DomainManifest = z.infer<typeof DomainManifestSchema>;
+export const DomainReferenceSchema = z.object({ id: z.string().min(1), version: z.number().int().positive() });
+export type DomainReference = z.infer<typeof DomainReferenceSchema>;

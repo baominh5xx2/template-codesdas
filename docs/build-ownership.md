@@ -69,6 +69,10 @@ src/
 
 Tên thư mục mới không có nghĩa là đã có `ProblemTemplate` runtime contract. MVP dùng `DomainDefinition`, `WorkflowDefinition`, `PresentationContext` và `UIBlock` hiện có; chỉ thêm abstraction mới khi có ít nhất hai consumer thật và hai owner thống nhất.
 
+**Chat-first C05 design — 2026-10-06:** [Domain Plug-in & Artifact Bridge spec](superpowers/specs/2026-10-06-domain-artifact-bridge-design.md) đề xuất mở rộng DomainDefinition hiện có: workflow optional, C03 business tool registrations, requirements/rules và typed result binding. Platform sở hữu resolution/policy/publication/read APIs; template owner vẫn viết schema/prompt/tools/presenter và FE composition. Spec đang chờ review, không phải code đã có. C05 chỉ dựng minimal result handoff cho pack mẫu; full 19 generic blocks thuộc X07.
+
+**C05 integration gate — 2026-10-06:** C05's publication builder validates C03 tool output and pack-derived values before calling `DomainResultPublicationPort`; C03/model receives the original tool output unchanged after successful publication. C02 must provide the thread-pinned pack identity and authoritative scope/run/tool-call correlation, then implement that port as one atomic run/artifact/binding/ResultView/outbox transaction with publication-key idempotency. C02 also owns transcript/history, event delivery/replay, and scoped read routes. The current C05 checkout has no C02 persistence/thread adapter, so routes and history hydration remain gated on that integration. Technical pre-commit failure is projected to the exact chat text `Chưa kết nối`. See [domain handoff](../src/core/domains/README.md) and [artifact publication boundary](../src/core/artifacts/README.md).
+
 ## Làm song song ngay bây giờ
 
 | Platform làm | Bạn làm |

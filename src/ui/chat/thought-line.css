@@ -1,0 +1,82 @@
+/* Adapted from React Bits "Thought Line" (reactbits.dev): breathing glyph, shimmering label, timer. */
+.thought-line {
+  --tl-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --tl-color: var(--chat-strong, #06132a);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  margin-block: 4px 12px;
+  color: var(--tl-color);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.thought-line__glyph {
+  display: inline-flex;
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  color: var(--chat-blue, #004de8);
+  animation: thought-line-breathe 1.6s var(--tl-ease-in-out) infinite;
+}
+
+.thought-line__glyph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.thought-line__text {
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--tl-color) 45%, transparent) 30%,
+    var(--tl-color) 50%,
+    color-mix(in srgb, var(--tl-color) 45%, transparent) 70%
+  );
+  background-size: 250% 100%;
+  background-position: 125% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: thought-line-shimmer 1.8s linear infinite;
+}
+
+.thought-line__timer {
+  color: var(--chat-muted, #5b6679);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes thought-line-shimmer {
+  to {
+    background-position: -125% 0;
+  }
+}
+
+@keyframes thought-line-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thought-line__glyph,
+  .thought-line__text {
+    animation: none;
+  }
+
+  .thought-line__text {
+    color: var(--tl-color);
+    -webkit-text-fill-color: currentColor;
+    background: none;
+  }
+}

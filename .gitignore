@@ -6,6 +6,7 @@
 # Dependencies and builds
 node_modules/
 .next/
+.next-e2e-*/
 dist/
 coverage/
 *.tsbuildinfo
@@ -15,6 +16,15 @@ coverage/
 uploads/
 *.log
 
+# Git worktrees
+worktree/
+worktrees/
+.worktrees/
+
 # OS and editor files
 .DS_Store
 Thumbs.db
+
+!.env.docker.example
+playwright-report/
+test-results/

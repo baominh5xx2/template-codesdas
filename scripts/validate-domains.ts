@@ -6,7 +6,7 @@ import { domain as datasetAnalysis } from "../src/domains/examples/dataset-analy
 import { domain as researchReport } from "../src/domains/examples/research-report/index.server";
 import { domain as riskAnalyzer } from "../src/domains/examples/risk-analyzer/index.server";
 
-const catalog = { sourceProfileIds: new Set(createSourceCatalog().list().map(profile => profile.id)), toolNames: new Set<string>(), artifactSchemas: createArtifactRegistry() };
+const catalog = { sourceProfileIds: new Set(createSourceCatalog().list().map(profile => profile.id)), toolNames: new Set<string>(), registeredDomainIdentities: new Set<string>(), artifactSchemas: createArtifactRegistry() };
 const ids = new Set<string>();
 const domains = [documentReview, datasetAnalysis, researchReport, riskAnalyzer];
 for (const domain of domains) {

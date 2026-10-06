@@ -1,14 +1,14 @@
 # C01 — Chat Foundation Design Spec
 
-Ngày: **2026-10-05**. Trạng thái: **user đã cho chuyển sang writing-plans; plan C01 đã viết; chưa triển khai**.
+Ngày: **2026-10-05**, cập nhật **2026-10-06**. Trạng thái: **C01 đã triển khai và đạt controlled-provider acceptance; durable history thuộc C02**.
 
-PRD: [AI-native Chat Core](../../platform-build-spec.md), phần C01 và notice/error policy ở mục 4. Đây là technical spec cho **C01**, không thay thế specs của C02–C05. User đã yêu cầu viết plan từ spec này; [implementation plan C01](../plans/2026-10-05-chat-foundation-implementation-plan.md) ghi chi tiết task/interfaces/checks, chưa execute.
+PRD: [AI-native Chat Core](../../platform-build-spec.md), phần C01 và notice/error policy ở mục 4. Đây là technical spec cho **C01**, không thay thế specs của C02–C05. [Implementation plan C01](../plans/2026-10-05-chat-foundation-implementation-plan.md) đã triển khai với actual CopilotKit v2 UI/runtime và controlled OpenAI provider. Check, 123 unit/integration tests, domain validation, build, 21 chat browser cases và 1 baseline case đạt. Browser validation dùng no-env port 3190 vì Docker local chiếm default 3100; defaults vẫn giữ nguyên. Chưa kiểm tra live external model; transcript/runner ephemeral, chưa có tools/MCP trong chat.
 
 ## 1. Ý định và kết quả
 
 User muốn một starter độc lập có core chat AI kiểu ChatGPT, dùng CopilotKit và ráp domain sau. Bản đầu phục vụ **một người local**, chưa cần login hoặc multi-tenant. Khung chat hoạt động được về giao diện khi chưa có model, với notice chính xác **`Chưa kết nối`**. Mọi technical failure dùng cùng notice; không in raw errors lên UI.
 
-C01 tạo vertical slice: **mở `/` → gửi text → assistant stream → hoàn tất**, cùng Stop, manual Retry và New chat trong phiên. Không yêu cầu database để boot. C02 bổ sung durable history/sidebar; C03 bổ sung tools/context/results; C04 dùng official MCP SDK và pgEdge local; C05 bổ sung domain packs.
+C01 tạo vertical slice: **mở `/` → gửi text → assistant stream → hoàn tất**, cùng Stop, manual Retry và New chat trong phiên. Không yêu cầu database để boot. C02 bổ sung durable history/sidebar; C03 bổ sung custom business MCP tools qua official SDK, context và inline results; C05 bổ sung domain packs. Theo quyết định user ngày 2026-10-06, C04 cũ không còn là phase riêng; pgEdge local trong Compose chỉ phục vụ coding agent, không thuộc app runtime.
 
 Repo duy nhất: `E:/thucchienai/hackathon-starter-kit`, origin `baominh5xx2/template-codesdas`. Không đọc hoặc thao tác repo thi `aitc2026-team-939-triplepeek`, secrets, tài liệu BTC hoặc cấu hình của nó.
 

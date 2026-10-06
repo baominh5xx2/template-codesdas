@@ -4,6 +4,7 @@ import type { Scope, SourceLocator } from "@/contracts/common";
 import type { Evidence } from "@/contracts/evidence";
 import type { NormalizedDocument, SearchHit, SourceDocument, SourceProfile, SourceRef } from "@/contracts/sources";
 import type { RunSnapshot, UploadRecord } from "@/contracts/runs";
+export type { DomainResultPublicationPort } from "@/core/artifacts/definition";
 
 export interface RunRepository {
   create(scope: Scope, domainId: string, domainVersion: number, input: import("@/contracts/common").JsonValue, steps?: import("@/contracts/common").StepState[]): Promise<RunSnapshot>;

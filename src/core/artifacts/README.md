@@ -1,0 +1,9 @@
+# Artifact publication boundary
+
+`publishDomainToolResult(input, port)` is the C05 publication builder. It takes a C03-validated tool output, a validated pack binding, and authoritative server context, then validates all data and references before the publication port can observe a candidate. The business output returned to the caller is the original C03 value; the parsed value is used only for the typed artifact, run snapshot, and `ResultView`.
+
+The `DomainResultPublicationPort` is an ownership boundary, not a local persistence implementation. C02 supplies it at server composition time and commits the candidate's completed snapshot, artifact, thread-scoped binding, immutable result view, and outbox record in one transaction. The port must enforce the unique publication key and semantic fingerprint rules documented in `definition.ts`. It must return existing references for an exact replay and reject changed output for the same key without partial writes.
+
+The committed outbox event is `domain_result`, correlated by `publicationId`, `threadId`, `agentRunId`, and `toolCallId`, with pinned pack identity/version and `businessRunId`/artifact references. C02 owns delivery and persistence; C05 owns the candidate contract and pre-port validation. Scoped result/artifact read routes and history hydration are gated on C02's persistence and authorization adapter and are not present in this checkout.
+
+Validation or publication failure before commit propagates to C03, which presents technical failure as exactly `Chưa kết nối`. A post-commit preview/read failure is a read-side unavailable state and must not roll back a completed business operation. C03/model receives the unchanged business tool output after successful publication; artifact identifiers and result views travel through the C02 event/read path, not as altered tool output.

@@ -26,7 +26,7 @@ it("keeps domain validation dependent on injected source, tool, and artifact cat
     sources: [], requiredArtifactKinds: [], workflow: { steps: [], requiredArtifactKinds: [] },
   };
   expect(() => validateDomain(domain as never, {
-    sourceProfileIds: new Set(), toolNames: new Set(), artifactSchemas: {
+    sourceProfileIds: new Set(), toolNames: new Set(), registeredDomainIdentities: new Set(), artifactSchemas: {
       has: () => true, register: () => undefined, parse: value => value as never,
     },
   })).not.toThrow();
