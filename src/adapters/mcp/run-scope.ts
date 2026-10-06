@@ -30,9 +30,10 @@ export async function createBusinessRunScope(options: {
   const controller = new AbortController();
   const deadline = now() + BUSINESS_RUN_LIMITS.runMs;
   const { client, transport } = createBusinessClient(options.config, controller.signal, options.fetch);
-  let closed: Promise<void> | undefined; let failed = false;
+  let closed: Promise<void> | undefined;
+  let terminalReason: "cancelled" | "failed" | undefined;
   let tail = Promise.resolve(); let calls = 0;
-  const externalAbort = () => { controller.abort(); void close(); };
+  const externalAbort = () => { void cancel(); };
   options.signal.addEventListener("abort", externalAbort, { once: true });
   const runTimer = setTimeout(() => { fail(new BusinessMcpFailure("run_timeout")); }, BUSINESS_RUN_LIMITS.runMs);
   function close(): Promise<void> {
@@ -41,8 +42,14 @@ export async function createBusinessRunScope(options: {
     closed = client.close().catch(() => {});
     return closed;
   }
+  function cancel(): Promise<void> {
+    // Latch the reason before aborting shared resources: queued siblings may
+    // immediately observe the controller abort with their own signals still live.
+    terminalReason ??= "cancelled";
+    return close();
+  }
   function fail(failure: BusinessMcpFailure): BusinessMcpFailure {
-    if (!failed && !options.signal.aborted) { failed = true; try { options.onFailure?.(failure); } catch { /* A sink must not break cancellation or leak its error. */ } }
+    if (!terminalReason && !options.signal.aborted) { terminalReason = "failed"; try { options.onFailure?.(failure); } catch { /* A sink must not break cancellation or leak its error. */ } }
     controller.abort(); void close(); return failure;
   }
   client.onclose = () => { if (!controller.signal.aborted) fail(new BusinessMcpFailure("disconnected")); };
@@ -80,7 +87,7 @@ export async function createBusinessRunScope(options: {
         signal.throwIfAborted();
         return decodeBusinessResult(registration, result);
       } catch (error) {
-        if (options.signal.aborted || execution.abortSignal?.aborted) { await close(); throw new BusinessMcpFailure("cancelled"); }
+        if (terminalReason === "cancelled" || options.signal.aborted || execution.abortSignal?.aborted) { await cancel(); throw new BusinessMcpFailure("cancelled"); }
         throw fail(error instanceof BusinessMcpFailure ? error : new BusinessMcpFailure(signal.aborted ? "cancelled" : "tool_failed"));
       } finally { clearTimeout(timer); release?.(); }
     });

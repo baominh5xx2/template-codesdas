@@ -114,6 +114,18 @@ it("treats the agent execute AbortSignal as interruption and closes once", async
   await vi.waitFor(() => expect(observed).toBeDefined()); abort.abort(); await rejection;
   expect(observed!.aborted).toBe(true); expect(failure).not.toHaveBeenCalled(); await scope.close(); expect(close).toHaveBeenCalledTimes(1);
 });
+it("latches interruption across sibling executions with different AbortSignals", async () => {
+  let observed: AbortSignal | undefined;
+  const handler = vi.spyOn(calculateBudgetTool, "execute").mockImplementation(async (_args, context) => { observed = context.signal; await new Promise<void>((resolve) => context.signal.addEventListener("abort", () => resolve(), { once: true })); return { currency: "USD", totalMinor: 0, remainingMinor: 10, overBudget: false, itemCount: 0 }; });
+  const failure = vi.fn(); const scope = await createBusinessRunScope({ config, threadId: "t", runId: "r", signal: new AbortController().signal, fetch: protocolFetch(), onFailure: failure });
+  const close = vi.spyOn(scope.client, "close"); const firstAbort = new AbortController(); const siblingAbort = new AbortController();
+  const execute = (await scope.provider.tools()).business__calculate_budget.execute!;
+  const first = execute(input, { toolCallId: "first", messages: [], abortSignal: firstAbort.signal }); const firstRejected = expect(first).rejects.toThrow("Chưa kết nối");
+  const sibling = execute(input, { toolCallId: "queued", messages: [], abortSignal: siblingAbort.signal }); const siblingRejected = expect(sibling).rejects.toThrow("Chưa kết nối");
+  await vi.waitFor(() => expect(observed).toBeDefined()); firstAbort.abort(); await firstRejected; await siblingRejected;
+  expect(siblingAbort.signal.aborted).toBe(false); expect(observed!.aborted).toBe(true); expect(handler).toHaveBeenCalledTimes(1);
+  expect(failure).not.toHaveBeenCalled(); await scope.close(); expect(close).toHaveBeenCalledTimes(1);
+});
 it.each(["error", "invalid", "disconnect"] as const)("sanitizes %s before returning output and closes once", async (mode) => {
   const real = protocolFetch(); let calls = 0;
   const fetch = vi.fn<typeof globalThis.fetch>(async (url, init) => {
