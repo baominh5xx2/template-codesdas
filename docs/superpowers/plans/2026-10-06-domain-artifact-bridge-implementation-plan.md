@@ -35,7 +35,7 @@
 - Test: `tests/contracts/domain-pack.test.ts`
 
 **Interfaces:**
-- Add `DomainResultBinding` with `id`, `toolName`, `toolVersion`, `outputSchema`, `artifactKind`, `artifactVersion`, `inputSchema`, `toRunInput(output): JsonValue`, and `toArtifactDraft(output): ArtifactDraft<JsonValue>`; callbacks are server-only and are never serialized in `DomainManifest`.
+- Add `DomainResultBinding` with `id`, `toolName`, exact semver `toolVersion` (for example `"1.0.0"`), `outputSchema`, `artifactKind`, integer `artifactVersion`, `inputSchema`, `toRunInput(output): JsonValue`, and `toArtifactDraft(output): ArtifactDraft<JsonValue>`; callbacks are server-only and are never serialized in `DomainManifest`.
 - Extend `DomainDefinition` with optional `tools`, `resultBindings`, `requirements`, and `rules`; make `workflow` optional while preserving the existing workflow pack shape.
 - `validateDomain(domain, catalog)` continues validating workflow packs and validates chat packs through registered tool names and artifact schemas. A required artifact kind must have either a workflow producer or a matching binding.
 - Reject duplicate binding IDs, duplicate tool/version bindings, unregistered tools/sources/artifact schemas, conflicting pack identity/version registrations, and unsupported output producers with stable error codes.
@@ -57,7 +57,7 @@
 - Modify: `src/contracts/domains.ts`
 
 **Interfaces:**
-- `DomainReferenceSchema` is `{ id: string; version: number }`.
+- `DomainReferenceSchema` is `{ id: string; version: number }` for pack identity. Tool reference versions are exact C03 semver strings (`"1.0.0"`), not pack versions.
 - `resolveDomainForNewThread({ active, catalog })` returns `{ kind: "generic" }` when both active env values are unset; returns `{ kind: "domain", reference, manifest }` only for a fully registered active pack; partial/unknown config throws a safe coded error and never selects another pack.
 - `resolveDomainForExistingThread({ pinned, active, catalog })` returns `readOnly` when the saved version is available but differs from active, and `available` only for an exact ID/version match; it never rebinds a thread.
 - `projectDomainForAgent(domain, { registeredToolNames, deploymentAllowlist, readyFeatures })` returns server-owned `systemPrompt`, exact permitted tool names, public reference, and readiness; tools are the intersection of pack registration, server catalog, allowlist, and readiness.
@@ -105,7 +105,7 @@
 - Modify: `src/domains/catalog.client.ts`
 
 **Interfaces:**
-- Both packs reference the stable C03 exposed tool `business__calculate_budget@1` and shared `budget.summary@1` schema; they do not define handlers or call an MCP client.
+- Both packs reference the stable C03 exposed tool `business__calculate_budget@1.0.0` and shared `budget.summary@1` schema; they do not define handlers or call an MCP client.
 - Budget Review presenter returns two metric blocks and an over-budget warning only when `overBudget` is true. Budget Compact returns a Markdown summary. Both use real validated tool output and empty source/evidence arrays.
 - Catalog registration is explicit and validates against the C03 tool catalog at composition time; it does not silently advertise an unavailable tool.
 
