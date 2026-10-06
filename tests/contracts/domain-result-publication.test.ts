@@ -13,7 +13,7 @@ const domain = {
   inputSchema: outputSchema,
   requiredArtifactKinds: ["budget.summary"], systemPrompt: "", sources: [],
   resultBindings: [],
-  present: ({ snapshot }: { snapshot: { artifacts: { id: string }[] } }) => [{ id: "total", type: "metric" as const, props: { label: "Total", value: 10, sourceIds: [] } }],
+  present: () => [{ id: "total", type: "metric" as const, props: { label: "Total", value: 10, sourceIds: [] } }],
 };
 const binding = {
   id: "calculate-budget", toolName: "business__calculate", toolVersion: "1.0.0",

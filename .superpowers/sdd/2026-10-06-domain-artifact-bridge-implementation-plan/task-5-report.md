@@ -18,6 +18,10 @@ C02 transaction/thread persistence is absent from this C05 checkout. Scoped resu
 - `bun run build` — failed because Turbopack could not resolve `next/package.json` from this worktree's `src/app`; the local `node_modules/next` dependency is unavailable or broken.
 - `git diff --check` — passed.
 
+## Follow-up cleanup
+
+Removed two unused locals from the contract test files without changing behavior. The subsequent `bun run check` passed, including Next route type generation, TypeScript, and ESLint, with no warnings. This successful rerun supersedes the earlier ESLint failure above; the separate build dependency resolution failure remains as recorded.
+
 ## Commit
 
 `docs(domains): document C02 C03 integration boundary`

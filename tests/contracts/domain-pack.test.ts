@@ -14,7 +14,6 @@ const manifest = (id = "chat-pack", version = 1, toolNames = ["business__calcula
   inputFields: [], examples: [], toolNames,
 });
 const catalog = (): DomainValidationCatalog => {
-  const artifactSchemas = { has: (kind: string, version: number) => kind === "budget.summary" && version === 1, register: () => undefined, parse: (value: unknown) => value as Artifact<unknown> };
   return { sourceProfileIds: new Set(["approved-source"]), toolNames: new Set(), registeredTools: new Map([["business__calculate@1.0.0", { name: "business__calculate", version: "1.0.0" }]]), registeredDomainIdentities: new Set(), artifactSchemas: { has: (kind: string, version: number) => kind === "budget.summary" && version === 1, register: () => undefined, parse: (value: unknown) => value as Artifact<unknown> } };
 };
 const binding = (overrides: Partial<NonNullable<DomainDefinition["resultBindings"]>[number]> = {}) => ({
