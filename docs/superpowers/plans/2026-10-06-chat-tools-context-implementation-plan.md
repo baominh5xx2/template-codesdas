@@ -21,6 +21,7 @@
 - Validate tool inputs and outputs on both sides of the MCP boundary. Use allowlists; unknown or disabled tools fail closed. Only validated structured output reaches model or UI.
 - Technical failures exposed in chat must be exactly `Chưa kết nối`. Do not expose tokens, headers, stacks, raw MCP messages/errors, or tool payloads in notices/logs. Latch/suppress failures before model/UI output; never convert a failure to a successful tool result or fixture answer.
 - User Stop is `interrupted`, not failed/completed. Abort in-flight client/handler work, suppress late output, and close/release run resources once. A valid business result such as `overBudget: true` is successful output.
+- Every per-run client must negotiate MCP modern protocol explicitly and fail closed if negotiation falls back to legacy. In the pinned stateless HTTP server, legacy cancellation travels as a separate request and cannot abort the active handler; modern request cancellation propagates through the HTTP request signal.
 - C02 durable history is not implemented. Define a persistence handoff contract only; do not claim reload/restart persistence or replay.
 - Before editing Next.js code, read the relevant local Next guide under `node_modules/next/dist/docs/` as required by `AGENTS.md`. Do not read secrets or copy `.env` files from another checkout. If starting a dev server, use a free port other than 3100.
 
@@ -106,10 +107,11 @@
 **Interfaces:**
 - `createBusinessRunScope({ config, threadId, runId, signal, now? })` owns one official MCP Client/transport, a per-run AbortController, discovered ToolSet, up to 3 total calls, max concurrency 1, and idempotent `close()`.
 - Discovery validates stable names, allowlist membership, discovered-vs-registered input/output schema compatibility, and rejects unsupported tools before exposing any tool to the model.
+- Client initialization must use the official SDK's modern protocol negotiation and verify the negotiated protocol era is modern before exposing tools or executing calls; legacy fallback fails closed.
 - Provider maps MCP `structuredContent` to AI SDK tool output only after validating the output schema; reject `isError`, missing/malformed structured result, oversized response, and unregistered names before the model sees them.
 
 - [ ] Write failing unit tests for discovery/allowlist/schema mismatch, namespace stability independent of discovery order, invalid input/output, missing structured content, `isError`, 32 KiB response limit, atomic three-call budget, serialized concurrency, and repeated close.
-- [ ] Write timeout/cancellation tests for connect/discovery (5 s), each call (15 s or remaining deadline), whole run (120 s), queue wait included in deadline, no automatic retry, abort signal reaches HTTP fetch and cooperative handler, and no floating handler work after timeout.
+- [ ] Write timeout/cancellation tests for connect/discovery (5 s), each call (15 s or remaining deadline), whole run (120 s), queue wait included in deadline, no automatic retry, modern protocol negotiation with legacy fallback rejection, abort signal reaches HTTP fetch and cooperative handler, and no floating handler work after timeout.
 - [ ] Run focused adapter tests and confirm the pre-implementation failures.
 - [ ] Implement a thin provider using the Task 1-proven `.tools()` interface and official SDK client; do not use `Promise.race` as a substitute for aborting work.
 - [ ] Re-run focused adapter tests and verify client transport is closed exactly once on success, error, timeout, cancellation, and disconnect.
