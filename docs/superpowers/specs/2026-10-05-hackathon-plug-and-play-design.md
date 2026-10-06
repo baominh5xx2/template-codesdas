@@ -1,5 +1,7 @@
 # Spec: Hackathon Starter Kit — cấu trúc gọn để ráp theo đề
 
+> **Scope update — 2026-10-06:** pgEdge MCP chỉ dành cho coding agent khi phát triển; app không kết nối, đăng ký DB tools hoặc nhận token pgEdge. Mọi bước/gate/adapter app-to-pgEdge trong tài liệu cũ này hết hiệu lực, không triển khai. App dùng Drizzle/repositories cho DB; C03 là custom business MCP server trong Next.js tại `/api/mcp/business`. Theo [PRD hiện hành](../../platform-build-spec.md), business MCP và coding-agent pgEdge là hai luồng riêng.
+
 Ngày: 2026-10-05. Phiên bản: 0.3. Trạng thái: thiết kế để review, chưa scaffold app.
 
 Các đoạn TypeScript là contract dự kiến của dự án, không phải mã đã triển khai hay API có sẵn của CopilotKit.

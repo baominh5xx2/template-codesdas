@@ -1,5 +1,7 @@
 # Core P0 — spec cho shared execution platform
 
+> **Scope update — 2026-10-06:** pgEdge MCP chỉ dành cho coding agent khi phát triển; app không kết nối, đăng ký DB tools hoặc nhận token pgEdge. Mọi bước/gate/adapter app-to-pgEdge trong tài liệu cũ này hết hiệu lực, không triển khai. App dùng Drizzle/repositories cho DB; C03 là custom business MCP server trong Next.js tại `/api/mcp/business`. Theo [PRD hiện hành](../../platform-build-spec.md), business MCP và coding-agent pgEdge là hai luồng riêng.
+
 Ngày: 2026-10-05. Trạng thái: **đề xuất để review, chưa triển khai**.
 
 **Ưu tiên đã thay đổi:** user muốn chat AI + durable chat history làm core trước. Bản này giữ làm reference business-run machinery, không còn là slice đầu tiên. Đọc [CopilotKit research](../../research/2026-10-05-copilotkit-chat-core.md); SDK/runtime integration cần đưa lên trước workflow machinery.

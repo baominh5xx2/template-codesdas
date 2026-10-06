@@ -1,5 +1,7 @@
 # Code Structure and Frontend Handoff Implementation Plan
 
+> **Scope update — 2026-10-06:** pgEdge MCP chỉ dành cho coding agent khi phát triển; app không kết nối, đăng ký DB tools hoặc nhận token pgEdge. Mọi bước/gate/adapter app-to-pgEdge trong tài liệu cũ này hết hiệu lực, không triển khai. App dùng Drizzle/repositories cho DB; C03 là custom business MCP server trong Next.js tại `/api/mcp/business`. Theo [PRD hiện hành](../../platform-build-spec.md), business MCP và coding-agent pgEdge là hai luồng riêng.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development to implement task-by-task. All implementers/reviewers use gpt-6-luna. Steps use checkbox syntax.
 
 **Goal:** Deliver a runnable, typed skeleton that another developer can immediately use to build reusable UI components independently.
@@ -157,4 +159,3 @@ Frontend handoff lists all19 block types/props, sources/evidence drawer data, ta
 - [ ] Friend has schema-valid fixtures/API/ownership docs for19 components and all states.
 - [ ] Components and engine implementation clearly reserved for later parallel work.
 - [ ] Local-only branch; competition repo untouched.
-

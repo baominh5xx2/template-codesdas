@@ -4,6 +4,13 @@ This setup implements the starter's previously chosen local topology: Next.js
 app + PostgreSQL + pgEdge Postgres MCP in the `hackathon-starter-core` project.
 Requires Docker Desktop with Linux containers and Bun 1.4.2 on the host.
 
+**Scope correction — 2026-10-06:** pgEdge MCP is development tooling for the
+coding agent only. The app accesses PostgreSQL through Drizzle/repositories.
+C03 business tools run in a separate module at `/api/mcp/business` in Next.js;
+they do not connect to pgEdge. Earlier app-to-pgEdge integration proposals are
+superseded. This document records the existing stack and the required config
+cleanup below; this docs-only change has not modified running containers.
+
 ## Start
 
 From the starter repo root:
@@ -49,19 +56,24 @@ PostgreSQL 18 stores data under the volume mounted at `/var/lib/postgresql`.
 Initialization runs only on a fresh volume. Keep `.env.docker` with its matching
 volume: editing passwords later does not alter existing database roles.
 
-## MCP boundary
+## Coding-agent pgEdge MCP boundary
 
 Use the `/mcp/v1` HTTP endpoint with `Authorization: Bearer <MCP_AUTH_TOKEN>`
-from a trusted backend. The token remains in `.env.docker`/server environment;
+from a trusted coding-agent MCP client. The token remains in ignored local
+credentials/coding-agent configuration;
 do not pass it to browser components. `/health` is the container health endpoint.
 LLM proxy, embeddings, similarity search, knowledgebase search and connection
 switching are disabled. MCP performs database queries without a provider key.
 
-The app receives `MCP_SERVER_URL` and `MCP_AUTH_TOKEN` as server environment.
-**This Compose setup does not register MCP tools in the chat agent or implement
-durable history.** Those are the C04 and C02 integrations from the PRD. The smoke
-script exercises MCP directly as an infrastructure probe; it is not the planned
-MCP TypeScript SDK adapter. Existing app persistence remains a separate task.
+**Current config discrepancy:** Compose still supplies the unused pgEdge
+`MCP_SERVER_URL` and `MCP_AUTH_TOKEN` to the app. The next infrastructure change
+must remove these two app environment entries; keep `MCP_AUTH_TOKEN` only for
+the pgEdge service and the coding-agent client. Do not reuse it for business MCP.
+Do not register pgEdge tools in CopilotKit or add an app-to-pgEdge adapter.
+
+The smoke script exercises pgEdge directly as a development-infrastructure
+probe. C03 adds a business MCP server/client bridge independently; C02 adds
+durable history. Existing app persistence remains a separate task.
 
 ## Optional local chat model
 
@@ -91,8 +103,9 @@ node scripts/docker.mjs logs --tail 50 app mcp db
 ```
 
 A host dev app needs a separate starter `.env.local` with its database URL
-pointing to `127.0.0.1:55432` and MCP URL to `127.0.0.1:18080/mcp/v1`; the
-container names `db` and `mcp` are only available inside the Compose network.
+pointing to `127.0.0.1:55432`. The coding agent's pgEdge MCP client connects to
+`http://127.0.0.1:18080/mcp/v1`; do not put that endpoint/token in app config.
+The container names `db` and `mcp` are only available inside the Compose network.
 Use the generated role credentials; do not reuse credentials from another repo.
 
 Verified on 2026-10-06 with Linux/amd64 containers:
