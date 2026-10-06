@@ -43,7 +43,7 @@ export default function HomePage() {
   return <>
     <SiteHeader variant="cover" menu={siteMenu()} />
     <main>
-      <Hero variant="cover" image="/images/home-hero.jpg" title="Từ đề bài đến demo" subtitle="Chào mừng tới Thực chiến AI" height="calc(100svh - clamp(72px, 8vw, 88px))" />
+      <Hero variant="cover" image="/images/home-hero.jpg" title="Từ đề bài đến demo" subtitle="AI Thực chiến × TriplePeek" height="calc(100svh - clamp(72px, 8vw, 88px))" />
 
       <Section id="mau-bai-toan">
         <SectionHeading title="Mẫu bài toán" subtitle="Sẵn sàng thi chưa? Chọn một dạng bài toán và bắt đầu ngay." />

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Children, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon, cx } from "../primitives";
-import { BRAND } from "./index";
+import { BRAND, BrandLockup } from "./index";
 import { StaggeredMenu } from "./StaggeredMenu";
 
 /**
@@ -89,7 +89,7 @@ export function SiteHeader({ transparent, menu, variant = "default" }: { transpa
   }, [variant, menuOpen]);
 
   return <header ref={headerRef} className={cx("vn-site-header", transparent && "vn-site-header--transparent", variant === "cover" && "vn-site-header--cover")}>
-    <Link href="/" className="vn-wordmark" aria-label={`${BRAND} — trang chủ`}>{BRAND}</Link>
+    <Link href="/" className="vn-wordmark" aria-label={`${BRAND} — trang chủ`}><BrandLockup /></Link>
     <nav ref={navRef} className={cx("vn-header-nav", navHidden && "vn-header-nav--hidden")} aria-label="Điều hướng chính" aria-hidden={navHidden || undefined} inert={navHidden} onFocusCapture={() => setScrollHidden(false)}>
       <Link href="/#mau-bai-toan" className="vn-header-act"><Icon name="layers" size={20} /><span>Mẫu bài toán</span></Link>
       <Link href="/playground" className="vn-header-act"><Icon name="search" size={20} /><span>Playground</span></Link>

@@ -12,7 +12,7 @@ const manrope = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Thực chiến AI", template: "%s · Thực chiến AI" },
+  title: { default: "AI Thực chiến × TriplePeek", template: "%s · TriplePeek" },
   description: "Bộ khung hackathon: sáu mẫu bài toán trên nền tảng dùng chung.",
 };
 

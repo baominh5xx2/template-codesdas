@@ -134,14 +134,27 @@ export function Section({ tone, tight, flushTop, id, children, style }: { tone?:
   </section>;
 }
 
-export const BRAND = "Thực chiến AI";
+export const BRAND = "AI Thực chiến × TriplePeek";
+
+/** Co-brand lockup: contest logo, event name and team name ("AI Thực chiến × TriplePeek"). */
+export function BrandLockup({ size = "m" }: { size?: "m" | "l" }) {
+  const px = size === "l" ? 56 : 40;
+  return <span className={cx("vn-brand", size === "l" && "vn-brand--l")}>
+    <Image src="/brand/ai-thuc-chien.png" alt="" width={px} height={px} className="vn-brand__logo" priority={size === "m"} />
+    <span className="vn-brand__text">
+      <span className="vn-brand__event">AI Thực chiến</span>
+      <span className="vn-brand__x" aria-hidden="true">×</span>
+      <span className="vn-brand__team">TriplePeek</span>
+    </span>
+  </span>;
+}
 
 export function SiteFooter({ templates }: { templates: Array<{ id: string; title: string }> }) {
   return <footer className="vn-footer">
     <div className="vn-footer__cols">
       <div>
-        <div className="vn-footer__brand">{BRAND}</div>
-        <p style={{ color: "var(--vn-ice-200)", fontSize: 15, maxWidth: 260 }}>Bộ khung hackathon: sáu mẫu bài toán trên một nền tảng dùng chung.</p>
+        <div className="vn-footer__brand"><BrandLockup size="l" /></div>
+        <p style={{ color: "var(--vn-ice-200)", fontSize: 15, maxWidth: 300 }}>Bài dự thi của nhóm TriplePeek tại AI Thực chiến: sáu mẫu bài toán trên một nền tảng dùng chung.</p>
       </div>
       <div>
         <h3 className="vn-footer__title">Mẫu bài toán</h3>
