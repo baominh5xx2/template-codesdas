@@ -256,7 +256,7 @@ describe("ChatHeader", () => {
       <ChatHeader showSidebarToggle={true} onOpenSidebar={onOpenSidebar} />
     );
 
-    expect(screen.getByRole("heading", { name: "Hackathon Starter Kit" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "AI Thực chiến × TriplePeek" })).toBeInTheDocument();
 
     const toggleBtn = screen.getByRole("button", { name: "Mở điều hướng" });
     expect(toggleBtn).toBeInTheDocument();
@@ -270,7 +270,7 @@ describe("ChatHeader", () => {
       <ChatHeader showSidebarToggle={false} onOpenSidebar={vi.fn()} />
     );
 
-    expect(screen.getByRole("heading", { name: "Hackathon Starter Kit" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "AI Thực chiến × TriplePeek" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mở điều hướng" })).not.toBeInTheDocument();
   });
 });

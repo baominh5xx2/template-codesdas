@@ -72,6 +72,11 @@ export function SidebarShell({ open, onClose, onNewChat, pending }: SidebarShell
   const content = (
     <>
       <div className="chat-sidebar-header">
+        <span className="chat-sidebar-brand" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element -- tiny static brand mark inside the client sidebar */}
+          <img src="/brand/ai-thuc-chien.png" alt="" width={40} height={40} />
+          <span className="chat-sidebar-brand-text"><small>AI Thực chiến ×</small>TriplePeek</span>
+        </span>
         <button type="button" className="chat-sidebar-action-btn"
           aria-label={desktop ? "Thu gọn điều hướng" : "Đóng điều hướng"} onClick={onClose}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -91,6 +96,7 @@ export function SidebarShell({ open, onClose, onNewChat, pending }: SidebarShell
           <span>Cuộc trò chuyện mới</span>
         </button>
       </nav>
+      <p className="chat-sidebar-footer">Hội thoại chỉ được giữ trong phiên làm việc này.</p>
     </>
   );
 
