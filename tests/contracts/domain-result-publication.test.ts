@@ -112,6 +112,13 @@ describe("publishDomainToolResult", () => {
     expect(port.calls).toHaveLength(0);
   });
 
+  it("rejects a workflow stepId in provenance for a chat-only run before calling the port", async () => {
+    const port = fakePort();
+    const badInput = { ...input, binding: { ...binding, toArtifactDraft: (output: { total: number }) => ({ ...binding.toArtifactDraft(output), provenance: { capabilityId: "tool.business.calculate", capabilityVersion: 1, stepId: "workflow-step" } }) } };
+    await expect(publishDomainToolResult(badInput, port)).rejects.toThrow("domain_result_reference_missing");
+    expect(port.calls).toHaveLength(0);
+  });
+
   it("rejects an expanded toRunInput over 32 KiB before calling the port", async () => {
     const port = fakePort();
     const badInput = { ...input, binding: { ...binding, inputSchema: z.object({ note: z.string() }), toRunInput: () => ({ note: "x".repeat(33 * 1024) }) } };

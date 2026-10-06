@@ -32,3 +32,8 @@ Status: implemented in the C05 worktree; committed as `feat(artifacts): define a
 - Documented that the C02 port persists result run, artifact, scoped binding, immutable ResultView, and publication outbox reference in one transaction. Same key plus same semantic fingerprint must return the original publication and IDs; a changed fingerprint must reject with no write.
 - Expanded the canonical fingerprint to cover pack ID/version, binding ID, tool name/version, validated output, parsed run input, validated artifact data/references/provenance, and presenter view semantics. Generated IDs and timestamps are excluded; generated self references in the view are normalized so retries remain stable. A same-output/changed-binding-semantics test proves the conflict path.
 - Focused validation after fixes: `bun run test -- tests/contracts/domain-result-publication.test.ts` passed, 22 tests. `git diff --check` passed. `bun run check` again passed Next type generation and TypeScript; ESLint startup remains blocked by the missing installed `es-abstract/2024/helpers/IsArray` module described above.
+
+## Scoped re-review follow-up
+
+- Chat-only publications now reject any nonempty artifact provenance `stepId`, consistent with their `steps: []` result snapshots. Added a no-port-call regression test.
+- Exact validation: `bun run test -- tests/contracts/domain-result-publication.test.ts` passed, 23 tests; `git diff --check` passed.

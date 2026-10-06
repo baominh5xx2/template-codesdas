@@ -46,7 +46,7 @@ export async function publishDomainToolResult(input: DomainResultPublicationInpu
   if (jsonBytes(parsedRunInput) > INPUT_LIMIT) throw new Error("domain_result_input_too_large");
   const draft = binding.toArtifactDraft(parsedOutput);
   if (draft.kind !== binding.artifactKind || draft.version !== binding.artifactVersion) throw new Error("domain_result_artifact_binding_invalid");
-  if (draft.sourceIds.length > 0 || draft.evidenceIds.length > 0 || (draft.provenance.inputArtifactIds?.length ?? 0) > 0) throw new Error("domain_result_reference_missing");
+  if (draft.sourceIds.length > 0 || draft.evidenceIds.length > 0 || draft.provenance.stepId !== undefined || (draft.provenance.inputArtifactIds?.length ?? 0) > 0) throw new Error("domain_result_reference_missing");
   const timestamp = input.clock().toISOString();
   const businessRunId = input.id("business-run");
   const artifactId = input.id("artifact");
