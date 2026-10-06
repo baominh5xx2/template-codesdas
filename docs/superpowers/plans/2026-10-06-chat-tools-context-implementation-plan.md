@@ -122,11 +122,11 @@
 **Files:**
 - Create: `src/adapters/agents/run-scoped-agent.ts`
 - Modify: `src/adapters/agents/chat-runtime.ts`
-- Modify: `src/adapters/agents/chat-policy.ts`
+- Keep: `src/adapters/agents/chat-policy.ts` for the existing disabled-MCP/C01 path; modify only if a shared policy contract must change.
 - Modify: `src/server/chat/http.ts` only if request cancellation/status needs a boundary adjustment
 - Modify: `src/contracts/chat.ts` for the four-step run and three-call caps if those limits belong in shared constants
 - Create: `tests/chat/tool-runtime.test.ts`
-- Extend: `tests/chat/runtime-policy.test.ts`
+- Keep: `tests/chat/runtime-policy.test.ts` as coverage of the existing C01 policy; new enabled-MCP lifecycle checks may live in `tests/chat/tool-runtime.test.ts`.
 - Extend: `tests/integration/chat-runtime.test.ts`
 
 **Interfaces:**
