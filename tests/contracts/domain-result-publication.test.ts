@@ -55,6 +55,31 @@ describe("publishDomainToolResult", () => {
     expect(result.output).toEqual(input.output);
   });
 
+  it("sends only validated output and server-resolved scope/correlation to the publication port", async () => {
+    const port = fakePort();
+    const toolOutput = { total: 10, ignored: "unvalidated" };
+    const resolved = { ...input, output: toolOutput };
+
+    const result = await publishDomainToolResult(resolved, port);
+
+    const candidate = port.calls[0] as DomainResultPublicationCandidate;
+    expect(candidate.key).toEqual({
+      workspaceId: "workspace-1", userId: "user-1", threadId: "thread-1",
+      agentRunId: "agent-1", toolCallId: "call-1", bindingId: "calculate-budget",
+    });
+    expect(candidate.binding).toMatchObject({
+      threadId: "thread-1", agentRunId: "agent-1", toolCallId: "call-1",
+      bindingId: "calculate-budget", packId: "budget-review", packVersion: 1,
+    });
+    expect(candidate.outboxReference).toMatchObject({
+      threadId: "thread-1", agentRunId: "agent-1", toolCallId: "call-1",
+      packId: "budget-review", packVersion: 1,
+    });
+    expect(candidate.artifact.data).toEqual({ total: 10 });
+    expect(candidate.snapshot.input).toEqual({ total: 10 });
+    expect(result.output).toBe(toolOutput);
+  });
+
   it("delegates same-payload idempotency to the atomic port", async () => {
     const port = fakePort();
     const selfReferencing = { ...input, domain: { ...domain, present: ({ snapshot }: { snapshot: { artifacts: { id: string }[] } }) => [{ id: "open", type: "action" as const, props: { label: "Open result", actionId: "focus-artifact" as const, artifactId: snapshot.artifacts[0].id } }] } };
