@@ -14,5 +14,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.{ts,tsx}"],
+    // Let Vite transform the SDK so its CSS side-effect imports are stubbed; composer tests run the real CopilotChatInput.
+    server: { deps: { inline: [/@copilotkit\/react-core/] } },
   },
 });

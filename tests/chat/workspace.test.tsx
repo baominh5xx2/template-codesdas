@@ -27,8 +27,10 @@ vi.mock("@/ui/chat/controller", async (importActual) => {
 });
 
 // The runtime handshake and agent transport are external; keep the real C01 binding/adapter/controller.
-vi.mock("@copilotkit/react-core/v2", async () => {
+vi.mock("@copilotkit/react-core/v2", async (importOriginal) => {
   const { useEffect } = await import("react");
+  // The composer is the real SDK input; only provider/agent plumbing is faked below.
+  const { CopilotChatInput } = await importOriginal<typeof import("@copilotkit/react-core/v2")>();
   const subscribers = new Set<Record<string, (event: unknown) => void>>();
   const agent = {
     threadId: "", messages: [] as { id: string; role: "user" | "assistant"; content: string }[],
@@ -67,6 +69,7 @@ vi.mock("@copilotkit/react-core/v2", async () => {
     return <div>{children}{typeof scrollToBottomButton === "object" && <button type="button" {...scrollToBottomButton} />}</div>;
   }
   return {
+    CopilotChatInput,
     // Installed 1.77.0 compatibility export only calls public onError with a public key.
     CopilotKit: ({ children }: { children: ReactNode }) => <Provider onError={() => {}}>{children}</Provider>,
     CopilotKitProvider: Provider,
@@ -80,6 +83,7 @@ vi.mock("@copilotkit/react-core/v2", async () => {
     CopilotChatUserMessage: ({ message, toolbar: Toolbar }: { message: { content: string }; toolbar: React.ComponentType }) => <div>{message.content}<Toolbar /></div>,
     CopilotChatAssistantMessage: Object.assign(({ message, toolbar: Toolbar }: { message: { content: string }; toolbar: React.ComponentType }) => <div>{message.content}<Toolbar /></div>, {
       MarkdownRenderer: ({ content }: { content: string }) => <div>{content}</div>,
+      CopyButton: ({ onClick, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button type="button" {...props} onClick={onClick} />,
     }),
   };
 });

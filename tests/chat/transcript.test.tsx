@@ -24,8 +24,12 @@ vi.mock("@copilotkit/react-core/v2", () => {
       {toolbarVisible !== false && <div data-testid="copilot-assistant-toolbar"><button>Regenerate</button><button>Inspector</button><button>Thumbs up</button><button>Read aloud</button></div>}
     </div>;
   }
+  // Stand-in for the SDK CopyButton: forwards props and the app-owned click handler.
+  function CopyButton({ onClick, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+    return <button type="button" {...props} onClick={onClick} />;
+  }
   return {
-  CopilotChatAssistantMessage: Object.assign(AssistantMessage, { MarkdownRenderer }),
+  CopilotChatAssistantMessage: Object.assign(AssistantMessage, { MarkdownRenderer, CopyButton }),
   CopilotChatUserMessage: ({ message, toolbar: Toolbar }: { message: { content: string }; toolbar?: React.ComponentType }) => <div>
     <div>{message.content}</div>
     {Toolbar ? <Toolbar /> : <div data-testid="copilot-user-toolbar"><button>Edit</button></div>}
