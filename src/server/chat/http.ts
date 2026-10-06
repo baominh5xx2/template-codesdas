@@ -4,6 +4,7 @@ import { createCopilotRuntimeHandler, type AgentRunner } from "@copilotkit/runti
 import type { BusinessMcpConfig } from "@/server/mcp/config";
 import { CHAT_LIMITS } from "@/contracts/chat";
 import type { ChatConfigResult } from "./config";
+import { incomingOrigin } from "./origin";
 import {
   chatFailureResponse,
   emitChatDiagnostic,
@@ -12,20 +13,6 @@ import {
 import type { RunAgentInput } from "@ag-ui/client";
 import { createChatModel } from "@/adapters/llm/chat-model";
 import { createChatRuntime } from "@/adapters/agents/chat-runtime";
-
-function incomingOrigin(request: Request, url: URL): string | undefined {
-  if (!["http:", "https:"].includes(url.protocol)) return;
-  const authority = request.headers.get("host") ?? url.host;
-  // Next normalizes loopback Request.url to localhost. The native Host retains
-  // the request authority; browser fetch cannot set this forbidden header.
-  // Forwarded headers are intentionally not trusted as request authority.
-  if (!authority || /[\s/@?#\\%]/.test(authority)) return;
-  try {
-    const incoming = new URL(`${url.protocol}//${authority}`);
-    if (!incoming.hostname || incoming.username || incoming.password || incoming.pathname !== "/" || incoming.search || incoming.hash) return;
-    return incoming.origin;
-  } catch { return; }
-}
 
 export function createChatRequestHandler(
   config: ChatConfigResult,

@@ -24,6 +24,16 @@ import { ConnectionNotice } from "./connection-notice";
 import { ChatPanel } from "./chat-panel";
 import { ChatErrorBoundary } from "./error-boundary";
 
+/**
+ * CopilotKit's AG-UI inspector, for local development only. The SDK additionally requires
+ * NODE_ENV === "development" and a loopback host, so production builds never mount it.
+ * The dev-server e2e suites opt out with NEXT_PUBLIC_COPILOTKIT_INSPECTOR=off because the
+ * inspector launcher adds its own live region (role="status") to the page.
+ */
+const INSPECTOR_ENABLED =
+  process.env.NODE_ENV !== "production" &&
+  process.env.NEXT_PUBLIC_COPILOTKIT_INSPECTOR !== "off";
+
 function generateChatId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -154,7 +164,7 @@ export function ChatWorkspace({ threadId }: ChatWorkspaceProps = {}): ReactEleme
       runtimeUrl="/api/copilotkit"
       agentId="default"
       useSingleEndpoint={false}
-      enableInspector={false}
+      enableInspector={INSPECTOR_ENABLED}
       debug={false}
       showDevConsole={false}
       onError={({ code }) => {

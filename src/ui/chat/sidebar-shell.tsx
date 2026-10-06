@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useEffect, useRef, type ReactElement } from "react";
 import { useDesktopViewport } from "./use-desktop-viewport";
 
@@ -76,11 +77,11 @@ export function SidebarShell({
         </svg>
         <span>Cuộc trò chuyện mới</span>
       </button>
-      <a
+      <Link
         href="/"
         aria-label="Về trang chủ"
         className="chat-new-chat-button"
-        style={{ textDecoration: "none", color: "inherit", marginTop: "8px" }}
+        style={{ textDecoration: "none" }}
       >
         <svg
           width="16"
@@ -97,7 +98,7 @@ export function SidebarShell({
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
         <span>Về trang chủ</span>
-      </a>
+      </Link>
     </nav>
   );
 
@@ -125,7 +126,7 @@ export function SidebarShell({
       className="chat-mobile-dialog"
       onKeyDown={(event) => {
         if (event.key !== "Tab") return;
-        const controls = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+        const controls = dialogRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href]");
         if (!controls?.length) return;
         const first = controls[0];
         const last = controls[controls.length - 1];

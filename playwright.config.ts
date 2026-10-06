@@ -6,7 +6,7 @@ const appServer = (port: number, distDir: string, configured = false) => ({
   url: `http://127.0.0.1:${port}/api/health`,
   reuseExistingServer: false,
   timeout: 60_000,
-  env: { ...emptyChat, NEXT_TEST_DIST_DIR: distDir, ...(configured ? { CHAT_MODEL_BASE_URL: "http://127.0.0.1:4310/v1", CHAT_MODEL_ID: "test-chat" } : {}) },
+  env: { ...emptyChat, NEXT_TEST_DIST_DIR: distDir, NEXT_PUBLIC_COPILOTKIT_INSPECTOR: "off",...(configured ? { CHAT_MODEL_BASE_URL: "http://127.0.0.1:4310/v1", CHAT_MODEL_ID: "test-chat" } : {}) },
 });
 
 export default defineConfig({

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { loadPages, loadSite } from "@/site/load";
 
 /** Routes that exist outside src/content. */
-const STATIC_ROUTES = new Set(["/playground", "/api/domains", "/api/health"]);
+const STATIC_ROUTES = new Set(["/chat", "/playground", "/api/domains", "/api/health"]);
 /** Anchors rendered by the interactive workspace section. */
 const WORKSPACE_ANCHORS = ["bat-dau"];
 
