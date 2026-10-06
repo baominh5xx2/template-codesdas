@@ -1,11 +1,12 @@
 import type { ComponentProps, ReactElement } from "react";
-import { CopilotChatMessageView, CopilotChatView } from "@copilotkit/react-core/v2";
+import { CopilotChatView } from "@copilotkit/react-core/v2";
 import { ConversationLayout } from "./conversation-layout";
 import { ChatComposer } from "./composer";
 import { useChatControllerRef, useChatNotice } from "./controller-context";
 import { useChatController } from "./use-controller";
 import { WhiteAssistantMessage, WhiteUserMessage } from "./message-views";
 import { ToolTranscript } from "./tool-renderers";
+import { ThoughtLine } from "./thought-line";
 
 export function WhiteChatView(
   props: ComponentProps<typeof CopilotChatView>
@@ -13,6 +14,8 @@ export function WhiteChatView(
   const controller = useChatControllerRef();
   const snapshot = useChatController(controller);
   const notice = useChatNotice();
+  const toolRunning = snapshot.transcript.some((message) =>
+    message.role === "assistant" && (message.toolCalls ?? []).some((call) => call.status === "pending" || call.status === "running"));
 
   return (
     <CopilotChatView
@@ -47,7 +50,7 @@ export function WhiteChatView(
                 ) : (
                   <div className="chat-messages-container">
                     <ToolTranscript messages={snapshot.transcript} />
-                    {snapshot.pending && <CopilotChatMessageView.Cursor aria-label="Đang trả lời" />}
+                    {snapshot.pending && <ThoughtLine label={toolRunning ? "Đang dùng công cụ…" : "Đang suy nghĩ…"} />}
                   </div>
                 )}
               </div>

@@ -3,6 +3,9 @@ import type { BusinessToolStatus, ChatToolCall, ChatTranscriptMessage } from "@/
 import type { JsonValue } from "@/contracts/common";
 import { WhiteAssistantMessage, WhiteUserMessage } from "./message-views";
 import { ToolResultView } from "./tool-result-view";
+import { StatusMark, type StatusMarkStatus } from "./status-mark";
+
+const MARK: Record<Exclude<BusinessToolStatus, "failed">, StatusMarkStatus> = { pending: "pending", running: "running", completed: "done", interrupted: "cancelled" };
 
 type TranscriptTool = { call: ChatToolCall; output?: JsonValue };
 const isTerminal = (status: BusinessToolStatus) => status === "completed" || status === "failed" || status === "interrupted";
@@ -35,7 +38,7 @@ export function ToolStatusView({ call, output }: TranscriptTool): ReactElement |
   const status = { pending: "Đang chuẩn bị", running: "Đang xử lý", completed: call.toolName === "calculate_budget" ? "Đã tính xong" : "Hoàn tất", interrupted: "Đã dừng" }[call.status];
   return (
     <section className="chat-tool-card" data-tool-call-id={call.id} aria-label={label}>
-      <div className="chat-tool-status" role="status"><strong>{label}</strong><span>{status}</span></div>
+      <div className="chat-tool-status" role="status"><StatusMark status={MARK[call.status]} label={<strong>{label}</strong>} color="var(--chat-blue)" size={22} fontSize={15} /><span>{status}</span></div>
       {call.status === "completed" && output !== undefined && <ToolResultView name={call.toolName} version={call.toolVersion} output={output} />}
     </section>
   );
