@@ -1,6 +1,9 @@
 import "server-only";
 import type { CallToolResult } from "@modelcontextprotocol/server";
 
+/** Complete serialized response body, after SDK encoding and sanitization. */
+export const BUSINESS_MCP_MAX_RESPONSE_BYTES = 32 * 1024;
+
 const toolCodes = new Set([
   "business_mcp_tool_failed", "business_mcp_input_invalid", "business_mcp_output_invalid",
   "business_mcp_result_too_large", "business_mcp_cancelled",
@@ -49,5 +52,13 @@ export async function sanitizeBusinessMcpResponse(response: Response): Promise<R
   } catch {
     return businessMcpHttpError(response.status >= 400 ? response.status : 500, "business_mcp_protocol_error");
   }
-  return Response.json(sanitizeMessage(payload), { status: response.status, headers: { "cache-control": "no-store" } });
+  const body = JSON.stringify(sanitizeMessage(payload));
+  if (Buffer.byteLength(body, "utf8") > BUSINESS_MCP_MAX_RESPONSE_BYTES) {
+    // Fixed failure also bounds attacker-controlled request IDs. An HTTP error
+    // rejects the official client's pending call without requiring its ID here.
+    return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: "business_mcp_result_too_large" } }, {
+      status: 500, headers: { "cache-control": "no-store" },
+    });
+  }
+  return new Response(body, { status: response.status, headers: { "cache-control": "no-store", "content-type": "application/json" } });
 }

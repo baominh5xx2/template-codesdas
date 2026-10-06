@@ -2,9 +2,11 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { McpServer, type McpRequestContext, type CallToolResult } from "@modelcontextprotocol/server";
 import type { BusinessToolCatalog } from "./catalog";
-import { businessMcpToolError } from "./errors";
+import { businessMcpToolError, BUSINESS_MCP_MAX_RESPONSE_BYTES } from "./errors";
 
-export const BUSINESS_MCP_MAX_RESULT_BYTES = 32 * 1024;
+// Early rejection avoids encoding obviously oversized tool results; the HTTP
+// sanitizer applies the authoritative cap to the complete SDK-encoded body.
+export const BUSINESS_MCP_MAX_RESULT_BYTES = BUSINESS_MCP_MAX_RESPONSE_BYTES;
 
 /** Fresh official server instance for each HTTP exchange; domain tools own no transport. */
 export function createBusinessMcpServer(catalog: BusinessToolCatalog, requestContext: McpRequestContext): McpServer {

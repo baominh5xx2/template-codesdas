@@ -116,6 +116,15 @@ describe("business MCP HTTP guards and protocol", () => {
     const body = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" });
     expect((await fixture().fetch(request("tools/list", undefined, {}, body.padEnd(256 * 1024, " ")))).status).toBe(200);
   });
+  it("includes request ID and JSON-RPC envelope in the final response cap", async () => {
+    const id = "private-id-secret".repeat(2500);
+    const response = await fixture().fetch(request("tools/list", undefined, {}, JSON.stringify({ jsonrpc: "2.0", id, method: "tools/list" })));
+    const body = await response.text();
+    expect(Buffer.byteLength(body)).toBeLessThanOrEqual(32768);
+    expect(response.status).toBe(500);
+    expect(JSON.parse(body)).toEqual({ jsonrpc: "2.0", id: null, error: { code: -32603, message: "business_mcp_result_too_large" } });
+    expect(body).not.toContain("private-id-secret");
+  });
   it("rejects tool results over 32 KiB using UTF-8 wire bytes", async () => {
     const handler = fixture([echo], "echo");
     const result = (await payload(await handler.fetch(request("tools/call", { name: "echo", arguments: { value: "😀".repeat(9000) } })))).result;
