@@ -175,6 +175,8 @@ export function createChatController(options: {
     }
 
     function acceptTerminal(termStatus: "completed" | "failed" | "interrupted"): void {
+      // Renderer/discovery failure stays visible after cancellation settles.
+      if (failed) termStatus = "failed";
       terminalStatus = termStatus;
       status = termStatus;
       if (termStatus === "failed") {
@@ -276,6 +278,7 @@ export function createChatController(options: {
     }
 
     function acceptTerminal(termStatus: "completed" | "failed" | "interrupted"): void {
+      if (failed) termStatus = "failed";
       retryTerminalStatus = termStatus;
       status = termStatus;
       if (termStatus === "failed") {

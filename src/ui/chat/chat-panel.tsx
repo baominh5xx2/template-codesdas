@@ -30,6 +30,7 @@ export function ChatPanel(props: ChatPanelProps): ReactElement {
       const detach = binding.attach(client);
       props.controller.setAvailable(true);
       return () => {
+        props.controller.setAvailable(false);
         detach();
       };
     }

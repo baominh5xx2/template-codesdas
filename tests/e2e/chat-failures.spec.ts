@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
-import { answer, observe, openChat, scenario, send } from "../helpers/chat-browser";
+import { answer, captureRequests, observe, openChat, scenario, send } from "../helpers/chat-browser";
 
 for (const value of ["reject", "partial-fail"] as const) {
   test(`${value} masks provider details and repeated Retry preserves one user ID`, async ({ page, request }) => {
@@ -68,23 +68,30 @@ test("clipboard failure stays masked", async ({ page, request }) => {
 });
 
 test("renderer exception displays the safe fallback and Retry remounts", async ({ page, request }) => {
-  await scenario(request, "success");
+  await scenario(request, "slow", { text: "Partial renderer run" });
   const observed = observe(page);
   await page.addInitScript(() => {
     const original = document.createElement.bind(document);
     document.createElement = ((...args: Parameters<typeof document.createElement>) => {
-      if (args[0] === "article" && document.documentElement.hasAttribute("data-test-render-failure")) {
+      if (args[0] === "code" && document.documentElement.hasAttribute("data-test-render-failure")) {
         throw new Error("controlled_renderer_failure");
       }
       return original(...args);
     }) as typeof document.createElement;
   });
   await openChat(page);
+  await send(page, "Active renderer run");
+  await expect(page.locator(".chat-assistant-message")).toContainText("Partial renderer run");
+  await expect(page.getByRole("button", { name: "Dừng", exact: true })).toBeVisible();
   await page.evaluate(() => document.documentElement.setAttribute("data-test-render-failure", "true"));
-  await send(page, "Render failure");
+  // A real provider delta adds Markdown code while its SDK run remains active.
+  const delta = await request.post("http://127.0.0.1:4310/test/delta", { data: { text: "\n\n```js\nrender_failure\n```\n" } });
+  expect(await delta.json()).toEqual({ delivered: 1 });
   await expect(page.locator(".chat-error-boundary-view")).toBeVisible();
   await expect(page.getByRole("status")).toHaveText("Chưa kết nối");
   await expect(page.getByRole("status")).toHaveCount(1);
+  await expect.poll(async () => (await captureRequests(request))[0]).toMatchObject({ aborted: true });
+  await expect(page.getByRole("button", { name: "Dừng", exact: true })).toHaveCount(0);
   await expect(page.locator(".chat-shell").getByText("controlled_renderer_failure", { exact: false })).toHaveCount(0);
   await observed.assertMasked();
   await observed.assertResponsesExclude("controlled_renderer_failure");
@@ -94,11 +101,12 @@ test("renderer exception displays the safe fallback and Retry remounts", async (
   for (const message of observed.consoleMessages.filter((text) => text.includes("controlled_renderer_failure"))) {
     expect(frameworkDiagnostics.some((event) => event.text === message &&
       event.source.includes("/_next/static/chunks/node_modules_next_dist_") &&
-      event.text.includes("The above error occurred in the <article> component. It was handled by the <ChatErrorBoundary> error boundary."))).toBe(true);
+      event.text.includes("The above error occurred in the <code> component. It was handled by the <ChatErrorBoundary> error boundary."))).toBe(true);
   }
   const diagnosticsPath = test.info().outputPath("renderer-framework-diagnostics.json");
   await writeFile(diagnosticsPath, JSON.stringify(frameworkDiagnostics, null, 2));
   await test.info().attach("renderer-framework-diagnostics", { path: diagnosticsPath, contentType: "application/json" });
+  await scenario(request, "success");
   await page.evaluate(() => document.documentElement.removeAttribute("data-test-render-failure"));
   await page.getByRole("button", { name: "Thử lại" }).click();
   await expect(page.locator(".chat-error-boundary-view")).toHaveCount(0);

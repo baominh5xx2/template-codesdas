@@ -70,6 +70,16 @@ export async function createChatProviderFixture(
         res.end(JSON.stringify({ status: "ok" }));
       } else if (req.url === "/test/requests" && req.method === "GET") {
         res.end(JSON.stringify(requests));
+      } else if (req.url === "/test/delta" && req.method === "POST") {
+        const control = parsedBody as { text?: unknown } | null;
+        if (!control || typeof control.text !== "string" || control.text.length > 32_000) {
+          res.writeHead(400); res.end(JSON.stringify({ error: "invalid_control" })); return;
+        }
+        let delivered = 0;
+        for (const held of heldResponses) {
+          if (!held.destroyed) { held.write(chunk(control.text)); delivered++; }
+        }
+        res.end(JSON.stringify({ delivered }));
       } else if (req.url === "/test/finish" && req.method === "POST") {
         for (const held of heldResponses) finish(held);
         heldResponses.clear();

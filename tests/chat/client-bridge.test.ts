@@ -12,7 +12,7 @@ import {
   createCopilotChatClient,
   type CopilotChatBindings,
 } from "@/adapters/agents/chat-client";
-import type { ChatRunRequest, ChatRunSink, ChatTextMessage } from "@/ui/chat/controller";
+import { createChatController, type ChatRunRequest, type ChatRunSink, type ChatTextMessage } from "@/ui/chat/controller";
 
 function createMockSdk() {
   let currentSubscriber: AgentSubscriber | null = null;
@@ -278,6 +278,39 @@ describe("createCopilotChatClient bridge", () => {
 });
 
 describe("createChatClientBinding forwarding port", () => {
+  it("cancels the specific detached running client and keeps controller pending until it settles", async () => {
+    const binding = createChatClientBinding();
+    let settle!: () => void;
+    const stop = vi.fn();
+    const detach = binding.attach({ run: () => new Promise<void>((resolve) => { settle = resolve; }), stop, reset: vi.fn() });
+    const controller = createChatController({ port: binding.port, uuid: () => "test-id", available: true });
+    controller.setDraft("Active render");
+    const sending = controller.send();
+    controller.fail();
+    detach();
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot().pending).toBe(true);
+    expect(controller.getSnapshot().notice).toBe(true);
+    expect(await controller.retry()).toBe(false);
+    settle(); await sending;
+    expect(controller.getSnapshot().pending).toBe(false);
+    expect(controller.getSnapshot().notice).toBe(true);
+    expect(controller.getSnapshot().status).toBe("failed");
+  });
+
+  it("cancels an old detached run without stopping a replacement client", async () => {
+    const binding = createChatClientBinding();
+    let settle!: () => void;
+    const oldStop = vi.fn(); const newStop = vi.fn();
+    const detach = binding.attach({ run: () => new Promise<void>((resolve) => { settle = resolve; }), stop: oldStop, reset: vi.fn() });
+    const running = binding.port.run({ threadId: "t", runId: "r", messages: [] }, createMockSink());
+    binding.attach({ run: vi.fn(), stop: newStop, reset: vi.fn() });
+    detach();
+    expect(oldStop).toHaveBeenCalledTimes(1);
+    expect(newStop).not.toHaveBeenCalled();
+    settle(); await running;
+  });
+
   it("rejects run with an app-safe error when unattached", async () => {
     const binding = createChatClientBinding();
     const sink = createMockSink();

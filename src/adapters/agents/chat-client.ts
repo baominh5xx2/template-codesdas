@@ -152,7 +152,7 @@ export function createCopilotChatClient(
         if (!terminalEmitted) {
           terminalEmitted = true;
           emitMessages(bindings.agent.messages);
-          sink.terminal("completed");
+          sink.terminal(userAborted ? "interrupted" : "completed");
         }
       } catch (error) {
         if (!terminalEmitted) {
@@ -181,13 +181,17 @@ export function createCopilotChatClient(
 
 export function createChatClientBinding(): ChatClientBinding {
   let activeClient: ChatClientPort | null = null;
+  const runningClients = new Set<ChatClientPort>();
 
   const port: ChatClientPort = {
     async run(request: ChatRunRequest, sink: ChatRunSink): Promise<void> {
       if (!activeClient) {
         throw new Error("Chat client is not attached");
       }
-      return activeClient.run(request, sink);
+      const client = activeClient;
+      runningClients.add(client);
+      try { await client.run(request, sink); }
+      finally { runningClients.delete(client); }
     },
     stop(): void {
       activeClient?.stop();
@@ -202,6 +206,11 @@ export function createChatClientBinding(): ChatClientBinding {
     attach(client: ChatClientPort): () => void {
       activeClient = client;
       return () => {
+        // Cancel this attachment's run before removing it. The original run
+        // promise remains the controller's pending fence until SDK teardown settles.
+        if (runningClients.has(client)) {
+          try { client.stop(); } catch { /* retain the pending run's settlement fence */ }
+        }
         if (activeClient === client) {
           activeClient = null;
         }
