@@ -48,7 +48,18 @@ export function createBusinessToolCatalog(
     const outputJsonSchema = z.toJSONSchema(definition.output);
     if (inputJsonSchema.type !== "object" || outputJsonSchema.type !== "object") throw new Error("business_tool_object_schema_required");
     exposedNames.add(exposedName);
-    registrations.set(definition.name, Object.freeze({ definition: Object.freeze({ ...definition }), exposedName, inputJsonSchema, outputJsonSchema }));
+    // Interface members may be prototype methods/getters on class instances.
+    // Snapshot them explicitly and retain the original execution receiver.
+    const storedDefinition: BusinessTool<unknown, unknown> = Object.freeze({
+      name: definition.name,
+      version: definition.version,
+      description: definition.description,
+      kind: definition.kind,
+      input: definition.input,
+      output: definition.output,
+      execute: definition.execute.bind(definition),
+    });
+    registrations.set(definition.name, Object.freeze({ definition: storedDefinition, exposedName, inputJsonSchema, outputJsonSchema }));
   }
   const enabled = new Map<string, BusinessToolRegistration>();
   for (const name of enabledNames) {

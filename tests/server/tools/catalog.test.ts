@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import type { BusinessTool } from "@/core/tools/definition";
+import type { BusinessTool, BusinessToolContext } from "@/core/tools/definition";
 import { createBusinessToolCatalog } from "@/server/mcp/catalog";
 import { calculateBudgetTool } from "@/server/mcp/tools/calculate-budget/definition";
 
@@ -11,6 +11,35 @@ const tool: BusinessTool<{ value: string }, { value: string }> = {
 };
 
 describe("business tool catalog", () => {
+  it("preserves prototype members and the execution receiver of class definitions", async () => {
+    class ClassTool implements BusinessTool<{ value: string }, { value: string }> {
+      #prefix = "class:";
+      #schema = z.object({ value: z.string() });
+      get name() { return "class_echo"; }
+      get version() { return "1.0.0"; }
+      get description() { return "Return a prefixed value with the call correlation ID."; }
+      get kind() { return "read" as const; }
+      get input() { return this.#schema; }
+      get output() { return this.#schema; }
+      async execute(input: { value: string }, context: BusinessToolContext) {
+        return { value: `${this.#prefix}${input.value}:${context.toolCallId}` };
+      }
+    }
+    const catalog = createBusinessToolCatalog([new ClassTool()], ["class_echo"]);
+    const registered = catalog.get("class_echo")!;
+    const execute = registered.definition.execute;
+    expect(await execute({ value: "hello" }, {
+      threadId: "thread", runId: "run", toolCallId: "call",
+      signal: new AbortController().signal, deadline: Date.now() + 15_000,
+    })).toEqual({ value: "class:hello:call" });
+    expect(registered.definition).toMatchObject({
+      name: "class_echo", version: "1.0.0",
+      description: "Return a prefixed value with the call correlation ID.", kind: "read",
+    });
+    expect(registered.definition.input.parse({ value: "hello" })).toEqual({ value: "hello" });
+    expect(registered.definition.output.parse({ value: "class:hello:call" })).toEqual({ value: "class:hello:call" });
+  });
+
   it("exposes enabled definitions with stable names and object JSON schemas", () => {
     const catalog = createBusinessToolCatalog([tool, calculateBudgetTool], ["calculate_budget"]);
     expect(catalog.list().map((entry) => entry.exposedName)).toEqual(["business__calculate_budget"]);
