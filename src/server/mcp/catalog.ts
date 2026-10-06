@@ -44,8 +44,11 @@ export function createBusinessToolCatalog(
     if (exposedNames.has(exposedName) || occupied.has(exposedName)) throw new Error("business_tool_namespace_collision");
     // Preserve structural Zod Standard Schema for AI SDK consumers. JSON Schema
     // is for MCP discovery only; unsupported Zod constructs throw at registration.
-    const inputJsonSchema = z.toJSONSchema(definition.input);
-    const outputJsonSchema = z.toJSONSchema(definition.output);
+    // Match the official SDK's direction-specific discovery conversion. Plain
+    // Zod objects strip extra input properties but do not reject them, so their
+    // input schema differs from the validated output schema.
+    const inputJsonSchema = z.toJSONSchema(definition.input, { io: "input" });
+    const outputJsonSchema = z.toJSONSchema(definition.output, { io: "output" });
     if (inputJsonSchema.type !== "object" || outputJsonSchema.type !== "object") throw new Error("business_tool_object_schema_required");
     exposedNames.add(exposedName);
     // Interface members may be prototype methods/getters on class instances.

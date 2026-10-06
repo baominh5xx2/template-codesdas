@@ -152,6 +152,7 @@ export function ChatWorkspace(): ReactElement {
       useSingleEndpoint={false}
       enableInspector={false}
       debug={false}
+      showDevConsole={false}
       onError={() => controller.fail()}
     >
       <ChatPanel controller={controller} />

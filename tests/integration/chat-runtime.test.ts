@@ -25,6 +25,20 @@ describe("createChatRequestHandler integration", () => {
       body: JSON.stringify({ protocolVersion: PROTOCOL_VERSION, threadId: randomUUID(), runId: randomUUID(), messages: [{ id: randomUUID(), role: "user", content: "hello" }], state: {}, tools: [], context: [], forwardedProps: {} }),
     });
   }
+  it("accepts the native Host origin when Next normalizes a loopback request URL", async () => {
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {});
+    const request = runRequest();
+    const normalized = new Request(request.url.replace("127.0.0.1", "localhost"), { method: "POST", headers: { ...Object.fromEntries(request.headers), host: "127.0.0.1:3000", "x-forwarded-host": "attacker.example" }, body: await request.text() });
+    const response = await handler(normalized);
+    expect(response.status).toBe(200); expect(await response.text()).toContain("Xin chào");
+    expect(fixture.requests).toHaveLength(1);
+  });
+  it.each(["attacker.example:3000", "127.0.0.1:3000/path", "user@127.0.0.1:3000", "127.0.0.1:3000?query", "127.0.0.1:3000#fragment", "http://127.0.0.1:3000", "127.0.0.1\\:3000", "127.0.0.1:3000 other", "127%2e0%2e0%2e1:3000"])("rejects mismatched or malformed native Host %s without trusting forwarded headers", async (host) => {
+    const handler = createChatRequestHandler(loadChatConfig({ CHAT_MODEL_BASE_URL: fixture.baseUrl, CHAT_MODEL_ID: "test-model" }), () => {});
+    const request = runRequest(); request.headers.set("host", host); request.headers.set("x-forwarded-host", "127.0.0.1:3000");
+    const response = await handler(request);
+    expect(response.status).toBe(403); expect(await response.json()).toMatchObject({ message: CHAT_NOTICE }); expect(fixture.requests).toHaveLength(0);
+  });
   it("enabled unavailable MCP fails closed before calling the model", async () => {
     const config: Extract<BusinessMcpConfig, { enabled: true }> = { enabled: true, url: new URL("http://127.0.0.1:3199/api/mcp/business"), token: "wrong-token", enabledTools: ["calculate_budget"], allowedHosts: ["127.0.0.1"], allowedOrigins: [] };
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("RAW_SECRET_MCP_TOKEN_ERROR", { status: 401 }));

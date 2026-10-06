@@ -13,6 +13,20 @@ import type { RunAgentInput } from "@ag-ui/client";
 import { createChatModel } from "@/adapters/llm/chat-model";
 import { createChatRuntime } from "@/adapters/agents/chat-runtime";
 
+function incomingOrigin(request: Request, url: URL): string | undefined {
+  if (!["http:", "https:"].includes(url.protocol)) return;
+  const authority = request.headers.get("host") ?? url.host;
+  // Next normalizes loopback Request.url to localhost. The native Host retains
+  // the request authority; browser fetch cannot set this forbidden header.
+  // Forwarded headers are intentionally not trusted as request authority.
+  if (!authority || /[\s/@?#\\%]/.test(authority)) return;
+  try {
+    const incoming = new URL(`${url.protocol}//${authority}`);
+    if (!incoming.hostname || incoming.username || incoming.password || incoming.pathname !== "/" || incoming.search || incoming.hash) return;
+    return incoming.origin;
+  } catch { return; }
+}
+
 export function createChatRequestHandler(
   config: ChatConfigResult,
   diagnostics: ChatDiagnosticSink,
@@ -45,7 +59,7 @@ export function createChatRequestHandler(
     // Enforce Origin check on browser mutations
     if (isMutation) {
       const originHeader = request.headers.get("origin");
-      if (!originHeader || originHeader !== url.origin) {
+      if (!originHeader || originHeader !== incomingOrigin(request, url)) {
         emitChatDiagnostic(diagnostics, {
           code: "invalid_request",
           traceId: "request",
