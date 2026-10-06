@@ -22,5 +22,5 @@ export const templateResultBinding: DomainResultBinding = {
   }),
 };
 export function createTemplateDefinition(manifest: DomainDefinition["manifest"]): DomainDefinition {
-  return { manifest, inputSchema: TemplateInputSchema, resultBindings: [templateResultBinding], requiredArtifactKinds: [], systemPrompt: "No model execution is configured.", sources: [], present: presentTemplate };
+  return { manifest, inputSchema: TemplateInputSchema, requiredArtifactKinds: [], systemPrompt: "No model execution is configured.", sources: [], present: presentTemplate };
 }

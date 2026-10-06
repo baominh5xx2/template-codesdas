@@ -22,15 +22,16 @@ export function validateDomain(domain: DomainDefinition, catalog: DomainValidati
     if (!catalog.artifactSchemas.has(binding.artifactKind, binding.artifactVersion)) throw new Error("domain_artifact_schema_unregistered");
   }
   const tools = domain.tools ?? [];
+  const hasVersionedReferences = tools.length > 0 || bindings.length > 0;
+  const isToolRegistered = (name: string, version: number): boolean => {
+    if (catalog.registeredTools) return catalog.registeredTools.has(`${name}@${version}`);
+    return !hasVersionedReferences && catalog.toolNames.has(name);
+  };
   for (const tool of tools) {
-    const key = `${tool.name}@${tool.version}`;
-    const registered = catalog.registeredTools?.get(key);
-    if (catalog.registeredTools ? !registered : !catalog.toolNames.has(tool.name)) throw new Error("domain_tool_unregistered");
+    if (!isToolRegistered(tool.name, tool.version)) throw new Error("domain_tool_unregistered");
   }
   for (const binding of bindings) {
-    const key = `${binding.toolName}@${binding.toolVersion}`;
-    const registered = catalog.registeredTools?.get(key);
-    if (catalog.registeredTools ? !registered : !catalog.toolNames.has(binding.toolName)) throw new Error("domain_tool_unregistered");
+    if (!isToolRegistered(binding.toolName, binding.toolVersion)) throw new Error("domain_tool_unregistered");
   }
   if (domain.tools && (domain.manifest.toolNames.length !== new Set(domain.manifest.toolNames).size ||
     domain.manifest.toolNames.length !== tools.length || tools.some(tool => !domain.manifest.toolNames.includes(tool.name)) ||

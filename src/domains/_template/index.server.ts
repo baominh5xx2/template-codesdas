@@ -1,3 +1,3 @@
 import { templateManifest } from "./manifest";
-import { createTemplateDefinition } from "./presenter";
-export const templateDomain = createTemplateDefinition(templateManifest);
+import { createTemplateDefinition, templateResultBinding } from "./presenter";
+export const templateDomain = { ...createTemplateDefinition(templateManifest), resultBindings: [templateResultBinding] };

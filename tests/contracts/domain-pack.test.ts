@@ -3,6 +3,8 @@ import { validateDomain } from "@/core/domains/validation";
 import type { DomainDefinition, DomainValidationCatalog } from "@/core/domains/definition";
 import type { JsonValue, Schema } from "@/contracts/common";
 import type { Artifact } from "@/contracts/artifacts";
+import { templateDomain } from "@/domains/_template/index.server";
+import { domain as documentReviewDomain } from "@/domains/examples/document-review/index.server";
 
 const schema = <T extends JsonValue>(): Schema<T> => ({ parse: value => value as T }) as Schema<T>;
 const registeredSchema = schema<{ total: number }>();
@@ -39,6 +41,34 @@ it("rejects unregistered tool bindings and manifest tool names", () => {
 
 it("rejects a binding whose tool version is not registered", () => {
   expect(() => validateDomain(pack({ tools: [{ name: "business__calculate", version: 2 }], resultBindings: [binding({ toolVersion: 2 })] }), catalog())).toThrow("domain_tool_unregistered");
+});
+
+it("requires a versioned registry for tool references and result bindings", () => {
+  const withoutVersionedRegistry = catalog();
+  withoutVersionedRegistry.registeredTools = undefined;
+  withoutVersionedRegistry.toolNames.add("business__calculate");
+  expect(() => validateDomain(pack({ resultBindings: [], requiredArtifactKinds: [] }), withoutVersionedRegistry)).toThrow("domain_tool_unregistered");
+  expect(() => validateDomain(pack(), withoutVersionedRegistry)).toThrow("domain_tool_unregistered");
+});
+
+it("preserves name-only validation for a legacy workflow pack", () => {
+  const legacyCatalog = catalog();
+  legacyCatalog.registeredTools = undefined;
+  legacyCatalog.toolNames.add("business__calculate");
+  const workflowPack = pack({ tools: undefined, resultBindings: [], workflow: { steps: [], requiredArtifactKinds: [] }, requiredArtifactKinds: [] });
+  expect(() => validateDomain(workflowPack, legacyCatalog)).not.toThrow();
+});
+
+it("exposes the template result binding on the server domain definition", () => {
+  expect(templateDomain.workflow).toBeUndefined();
+  expect(templateDomain.resultBindings?.map(({ id, toolName, toolVersion, artifactKind, artifactVersion }) => ({ id, toolName, toolVersion, artifactKind, artifactVersion }))).toEqual([
+    { id: "example-result", toolName: "business__example", toolVersion: 1, artifactKind: "example.result", artifactVersion: 1 },
+  ]);
+});
+
+it("keeps example workflow domains free of the template-only result binding", () => {
+  expect(documentReviewDomain.workflow).toBeUndefined();
+  expect(documentReviewDomain.resultBindings).toBeUndefined();
 });
 
 it("rejects an artifact binding with an unregistered schema version", () => {
