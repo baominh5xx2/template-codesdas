@@ -107,7 +107,7 @@ Definition tối thiểu:
 | `execute(input, context)` | Handler trả output data; không trả MCP content blocks |
 | `context` | Server-resolved local scope, correlation IDs, AbortSignal và deadline |
 
-`threadId`, `runId`, `toolCallId` dùng để correlate, không cấp quyền. Owner lấy từ local identity trên server; không lấy từ model args, forwardedProps hay UI context. HTTP MCP requests dùng verified service credential của app và local identity; caller-provided IDs chỉ là trace metadata.
+`threadId`, `runId`, `toolCallId` dùng để correlate, không cấp quyền. App truyền các ID đã có trong server-side run scope qua MCP `_meta` có namespace; server chỉ nhận string có giới hạn độ dài và ký tự điều khiển. ID không lấy từ model args hoặc forwardedProps, và không tham gia quyết định quyền. Nếu thiếu/không hợp lệ thì handler sinh correlation ID mới.
 
 Server và bridge reuse cùng typed catalog cho connector business nội bộ. Server sinh JSON Schema từ validator; bridge đối chiếu discovered tool/schema với registration được phép trước khi expose cho agent. Tool/schema không khớp hoặc không hỗ trợ thì reject, không dùng fallback `any`. Không xây universal JSON-Schema converter cho mọi remote MCP trong P0.
 
@@ -158,7 +158,7 @@ Budget bị vượt là **kết quả nghiệp vụ hợp lệ**, không phải 
 - URL do backend config chọn, không lấy từ browser/model args. Host dev có thể dùng `http://127.0.0.1:3100/api/mcp/business`; app container gọi endpoint cùng container `http://127.0.0.1:3000/api/mcp/business`. Port host phải theo dev config thực tế.
 - Token riêng tự sinh local, không phải provider API key, không reuse `MCP_AUTH_TOKEN` của pgEdge. Không có `NEXT_PUBLIC_` credential. App và business route dùng cùng business credential; missing/bad token bị từ chối trước handler.
 - Guard Host theo origins được cấu hình; Origin nếu có phải được phép. Internal requests không có Origin vẫn cần bearer hợp lệ. Không mở wildcard CORS hoặc forward browser auth/cookies tới MCP.
-- Body tối đa 256 KiB; validation trước dispatch. Giới hạn result cần áp dụng trước gửi kết quả và trong client response reader để không buffer vô hạn. Không cho token theo redirect sang host khác.
+- Request body tối đa 256 KiB. Tool output được preflight giới hạn ở 4 KiB compact JSON trước Zod output parsing/serialization; toàn bộ MCP response tối đa 32 KiB và được đọc theo stream có giới hạn ở HTTP boundary/client reader. Không cho token theo redirect sang host khác.
 - Catalog server chỉ advertise enabled/allowlisted `read`/`compute` tools. Unknown/disabled tools bị deny cả discovery lẫn direct call. Không suy ra quyền từ MCP annotations.
 
 App không connect trong import/build. Model chưa cấu hình vẫn dùng `Chưa kết nối`, không dựng assistant fixture. Live agent acceptance cần configured model hỗ trợ native tool calls; test protocol/handler/bridge dùng local deterministic tests không cần key.
@@ -180,7 +180,7 @@ Per-run client đã triển khai:
 
 Wrapper gắn cancellation của outer AG-UI subscription với inner agent và MCP scope; phải thử với runner/clone semantics của version đã pin trước khi wire vào runtime. Không fallback sang agent loop tự viết nếu probe fail. AI SDK tool execute options có abort signal; ghép với run signal và call deadline, không giả định `defineTool.execute(args)` cung cấp execution context.
 
-Limits đã áp dụng: connect/discovery 5 giây; mỗi tool call 15 giây hoặc remaining run deadline, tùy cái nhỏ hơn; whole run giữ 120 giây; tool input tối đa 32 KiB mỗi call. Result limit 32 KiB đếm toàn bộ UTF-8 HTTP response sau SDK encoding/sanitization, gồm modern metadata, JSON-RPC envelope và request ID; payload gần limit có thể bị reject vì framing cũng dùng quota. Client response reader cũng giới hạn 32 KiB. Không tự retry MCP call. Handlers có async I/O phải honor signal/deadline; không dùng Promise.race rồi bỏ request chạy ngầm. Client close không đóng shared business HTTP handler của app.
+Limits đã áp dụng: connect/discovery 5 giây; mỗi tool call 15 giây hoặc remaining run deadline, tùy cái nhỏ hơn; whole run giữ 120 giây; tool input tối đa 32 KiB mỗi call. Business handler output được preflight giới hạn 4 KiB compact JSON trước validation có thể clone dữ liệu hoặc serialization. Result limit 32 KiB đếm toàn bộ UTF-8 HTTP response sau SDK encoding/sanitization, gồm modern metadata, JSON-RPC envelope và request ID; payload gần limit có thể bị reject vì framing cũng dùng quota. HTTP sanitizer và client response reader đều giới hạn theo stream ở 32 KiB. Không tự retry MCP call. Handlers có async I/O phải honor signal/deadline; không dùng Promise.race rồi bỏ request chạy ngầm. Client close không đóng shared business HTTP handler của app.
 
 Khi MCP enabled nhưng connector không sẵn hoặc discovery thất bại: run fail bằng notice chung trước model call, không âm thầm bỏ tools rồi để assistant bịa kết quả. Khi feature disabled: chat text bình thường. Persistent clients/cache hot-reload/reconnect streams để sau.
 

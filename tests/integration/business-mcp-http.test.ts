@@ -99,36 +99,25 @@ it("delivers real client disconnect to a cooperative route handler through Reque
   expect(delivered).not.toContain("tools/call");
 });
 
-it("caps the complete modern HTTP response after SDK encoding, including metadata and JSON-RPC envelope", async () => {
+it("bounds oversized custom output before SDK encoding and keeps the full MCP response under 32 KiB", async () => {
   const echo: BusinessTool<{ value: string }, { value: string }> = {
     name: "echo", version: "1.0.0", description: "Echo boundary input", kind: "read",
     input: z.object({ value: z.string() }), output: z.object({ value: z.string() }),
     async execute(input) { return input; },
   };
   const { client, responses } = await fixture((request) => createBusinessMcpHttpHandler(loadBusinessMcpConfig(process.env), [echo]).fetch(request), "echo");
-  // 16,340 ASCII bytes twice plus the callback result's 88 JSON framing bytes.
-  const value = "x".repeat(16340);
-  expect(Buffer.byteLength(JSON.stringify({ structuredContent: { value }, content: [{ type: "text", text: JSON.stringify({ value }) }] }))).toBe(32768);
-  let succeeded = false;
-  let failure: unknown;
-  try { await client.callTool({ name: "echo", arguments: { value } }); succeeded = true; } catch (error) { failure = error; }
+  const value = "x".repeat(5000);
+  const result = await client.callTool({ name: "echo", arguments: { value } });
   const response = responses.findLast((response) => response.method === "tools/call")!;
-  if (response.status === 200) {
-    // Characterize the reviewed bug with the pinned 2.3.1 SDK.
-    expect(Buffer.byteLength(JSON.stringify(JSON.parse(response.body).result))).toBe(32881);
-    expect(Buffer.byteLength(response.body)).toBe(32915);
-  }
   expect(Buffer.byteLength(response.body)).toBeLessThanOrEqual(32768);
-  expect(succeeded).toBe(false);
-  expect(failure).toBeInstanceOf(Error);
-  expect(response.status).toBe(500);
-  expect(JSON.parse(response.body)).toEqual({ jsonrpc: "2.0", id: null, error: { code: -32603, message: "business_mcp_result_too_large" } });
+  expect(result.isError).toBe(true);
+  expect(response.status).toBe(200);
+  expect(JSON.stringify(JSON.parse(response.body).result)).toContain("business_mcp_result_too_large");
   expect(response.body).not.toContain(value);
 
-  // This fits after the SDK's modern fields and envelope are added.
-  const accepted = await client.callTool({ name: "echo", arguments: { value: "x".repeat(16266) } });
-  expect(accepted.structuredContent).toEqual({ value: "x".repeat(16266) });
+  const accepted = await client.callTool({ name: "echo", arguments: { value: "x".repeat(3500) } });
+  expect(accepted.structuredContent).toEqual({ value: "x".repeat(3500) });
   const acceptedResponse = responses.findLast((response) => response.method === "tools/call")!;
   expect(acceptedResponse.status).toBe(200);
-  expect(Buffer.byteLength(acceptedResponse.body)).toBe(32767);
+  expect(Buffer.byteLength(acceptedResponse.body)).toBeLessThan(32768);
 });

@@ -9,12 +9,42 @@ const toolCodes = new Set([
   "business_mcp_result_too_large", "business_mcp_cancelled",
 ]);
 export function businessMcpToolError(code: string): CallToolResult {
-  return { isError: true, content: [{ type: "text", text: toolCodes.has(code) ? code : "business_mcp_tool_failed" }] };
+  return { resultType: "complete", isError: true, content: [{ type: "text", text: toolCodes.has(code) ? code : "business_mcp_tool_failed" }] };
 }
 export function businessMcpHttpError(status: number, code: string): Response {
   return Response.json({ error: { code } }, { status, headers: {
     "cache-control": "no-store", ...(status === 401 ? { "www-authenticate": "Bearer" } : {}),
   } });
+}
+async function readBoundedBody(response: Response): Promise<string | undefined> {
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > BUSINESS_MCP_MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        return undefined;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return new TextDecoder().decode(bytes);
+}
+
+function oversizedResponse(): Response {
+  return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: "business_mcp_result_too_large" } }, {
+    status: 500, headers: { "cache-control": "no-store" },
+  });
 }
 function object(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
@@ -41,7 +71,11 @@ function sanitizeMessage(value: unknown): unknown {
 /** Sanitize JSON and legacy SSE terminal messages before any bytes leave the route. */
 export async function sanitizeBusinessMcpResponse(response: Response): Promise<Response> {
   if (!response.body) return new Response(null, { status: response.status, headers: { "cache-control": "no-store" } });
-  const text = await response.text();
+  let text: string | undefined;
+  try { text = await readBoundedBody(response); } catch {
+    return businessMcpHttpError(response.status >= 400 ? response.status : 500, "business_mcp_protocol_error");
+  }
+  if (text === undefined) return oversizedResponse();
   let payload: unknown;
   try {
     if (response.headers.get("content-type")?.includes("text/event-stream")) {
@@ -56,9 +90,7 @@ export async function sanitizeBusinessMcpResponse(response: Response): Promise<R
   if (Buffer.byteLength(body, "utf8") > BUSINESS_MCP_MAX_RESPONSE_BYTES) {
     // Fixed failure also bounds attacker-controlled request IDs. An HTTP error
     // rejects the official client's pending call without requiring its ID here.
-    return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: "business_mcp_result_too_large" } }, {
-      status: 500, headers: { "cache-control": "no-store" },
-    });
+    return oversizedResponse();
   }
   return new Response(body, { status: response.status, headers: { "cache-control": "no-store", "content-type": "application/json" } });
 }

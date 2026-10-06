@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { BusinessTool, BusinessToolContext } from "@/core/tools/definition";
 import { loadBusinessMcpConfig } from "@/server/mcp/config";
 import { createBusinessMcpHttpHandler } from "@/server/mcp/http";
+import { BUSINESS_MCP_MAX_RESPONSE_BYTES, sanitizeBusinessMcpResponse } from "@/server/mcp/errors";
 import { calculateBudgetTool } from "@/server/mcp/tools/calculate-budget/definition";
 import { POST } from "@/app/api/mcp/business/route";
 
@@ -132,6 +133,22 @@ describe("business MCP HTTP guards and protocol", () => {
     expect(result.content).toEqual([{ type: "text", text: "business_mcp_result_too_large" }]);
     expect(result.structuredContent).toBeUndefined();
   });
+  it("stops reading an oversized SDK response at the response cap", async () => {
+    let cancelled = false;
+    let enqueued = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        enqueued += 1;
+        controller.enqueue(new Uint8Array(16 * 1024).fill(0x20));
+      },
+      cancel() { cancelled = true; },
+    });
+    const safe = await sanitizeBusinessMcpResponse(new Response(body, { headers: { "content-type": "application/json" } }));
+    expect(safe.status).toBe(500);
+    expect(Buffer.byteLength(await safe.text())).toBeLessThanOrEqual(BUSINESS_MCP_MAX_RESPONSE_BYTES);
+    expect(cancelled).toBe(true);
+    expect(enqueued).toBeLessThanOrEqual(3);
+  });
   it.each(["throw", "output"])("sanitizes handler %s errors without secrets", async (mode) => {
     const broken = { ...echo, async execute() { if (mode === "throw") throw new Error("Authorization: Bearer private-handler-secret"); return { value: 5 } as unknown as { value: string }; } };
     const result = await payload(await fixture([broken], "echo").fetch(request("tools/call", { name: "echo", arguments: { value: "x" } })));
@@ -157,13 +174,14 @@ describe("business MCP HTTP guards and protocol", () => {
       return input;
     } };
     const abort = new AbortController();
-    const response = fixture([slow], "echo").fetch(request("tools/call", { name: "echo", arguments: { value: "x" }, _meta: { threadId: "spoofed" } }, {}, undefined, abort.signal));
+    const correlation = { threadId: "thread-123", runId: "run-456", toolCallId: "call-789" };
+    const response = fixture([slow], "echo").fetch(request("tools/call", { name: "echo", arguments: { value: "x" }, _meta: { "com.hackathon-starter/business-context": correlation } }, {}, undefined, abort.signal));
     await vi.waitFor(() => expect(observed).toBeDefined());
     abort.abort(new Error("private-abort-secret"));
     await response;
     expect(observed!.signal.aborted).toBe(true);
     expect(settled).toBe(true);
-    expect(observed!.threadId).not.toBe("spoofed");
+    expect(observed).toMatchObject(correlation);
     expect(observed!.deadline).toBeGreaterThan(Date.now() - 1000);
   });
 });

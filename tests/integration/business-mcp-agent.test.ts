@@ -11,6 +11,7 @@ import { createBusinessRunScope } from "@/adapters/mcp/run-scope";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { createBusinessToolCatalog } from "@/server/mcp/catalog";
 import { calculateBudgetTool } from "@/server/mcp/tools/calculate-budget/definition";
+import type { BusinessTool, BusinessToolContext } from "@/core/tools/definition";
 import type { ChatTranscriptMessage } from "@/contracts/chat-tools";
 import { collectTranscriptTools, ToolStatusView } from "@/ui/chat/tool-renderers";
 import { createBusinessHttpFixture, multiplyValueTool } from "../helpers/business-mcp";
@@ -32,8 +33,17 @@ it("matches SDK discovery input semantics for ordinary Zod object schemas", asyn
 });
 
 it.each(["calculate_budget", "multiply_value"] as const)("runs %s over real MCP HTTP through BuiltInAgent, transcript and the existing inline renderer", async (name) => {
-  const definitions = name === "calculate_budget" ? undefined : [calculateBudgetTool, multiplyValueTool];
-  const fixture = await createBusinessHttpFixture({ definitions, enabledTools: ["calculate_budget", ...(definitions ? ["multiply_value"] : [])] });
+  const selected = name === "calculate_budget" ? calculateBudgetTool : multiplyValueTool;
+  let executionContext: BusinessToolContext | undefined;
+  const tracked = {
+    ...selected,
+    async execute(input: unknown, context: BusinessToolContext) {
+      executionContext = context;
+      return selected.execute(input as never, context);
+    },
+  } as BusinessTool<unknown, unknown>;
+  const definitions = [calculateBudgetTool, ...(name === "calculate_budget" ? [] : [multiplyValueTool])].map((definition) => definition.name === name ? tracked : definition);
+  const fixture = await createBusinessHttpFixture({ definitions, enabledTools: ["calculate_budget", ...(name === "calculate_budget" ? [] : ["multiply_value"])] });
   cleanup.push(fixture.close);
   const args = name === "calculate_budget" ? { currency: "VND", budgetMinor: 200_000, items: [{ label: "Room", amountMinor: 120_000 }, { label: "Food", amountMinor: 85_000 }] } : { value: 7, factor: 6 };
   const expected = name === "calculate_budget" ? { currency: "VND", totalMinor: 205_000, remainingMinor: -5_000, overBudget: true, itemCount: 2 } : { product: 42 };
@@ -72,6 +82,7 @@ it.each(["calculate_budget", "multiply_value"] as const)("runs %s over real MCP 
   expect(fixture.methods).toEqual(["server/discover", "tools/list", "tools/call"]);
   const result = transcript.find((message) => message.role === "tool");
   expect(result).toMatchObject({ role: "tool", output: expected, toolCallId: "acceptance-call", threadId: request.threadId, runId: request.runId });
+  expect(executionContext).toMatchObject({ threadId: request.threadId, runId: request.runId, toolCallId: "acceptance-call" });
   expect(transcript.some((message) => message.role === "assistant" && message.content === `Kết quả: ${JSON.stringify(expected)}`)).toBe(true);
   const projected = [...collectTranscriptTools(transcript).values()];
   expect(projected).toHaveLength(1);

@@ -2,6 +2,7 @@ import "server-only";
 import type { MCPClientProvider } from "@copilotkit/runtime/v2";
 import type { BusinessMcpConfig } from "@/server/mcp/config";
 import type { BusinessTool } from "@/core/tools/definition";
+import { BUSINESS_MCP_CORRELATION_META_KEY } from "@/contracts/business-mcp";
 import type { BusinessToolDescriptor, BusinessToolStatusEvent } from "@/contracts/chat-tools";
 import { createBusinessToolCatalog } from "@/server/mcp/catalog";
 import { calculateBudgetTool } from "@/server/mcp/tools/calculate-budget/definition";
@@ -92,7 +93,11 @@ export async function createBusinessRunScope(options: {
         tail = new Promise<void>((resolve) => { release = resolve; });
         await waitForTurn(previous, signal);
         emitStatus("running");
-        const result = await client.callTool({ name: registration.definition.name, arguments: input.data as Record<string, unknown> }, { signal, timeout: Math.max(1, Math.min(remaining, deadline - now())) });
+        const result = await client.callTool({
+          name: registration.definition.name,
+          arguments: input.data as Record<string, unknown>,
+          _meta: { [BUSINESS_MCP_CORRELATION_META_KEY]: { threadId: options.threadId, runId: options.runId, toolCallId: execution.toolCallId } },
+        }, { signal, timeout: Math.max(1, Math.min(remaining, deadline - now())) });
         signal.throwIfAborted();
         const output = decodeBusinessResult(registration, result);
         emitStatus("completed");

@@ -87,9 +87,9 @@
 **Interfaces:**
 - Config is disabled by default. Enabling requires backend URL, a dedicated `BUSINESS_MCP_TOKEN`, explicit tool allowlist, and allowed Host/Origin values. It must not read `MCP_AUTH_TOKEN` or any pgEdge setting.
 - Server factory creates an official MCP v2 HTTP handler for each request and registers only catalog tools allowed by backend config. Each handler validates input, resolves local context, executes once, validates output, and emits structured object plus equivalent text content.
-- HTTP boundary enforces bearer auth before protocol dispatch, Host/Origin policy, Node runtime, request body at most 256 KiB, result at most 32 KiB, no wildcard CORS, and no cross-host token forwarding on redirects.
+- HTTP boundary enforces bearer auth before protocol dispatch, Host/Origin policy, Node runtime, request body at most 256 KiB, tool output preflight at 4 KiB compact JSON, complete MCP response at most 32 KiB with bounded streaming reads, no wildcard CORS, and no cross-host token forwarding on redirects. Correlation IDs travel in namespaced MCP `_meta` from the server-side run scope and are trace-only.
 
-- [ ] Write failing route tests for disabled config, valid bearer, missing/wrong bearer, denied direct tool call, denied discovery, invalid input, disallowed Host/Origin, body over 256 KiB, and structured result over 32 KiB.
+- [ ] Write failing route tests for disabled config, valid bearer, missing/wrong bearer, denied direct tool call, denied discovery, invalid input, disallowed Host/Origin, body over 256 KiB, tool output preflight over 4 KiB, and complete MCP response over 32 KiB.
 - [ ] Write an official SDK integration test that initializes, calls `tools/list`, and calls `calculate_budget` through the actual HTTP route; assert sample values and that handler dispatch occurred through the protocol.
 - [ ] Run focused server/HTTP tests and observe expected failures.
 - [ ] Implement the config parser and thin Next Node route that delegates to the official server handler; keep business handlers transport-independent.
