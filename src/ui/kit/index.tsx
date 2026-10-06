@@ -40,15 +40,16 @@ export function SectionHeading({ title, subtitle, link, action, size = "l", id }
   </div>;
 }
 
-export function ArticleCard({ href, image, title, excerpt, kicker, ratio = "4/5" }: { href: string; image: string; title: ReactNode; excerpt?: ReactNode; kicker?: ReactNode; ratio?: string }) {
-  return <Link href={href} className="vn-article vn-zoom">
+export function ArticleCard({ href, image, title, excerpt, kicker, ratio = "4/5" }: { href?: string; image: string; title: ReactNode; excerpt?: ReactNode; kicker?: ReactNode; ratio?: string }) {
+  const body = <>
     <Img src={image} ratio={ratio} sizes="320px" />
     <div className="vn-stack vn-stack--s" style={{ gap: 8 }}>
       {kicker ? <span className="vn-article__kicker">{kicker}</span> : null}
       <h3 className="vn-article__title">{title}</h3>
       {excerpt ? <p className="vn-article__excerpt">{excerpt}</p> : null}
     </div>
-  </Link>;
+  </>;
+  return href ? <Link href={href} className="vn-article vn-zoom">{body}</Link> : <article className="vn-article">{body}</article>;
 }
 
 export function TileCard({ href, image, title, ratio = "4/5", size = "l" }: { href: string; image: string; title: ReactNode; ratio?: string; size?: "l" | "m" }) {
@@ -134,35 +135,40 @@ export function Section({ tone, tight, flushTop, id, children, style }: { tone?:
   </section>;
 }
 
-export const BRAND = "Thực chiến AI";
+export type Brand = { event: string; team: string; logo: string };
+export const DEFAULT_BRAND: Brand = { event: "AI Thực chiến", team: "TriplePeek", logo: "/brand/ai-thuc-chien.png" };
+export const BRAND = `${DEFAULT_BRAND.event} × ${DEFAULT_BRAND.team}`;
 
-export function SiteFooter({ templates }: { templates: Array<{ id: string; title: string }> }) {
+/** Co-brand lockup: contest logo, event name and team name ("AI Thực chiến × TriplePeek"). */
+export function BrandLockup({ size = "m", brand = DEFAULT_BRAND }: { size?: "m" | "l"; brand?: Brand }) {
+  const px = size === "l" ? 56 : 40;
+  return <span className={cx("vn-brand", size === "l" && "vn-brand--l")}>
+    <Image src={brand.logo} alt="" width={px} height={px} className="vn-brand__logo" priority={size === "m"} />
+    <span className="vn-brand__text">
+      <span className="vn-brand__event">{brand.event}</span>
+      <span className="vn-brand__x" aria-hidden="true">×</span>
+      <span className="vn-brand__team">{brand.team}</span>
+    </span>
+  </span>;
+}
+
+export type FooterContent = { about?: string; columns: Array<{ title: string; links: Array<{ label: string; href: string }> }>; note?: string };
+
+export function SiteFooter({ brand = DEFAULT_BRAND, footer }: { brand?: Brand; footer: FooterContent }) {
   return <footer className="vn-footer">
     <div className="vn-footer__cols">
       <div>
-        <div className="vn-footer__brand">{BRAND}</div>
-        <p style={{ color: "var(--vn-ice-200)", fontSize: 15, maxWidth: 260 }}>Bộ khung hackathon: sáu mẫu bài toán trên một nền tảng dùng chung.</p>
+        <div className="vn-footer__brand"><BrandLockup size="l" brand={brand} /></div>
+        {footer.about ? <p style={{ color: "var(--vn-ice-200)", fontSize: 15, maxWidth: 300 }}>{footer.about}</p> : null}
       </div>
-      <div>
-        <h3 className="vn-footer__title">Mẫu bài toán</h3>
-        <ul>{templates.slice(0, 3).map(t => <li key={t.id}><Link href={`/templates/${t.id}`}>{t.title}</Link></li>)}</ul>
-      </div>
-      <div>
-        <h3 className="vn-footer__title">Thêm mẫu</h3>
-        <ul>{templates.slice(3).map(t => <li key={t.id}><Link href={`/templates/${t.id}`}>{t.title}</Link></li>)}</ul>
-      </div>
-      <div>
-        <h3 className="vn-footer__title">Nhà phát triển</h3>
-        <ul>
-          <li><Link href="/playground">Fixture playground</Link></li>
-          <li><Link href="/api/domains">Domain manifests</Link></li>
-          <li><Link href="/api/health">Health check</Link></li>
-        </ul>
-      </div>
+      {footer.columns.map(column => <div key={column.title}>
+        <h3 className="vn-footer__title">{column.title}</h3>
+        <ul>{column.links.map(link => <li key={link.href + link.label}><Link href={link.href}>{link.label}</Link></li>)}</ul>
+      </div>)}
     </div>
     <div className="vn-footer__bottom">
       <span className="vn-row" style={{ gap: 8 }}><Icon name="globe" size={16} />Tiếng Việt</span>
-      <span>Dữ liệu demo tổng hợp · Ảnh: Unsplash</span>
+      {footer.note ? <span>{footer.note}</span> : null}
     </div>
   </footer>;
 }

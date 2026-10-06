@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { Children, useEffect, useRef, useState, type ReactNode } from "react";
-import { Icon, cx } from "../primitives";
-import { BRAND } from "./index";
+import { Icon, cx, type IconName } from "../primitives";
+import { BRAND, BrandLockup, type Brand } from "./index";
 import { StaggeredMenu } from "./StaggeredMenu";
 
 /**
@@ -60,7 +60,10 @@ export function Carousel({ maxPerView = 5, minCard = 340, children }: { maxPerVi
 export type SiteMenu = { items: Array<{ label: string; href: string }>; secondary: Array<{ label: string; href: string }>; secondaryTitle: string };
 
 /** 72px header: wordmark left, actions right; transparent over heroes. The menu is a StaggeredMenu panel. */
-export function SiteHeader({ transparent, menu, variant = "default" }: { transparent?: boolean; menu: SiteMenu; variant?: "default" | "cover" }) {
+export type HeaderNavItem = { label: string; href: string; icon: IconName };
+const DEFAULT_NAV: HeaderNavItem[] = [{ label: "Mẫu bài toán", href: "/#mau-bai-toan", icon: "layers" }, { label: "Playground", href: "/playground", icon: "search" }];
+
+export function SiteHeader({ transparent, menu, variant = "default", nav = DEFAULT_NAV, brand }: { transparent?: boolean; menu: SiteMenu; variant?: "default" | "cover"; nav?: HeaderNavItem[]; brand?: Brand }) {
   const headerRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const [scrollHidden, setScrollHidden] = useState(false);
@@ -89,10 +92,9 @@ export function SiteHeader({ transparent, menu, variant = "default" }: { transpa
   }, [variant, menuOpen]);
 
   return <header ref={headerRef} className={cx("vn-site-header", transparent && "vn-site-header--transparent", variant === "cover" && "vn-site-header--cover")}>
-    <Link href="/" className="vn-wordmark" aria-label={`${BRAND} — trang chủ`}>{BRAND}</Link>
+    <Link href="/" className="vn-wordmark" aria-label={`${brand ? `${brand.event} × ${brand.team}` : BRAND} — trang chủ`}><BrandLockup brand={brand} /></Link>
     <nav ref={navRef} className={cx("vn-header-nav", navHidden && "vn-header-nav--hidden")} aria-label="Điều hướng chính" aria-hidden={navHidden || undefined} inert={navHidden} onFocusCapture={() => setScrollHidden(false)}>
-      <Link href="/#mau-bai-toan" className="vn-header-act"><Icon name="layers" size={20} /><span>Mẫu bài toán</span></Link>
-      <Link href="/playground" className="vn-header-act"><Icon name="search" size={20} /><span>Playground</span></Link>
+      {nav.map(item => <Link key={item.href} href={item.href} className="vn-header-act"><Icon name={item.icon} size={20} /><span>{item.label}</span></Link>)}
       <StaggeredMenu
         position="right"
         items={menu.items.map(item => ({ label: item.label, ariaLabel: `Đi tới ${item.label}`, link: item.href }))}

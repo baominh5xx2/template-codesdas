@@ -105,6 +105,17 @@ code, pre, kbd, samp { font-family: var(--font-sans); }
 .vn-site-header--transparent { position: absolute; left: 0; right: 0; background: var(--overlay-scrim-top); border-bottom: 0; color: #fff; }
 .vn-wordmark { color: inherit; text-decoration: none; font: var(--fw-black) 22px/1 var(--font-display); letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
 .vn-wordmark:hover { color: inherit; }
+.vn-brand { display: inline-flex; align-items: center; gap: 12px; }
+.vn-brand__logo { display: block; flex: none; border-radius: 10px; box-shadow: 0 2px 8px rgba(6, 19, 42, 0.18); }
+.vn-brand__text { display: inline-flex; align-items: baseline; gap: 0.35em; }
+.vn-brand__event { font-weight: var(--fw-black); }
+.vn-brand__x { font-weight: var(--fw-regular); opacity: 0.7; }
+.vn-brand__team { font-weight: var(--fw-black); color: var(--vn-blue); }
+.vn-site-header--transparent .vn-brand__team { color: #fff; }
+.vn-footer .vn-brand__team { color: var(--vn-ice); }
+.vn-brand--l .vn-brand__logo { border-radius: 14px; }
+.vn-footer__brand .vn-brand__text { flex-wrap: wrap; row-gap: 4px; }
+@media (max-width: 640px) { .vn-site-header .vn-brand__event, .vn-site-header .vn-brand__x { display: none; } }
 .vn-header-nav { display: flex; align-items: center; gap: 4px; }
 .vn-header-act { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: var(--radius-pill); color: inherit; background: transparent; border: 0; text-decoration: none; font: var(--fw-semibold) 15px/1 var(--font-sans); cursor: pointer; transition: background var(--dur-fast); }
 .vn-header-act:hover { background: var(--vn-grey-100); color: inherit; }
@@ -124,7 +135,7 @@ code, pre, kbd, samp { font-family: var(--font-sans); }
 }
 .vn-footer { background: var(--vn-navy); color: #fff; padding: var(--space-9) var(--page-inset) var(--space-6); }
 .vn-footer__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-7); margin-bottom: var(--space-8); }
-.vn-footer__brand { font: var(--fw-black) 28px/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 16px; }
+.vn-footer__brand { font: var(--fw-black) 22px/1.2 var(--font-display); text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 16px; }
 .vn-footer__title { margin: 0 0 12px; font: var(--fw-bold) 15px/1.2 var(--font-sans); color: var(--vn-ice); }
 .vn-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .vn-footer a { color: #fff; text-decoration: none; font-size: 15px; }

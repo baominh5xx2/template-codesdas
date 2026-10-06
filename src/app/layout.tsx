@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { loadSite } from "@/site/load";
 import "@/ui/styles/tokens.css";
 import "@/ui/styles/ui.css";
 import "./globals.css";
@@ -11,9 +12,11 @@ const manrope = localFont({
   display: "swap",
 });
 
+const site = loadSite();
+
 export const metadata: Metadata = {
-  title: { default: "Thực chiến AI", template: "%s · Thực chiến AI" },
-  description: "Bộ khung hackathon: sáu mẫu bài toán trên nền tảng dùng chung.",
+  title: { default: site.metadata.title, template: `%s · ${site.brand.team}` },
+  description: site.metadata.description,
 };
 
 export default function RootLayout({

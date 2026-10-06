@@ -2,6 +2,10 @@
 
 Đây là baseline Next.js/TypeScript chạy độc lập để frontend bắt đầu tích hợp ngay. Domain manifests, hợp đồng JSON, fixture và API demo không cần `.env`, database, model, API key hay dịch vụ ngoài. Mọi kết quả demo đều ghi rõ là dữ liệu synthetic; route chạy workflow trả `501 feature_unavailable` cho đến khi engine thật được tích hợp.
 
+## Sửa nội dung trang web dự thi
+
+Chữ, ảnh, bản đồ và thứ tự các khối của mọi trang nằm trong `src/content`. Xem [hướng dẫn chỉnh sửa](src/content/README.md); `pnpm test` kiểm tra nội dung (loại khối, ảnh, link) trước khi nộp.
+
 ## Bắt đầu
 
 ```sh
