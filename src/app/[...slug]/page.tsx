@@ -12,7 +12,9 @@ const slugOf = (parts: string[] | undefined) => (parts ?? []).join("/");
 
 /** Every page comes from src/content; this route only looks it up and renders its sections. */
 export function generateStaticParams() {
-  return loadPages().map(page => ({ slug: page.slug ? page.slug.split("/") : [] }));
+  return loadPages()
+    .filter(page => Boolean(page.slug))
+    .map(page => ({ slug: page.slug.split("/") }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

@@ -14,6 +14,10 @@ export default definePage({
       title: "Từ đề bài đến demo",
       subtitle: "AI Thực chiến × TriplePeek",
       height: "calc(100svh - clamp(72px, 8vw, 88px))",
+      actions: [
+        { label: "Mở AI Native Chat", href: "/chat", style: "primary" },
+        { label: "Xem mẫu bài toán", href: "/#mau-bai-toan", style: "inverse" },
+      ],
     },
     {
       type: "cards",

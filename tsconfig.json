@@ -39,9 +39,12 @@
     ".next-e2e-no-env/types/**/*.ts",
     ".next-e2e-no-env/dev/types/**/*.ts",
     ".next-e2e-live/types/**/*.ts",
-    ".next-e2e-live/dev/types/**/*.ts"
+    ".next-e2e-live/dev/types/**/*.ts",
+    ".next-e2e-review/types/**/*.ts",
+    ".next-e2e-review/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "worktree"
   ]
 }

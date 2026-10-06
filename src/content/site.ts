@@ -13,12 +13,14 @@ export default defineSite({
     description: "Bài dự thi của nhóm TriplePeek: sáu mẫu bài toán trên một nền tảng dùng chung.",
   },
   nav: [
+    { label: "AI Native Chat", href: "/chat", icon: "message-circle" },
     { label: "Mẫu bài toán", href: "/#mau-bai-toan", icon: "layers" },
     { label: "Bản đồ", href: "/#ban-do", icon: "map-pin" },
   ],
   menu: {
     items: [
       { label: "Trang chủ", href: "/" },
+      { label: "AI Native Chat", href: "/chat" },
       { label: "Bảng điều khiển dữ liệu", href: "/templates/data-dashboard" },
       { label: "Phân tích tài liệu", href: "/templates/document-analyzer" },
       { label: "Phân tích rủi ro", href: "/templates/risk-analyzer" },
@@ -47,6 +49,7 @@ export default defineSite({
         { label: "Trợ lý tri thức", href: "/templates/knowledge-assistant" },
       ] },
       { title: "Nhà phát triển", links: [
+        { label: "AI Native Chat", href: "/chat" },
         { label: "Fixture playground", href: "/playground" },
         { label: "Domain manifests", href: "/api/domains" },
         { label: "Health check", href: "/api/health" },

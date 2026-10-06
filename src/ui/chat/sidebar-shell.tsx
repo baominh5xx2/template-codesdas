@@ -76,6 +76,28 @@ export function SidebarShell({
         </svg>
         <span>Cuộc trò chuyện mới</span>
       </button>
+      <a
+        href="/"
+        aria-label="Về trang chủ"
+        className="chat-new-chat-button"
+        style={{ textDecoration: "none", color: "inherit", marginTop: "8px" }}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+        <span>Về trang chủ</span>
+      </a>
     </nav>
   );
 

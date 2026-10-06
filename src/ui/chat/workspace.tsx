@@ -31,16 +31,20 @@ function generateChatId(): string {
   return "chat-session-thread";
 }
 
-export function ChatWorkspace(): ReactElement {
+export type ChatWorkspaceProps = {
+  threadId?: string;
+};
+
+export function ChatWorkspace({ threadId }: ChatWorkspaceProps = {}): ReactElement {
   const binding = useMemo(() => createChatClientBinding(), []);
   const controller = useMemo(
     () =>
       createChatController({
         port: binding.port,
-        uuid: generateChatId,
+        uuid: () => threadId || generateChatId(),
         available: false,
       }),
-    [binding]
+    [binding, threadId]
   );
 
   useEffect(() => {
