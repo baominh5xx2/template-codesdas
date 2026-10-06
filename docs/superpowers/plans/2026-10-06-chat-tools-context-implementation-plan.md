@@ -22,6 +22,7 @@
 - Technical failures exposed in chat must be exactly `Chưa kết nối`. Do not expose tokens, headers, stacks, raw MCP messages/errors, or tool payloads in notices/logs. Latch/suppress failures before model/UI output; never convert a failure to a successful tool result or fixture answer.
 - User Stop is `interrupted`, not failed/completed. Abort in-flight client/handler work, suppress late output, and close/release run resources once. A valid business result such as `overBudget: true` is successful output.
 - Every per-run client must negotiate MCP modern protocol explicitly and fail closed if negotiation falls back to legacy. In the pinned stateless HTTP server, legacy cancellation travels as a separate request and cannot abort the active handler; modern request cancellation propagates through the HTTP request signal.
+- CopilotKit Stop can emit a `RUN_FINISHED` outcome with type `cancelled` and synthesize a `TOOL_CALL_RESULT` whose payload is `{ status: "stopped", reason: "stop_requested" }`. Transcript projection must treat these as interruption status, never as validated business output or a replayable successful tool pair.
 - C02 durable history is not implemented. Define a persistence handoff contract only; do not claim reload/restart persistence or replay.
 - Before editing Next.js code, read the relevant local Next guide under `node_modules/next/dist/docs/` as required by `AGENTS.md`. Do not read secrets or copy `.env` files from another checkout. If starting a dev server, use a free port other than 3100.
 
@@ -152,6 +153,7 @@
 **Interfaces:**
 - Replace text-only run payloads with a serializable typed chat transcript that preserves assistant text, assistant tool calls, tool results, tool status, `toolCallId`, `runId`, `threadId`, tool name/version, validated input, validated output, and safe error code/status.
 - Keep only complete successful call/result pairs in subsequent run context; interrupted/orphan calls never become replayable success. Trim history by whole pair. Retry reuses the original user message once, creates a new `runId`, and does not replay stale tool events as new events.
+- Map CopilotKit's `RUN_FINISHED` cancellation outcome and synthetic stopped tool result to interrupted state; never persist/project the synthetic `{ status: "stopped", reason: "stop_requested" }` payload as business output.
 - Define a `PersistedToolCallRecord` C02 handoff type with scope, IDs, connector/tool identity/version, validated input, status, validated output only when completed, timestamps, and safe error code. It is an interface only; this task adds no DB or durable storage.
 
 - [ ] Write tests proving tool call/result messages survive adapter projection and the next user turn, stable IDs match, and text projection does not create fake assistant bubbles.
