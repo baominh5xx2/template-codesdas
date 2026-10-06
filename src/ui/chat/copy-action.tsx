@@ -1,56 +1,43 @@
 import { useState, type ReactElement } from "react";
+import { CopilotChatAssistantMessage } from "@copilotkit/react-core/v2";
 
+/**
+ * Message copy using CopilotKit's own `CopyButton` (icon, tooltip, copied check state).
+ * The app supplies the click handler so a clipboard failure goes through the single
+ * `Chưa kết nối` notice policy instead of failing silently.
+ */
 export function CopyAction(props: {
   content: string;
   onFailure: () => void;
 }): ReactElement {
-  const [copied, setCopied] = useState(false);
+  const [copiedContent, setCopiedContent] = useState<string | null>(null);
 
-  const handleCopy = async () => {
+  const copy = async (): Promise<boolean> => {
+    setCopiedContent(null);
     try {
       if (!navigator.clipboard?.writeText) {
         throw new Error("Clipboard API unavailable");
       }
       await navigator.clipboard.writeText(props.content);
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
+      setCopiedContent(props.content);
+      return true;
     } catch {
       props.onFailure();
+      return false;
     }
   };
 
   return (
     <div className="chat-copy-wrapper">
-      <button
-        type="button"
-        aria-label="Sao chép"
+      <CopilotChatAssistantMessage.CopyButton
         className="chat-copy-btn"
-        onClick={() => {
-          void handleCopy();
-        }}
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-        </svg>
-      </button>
-      {copied && (
-        <span className="chat-copy-feedback" role="status" aria-live="polite">
-          Đã sao chép
-        </span>
-      )}
+        title="Sao chép"
+        aria-label="Sao chép"
+        onClick={copy}
+      />
+      <span className="chat-copy-feedback" role="status" aria-live="polite">
+        {copiedContent === props.content ? "Đã sao chép" : ""}
+      </span>
     </div>
   );
 }

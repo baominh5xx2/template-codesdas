@@ -36,7 +36,7 @@ describe("ChatWorkspace", () => {
 
     render(<ChatWorkspace />);
 
-    expect(screen.getByRole("heading", { name: "Hackathon Starter Kit" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "AI Thực chiến × TriplePeek" })).toBeVisible();
     expect(screen.getByText("Bạn muốn hỏi gì?")).toBeVisible();
 
     await waitFor(() => {
