@@ -1,8 +1,8 @@
 # C01 — Chat Foundation Design Spec
 
-Ngày: **2026-10-05**. Trạng thái: **user đã cho chuyển sang writing-plans; plan C01 đã viết; chưa triển khai**.
+Ngày: **2026-10-05**, cập nhật **2026-10-06**. Trạng thái: **C01 đã triển khai và đạt controlled-provider acceptance; durable history thuộc C02**.
 
-PRD: [AI-native Chat Core](../../platform-build-spec.md), phần C01 và notice/error policy ở mục 4. Đây là technical spec cho **C01**, không thay thế specs của C02–C05. User đã yêu cầu viết plan từ spec này; [implementation plan C01](../plans/2026-10-05-chat-foundation-implementation-plan.md) ghi chi tiết task/interfaces/checks, chưa execute.
+PRD: [AI-native Chat Core](../../platform-build-spec.md), phần C01 và notice/error policy ở mục 4. Đây là technical spec cho **C01**, không thay thế specs của C02–C05. [Implementation plan C01](../plans/2026-10-05-chat-foundation-implementation-plan.md) đã triển khai với actual CopilotKit v2 UI/runtime và controlled OpenAI provider. Check, 123 unit/integration tests, domain validation, build, 21 chat browser cases và 1 baseline case đạt. Browser validation dùng no-env port 3190 vì Docker local chiếm default 3100; defaults vẫn giữ nguyên. Chưa kiểm tra live external model; transcript/runner ephemeral, chưa có tools/MCP trong chat.
 
 ## 1. Ý định và kết quả
 

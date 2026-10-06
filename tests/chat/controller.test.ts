@@ -346,7 +346,7 @@ describe("createChatController", () => {
   });
 
   describe("fail() and notice policy", () => {
-    it("sets notice, fails status, blocks send, but does not release pending run before teardown", async () => {
+    it.each(["completed", "interrupted", "failed"] as const)("preserves failed notice/status until recovery after a %s terminal", async (terminal) => {
       const h = createControlledChatPort();
       let n = 0;
       const c = createChatController({
@@ -369,11 +369,12 @@ describe("createChatController", () => {
       c.setDraft("Attempt during failed pending");
       expect(await c.send()).toBe(false);
 
-      h.finish("failed");
+      h.finish(terminal);
       await sendPromise;
 
       expect(c.getSnapshot().pending).toBe(false);
       expect(c.getSnapshot().notice).toBe(true);
+      expect(c.getSnapshot().status).toBe("failed");
       expect(await c.send()).toBe(false);
     });
 

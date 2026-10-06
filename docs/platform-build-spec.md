@@ -31,7 +31,7 @@ Core không cam kết tự giải mọi đề bằng một prompt. Khả năng x
 ## 2. Phạm vi và quyết định nền tảng
 
 - **Chat-first**: live chat và durable history đi trước custom workflow engine, ingestion hoặc analytics đầy đủ.
-- **Design giống bố cục ChatGPT, theme trắng cố định** theo ảnh/yêu cầu user; main trắng, sidebar xám nhẹ, transcript/composer giữa. [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) và [UI plan](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md) khóa visual tokens/layout và tasks chi tiết C01 UI; browser dark preference không đổi theme. Mình chỉ viết spec/plan, user tự handle code.
+- **Design giống bố cục ChatGPT, theme trắng cố định** theo ảnh/yêu cầu user; main trắng, sidebar xám nhẹ, transcript/composer giữa. [White UI design](superpowers/specs/2026-10-05-chat-white-ui-design.md) và [UI plan](superpowers/plans/2026-10-05-chat-white-ui-implementation-plan.md) đã triển khai ở C01; browser dark preference không đổi theme.
 - **Một người dùng local** cho baseline; chưa xây multi-user login, multi-tenant management, tenant switching hoặc tenant RBAC. Giữ server-owned identity/adapter boundary để mở rộng sau; các IDs trong contracts không đồng nghĩa phải xây tenant product features.
 - **Thông báo lỗi thống nhất trong khung chat: `Chưa kết nối`**. Thiếu config, mất kết nối và mọi technical failure đi qua cùng notice; không đưa lỗi SDK/provider/tool/MCP hoặc stack trace lên UI. Chi tiết chỉ giữ trong server diagnostics đã loại secrets. Không fallback sang demo assistant replies.
 - **CopilotKit OSS làm nền mặc định**: tái sử dụng chat UI, runtime, agent loop, tool calling, shared state và HITL. Intelligence là extension tùy chọn có điều kiện, không là prerequisite. [OSS vs Intelligence](https://docs.copilotkit.ai/concepts/oss-vs-enterprise).
@@ -59,7 +59,8 @@ Snapshot này giữ để đọc nền ban đầu. Trạng thái hiện hành xe
 
 | Phần hiện có | Trạng thái và giới hạn |
 |---|---|
-| Next.js/React/TypeScript bootstrap | Có implementation; trang `/` là landing skeleton, chưa có chat |
+| Next.js/React/TypeScript bootstrap | Có implementation; trang `/` là workspace chat trắng với actual CopilotKit v2 UI |
+| Chat C01 UI/runtime/model | Có implementation; stream, Stop, manual Retry, New chat, readiness/no-env và masked errors; transcript/runner ephemeral, reload reset |
 | `/api/health`, `/api/domains` | Có implementation; health báo `mode: skeleton`, domains trả bốn manifests |
 | `/api/demo/:domainId`, dataset rows API | Fixture có validation/pagination; production từ chối fixture API |
 | `/playground` | Danh sách link tới fixture JSON; chưa phải gallery React cards |
@@ -72,7 +73,7 @@ Snapshot này giữ để đọc nền ban đầu. Trạng thái hiện hành xe
 | Bốn domain seeds | Dataset analysis, document review, research report, risk analyzer; workflows rỗng, dùng synthetic fixtures |
 | `/api/runs` | Placeholder trả `501 feature_unavailable`; chưa tạo business run |
 | Feature flags | Server container đang tắt runs/artifacts/uploads/datasets/storage/model/sources/parsers |
-| Toolchain checks/tests | Đã có scripts check/test/build/e2e/domain validation và tests skeleton; không phải bằng chứng live chat hoạt động |
+| Toolchain checks/tests | Check, 123 unit/integration tests, domain validation, build, 21 actual SDK chat browser cases và 1 baseline case đạt với controlled OpenAI provider; chưa kiểm tra external model |
 
 **Chưa có tại snapshot baseline này:** packages CopilotKit/AI SDK/MCP SDK, chat UI/provider/runtime, live model, thread storage/history, Postgres migrations/compose, pgEdge MCP integration, workflow runner, generic cards và reusable capability algorithms. Các bảng feature dưới đây đều là **yêu cầu cần tích hợp/xây**, trừ inventory nêu trên.
 

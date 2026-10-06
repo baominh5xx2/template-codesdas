@@ -11,13 +11,15 @@ export type ChatPanelProps = {
 };
 
 export function ChatPanel(props: ChatPanelProps): ReactElement {
-  void props.controller;
   const agent = useAgent({ agentId: "default" });
   const copilotkit = useCopilotKit();
   const binding = useChatBinding();
 
   useEffect(() => {
-    if (!agent.agent || !copilotkit.copilotkit) return;
+    if (!agent.isReady || !agent.agent || !copilotkit.copilotkit) {
+      props.controller.setAvailable(false);
+      return;
+    }
 
     const client = createCopilotChatClient({
       agent: agent.agent,
@@ -26,11 +28,13 @@ export function ChatPanel(props: ChatPanelProps): ReactElement {
 
     if (binding) {
       const detach = binding.attach(client);
+      props.controller.setAvailable(true);
       return () => {
+        props.controller.setAvailable(false);
         detach();
       };
     }
-  }, [agent.agent, copilotkit.copilotkit, binding]);
+  }, [agent.agent, agent.isReady, copilotkit.copilotkit, binding, props.controller]);
 
   return <CopilotChat chatView={WhiteChatView} />;
 }

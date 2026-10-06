@@ -412,6 +412,16 @@
   text-align: center;
 }
 
+.chat-error-boundary-layout {
+  align-items: stretch;
+  justify-content: initial;
+  padding: 0;
+  gap: 0;
+  text-align: initial;
+  flex: 1;
+  min-height: 0;
+}
+
 @media (max-width: 1023px) {
   .chat-header {
     height: 52px;
