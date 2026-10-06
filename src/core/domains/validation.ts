@@ -16,6 +16,7 @@ export function validateDomain(domain: DomainDefinition, catalog: DomainValidati
   const boundTools = new Set<string>();
   for (const binding of bindings) {
     const toolKey = `${binding.toolName}@${binding.toolVersion}`;
+    if (!isSemver(binding.toolVersion)) throw new Error("domain_tool_version_invalid");
     if (bindingIds.has(binding.id) || boundTools.has(toolKey)) throw new Error("domain_result_binding_duplicate");
     bindingIds.add(binding.id);
     boundTools.add(toolKey);
@@ -23,11 +24,12 @@ export function validateDomain(domain: DomainDefinition, catalog: DomainValidati
   }
   const tools = domain.tools ?? [];
   const hasVersionedReferences = tools.length > 0 || bindings.length > 0;
-  const isToolRegistered = (name: string, version: number): boolean => {
+  const isToolRegistered = (name: string, version: string): boolean => {
     if (catalog.registeredTools) return catalog.registeredTools.has(`${name}@${version}`);
     return !hasVersionedReferences && catalog.toolNames.has(name);
   };
   for (const tool of tools) {
+    if (!isSemver(tool.version)) throw new Error("domain_tool_version_invalid");
     if (!isToolRegistered(tool.name, tool.version)) throw new Error("domain_tool_unregistered");
   }
   for (const binding of bindings) {
@@ -44,4 +46,5 @@ export function validateDomain(domain: DomainDefinition, catalog: DomainValidati
   if (domain.requiredArtifactKinds.some(kind => !workflowProducers.has(kind) && !bindingProducers.has(kind))) throw new Error("domain_artifact_unproduced");
   catalog.registeredDomainIdentities.add(identity);
 }
+const isSemver = (version: string) => /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version);
 export type { DomainValidationCatalog };

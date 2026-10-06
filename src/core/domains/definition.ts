@@ -12,7 +12,7 @@ export interface PresentationContext { snapshot: RunSnapshot; get<T>(kind: strin
 export interface DomainResultBinding {
   id: string;
   toolName: string;
-  toolVersion: number;
+  toolVersion: string;
   outputSchema: Schema<JsonValue>;
   artifactKind: string;
   artifactVersion: number;
@@ -20,7 +20,7 @@ export interface DomainResultBinding {
   toRunInput(output: JsonValue): JsonValue;
   toArtifactDraft(output: JsonValue): ArtifactDraft<JsonValue>;
 }
-export interface DomainToolReference { name: string; version: number; optional?: boolean }
+export interface DomainToolReference { name: string; version: string; optional?: boolean }
 export interface DomainDefinition {
   manifest: DomainManifest;
   inputSchema: Schema<JsonValue>;

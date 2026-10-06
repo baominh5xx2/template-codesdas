@@ -15,15 +15,15 @@ const manifest = (id = "chat-pack", version = 1, toolNames = ["business__calcula
 });
 const catalog = (): DomainValidationCatalog => {
   const artifactSchemas = { has: (kind: string, version: number) => kind === "budget.summary" && version === 1, register: () => undefined, parse: (value: unknown) => value as Artifact<unknown> };
-  return { sourceProfileIds: new Set(["approved-source"]), toolNames: new Set(), registeredTools: new Map([["business__calculate@1", { name: "business__calculate", version: 1 }]]), registeredDomainIdentities: new Set(), artifactSchemas: { has: (kind: string, version: number) => kind === "budget.summary" && version === 1, register: () => undefined, parse: (value: unknown) => value as Artifact<unknown> } };
+  return { sourceProfileIds: new Set(["approved-source"]), toolNames: new Set(), registeredTools: new Map([["business__calculate@1.0.0", { name: "business__calculate", version: "1.0.0" }]]), registeredDomainIdentities: new Set(), artifactSchemas: { has: (kind: string, version: number) => kind === "budget.summary" && version === 1, register: () => undefined, parse: (value: unknown) => value as Artifact<unknown> } };
 };
 const binding = (overrides: Partial<NonNullable<DomainDefinition["resultBindings"]>[number]> = {}) => ({
-  id: "calculate-result", toolName: "business__calculate", toolVersion: 1, outputSchema: registeredSchema,
+  id: "calculate-result", toolName: "business__calculate", toolVersion: "1.0.0", outputSchema: registeredSchema,
   artifactKind: "budget.summary", artifactVersion: 1, inputSchema: schema<{ amount: number }>(),
   toRunInput: (output: JsonValue) => output, toArtifactDraft: (output: JsonValue) => ({ kind: "budget.summary", version: 1, data: output, sourceIds: [], evidenceIds: [], provenance: { capabilityId: "business__calculate", capabilityVersion: 1 } }),
   ...overrides,
 });
-const pack = (overrides: Partial<DomainDefinition> = {}): DomainDefinition => ({ manifest: manifest(), inputSchema: schema<Record<string, JsonValue>>(), requiredArtifactKinds: ["budget.summary"], systemPrompt: "", sources: [], present: () => [], tools: [{ name: "business__calculate", version: 1 }], resultBindings: [binding()], ...overrides });
+const pack = (overrides: Partial<DomainDefinition> = {}): DomainDefinition => ({ manifest: manifest(), inputSchema: schema<Record<string, JsonValue>>(), requiredArtifactKinds: ["budget.summary"], systemPrompt: "", sources: [], present: () => [], tools: [{ name: "business__calculate", version: "1.0.0" }], resultBindings: [binding()], ...overrides });
 
 it("validates a chat-only pack with registered tool and artifact schema", () => {
   expect(() => validateDomain(pack(), catalog())).not.toThrow();
@@ -36,11 +36,11 @@ it("rejects duplicate binding IDs and duplicate tool/version bindings", () => {
 });
 
 it("rejects unregistered tool bindings and manifest tool names", () => {
-  expect(() => validateDomain(pack({ tools: [{ name: "missing", version: 1 }], manifest: manifest("chat-pack", 1, ["missing"]) }), catalog())).toThrow("domain_tool_unregistered");
+  expect(() => validateDomain(pack({ tools: [{ name: "missing", version: "1.0.0" }], manifest: manifest("chat-pack", 1, ["missing"]) }), catalog())).toThrow("domain_tool_unregistered");
 });
 
 it("rejects a binding whose tool version is not registered", () => {
-  expect(() => validateDomain(pack({ tools: [{ name: "business__calculate", version: 2 }], resultBindings: [binding({ toolVersion: 2 })] }), catalog())).toThrow("domain_tool_unregistered");
+  expect(() => validateDomain(pack({ tools: [{ name: "business__calculate", version: "2.0.0" }], resultBindings: [binding({ toolVersion: "2.0.0" })] }), catalog())).toThrow("domain_tool_unregistered");
 });
 
 it("requires a versioned registry for tool references and result bindings", () => {
@@ -62,7 +62,7 @@ it("preserves name-only validation for a legacy workflow pack", () => {
 it("exposes the template result binding on the server domain definition", () => {
   expect(templateDomain.workflow).toBeUndefined();
   expect(templateDomain.resultBindings?.map(({ id, toolName, toolVersion, artifactKind, artifactVersion }) => ({ id, toolName, toolVersion, artifactKind, artifactVersion }))).toEqual([
-    { id: "example-result", toolName: "business__example", toolVersion: 1, artifactKind: "example.result", artifactVersion: 1 },
+    { id: "example-result", toolName: "business__example", toolVersion: "1.0.0", artifactKind: "example.result", artifactVersion: 1 },
   ]);
 });
 

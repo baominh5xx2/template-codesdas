@@ -6,7 +6,7 @@ import type { DomainDefinition } from "@/core/domains/definition";
 const pack = (id: string, version: number, tools: string[] = ["a", "b"]): DomainDefinition => ({
   manifest: { id, version, title: id, description: "safe description", branding: { name: id, accent: "blue" }, surface: "workspace", inputFields: [], examples: [], toolNames: tools },
   inputSchema: {} as DomainDefinition["inputSchema"], requiredArtifactKinds: [],
-  systemPrompt: "server prompt", sources: [], tools: tools.map(name => ({ name, version: 1 })),
+  systemPrompt: "server prompt", sources: [], tools: tools.map(name => ({ name, version: "1.0.0" })),
   requirements: ["search"], rules: { secret: "must not project" }, present: () => [],
 });
 

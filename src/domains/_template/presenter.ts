@@ -10,7 +10,7 @@ export function presentTemplate(): UIBlock[] { return []; }
 export const templateResultBinding: DomainResultBinding = {
   id: "example-result",
   toolName: "business__example",
-  toolVersion: 1,
+  toolVersion: "1.0.0",
   outputSchema: JsonValueSchema,
   artifactKind: "example.result",
   artifactVersion: 1,

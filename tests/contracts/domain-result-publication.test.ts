@@ -16,7 +16,7 @@ const domain = {
   present: ({ snapshot }: { snapshot: { artifacts: { id: string }[] } }) => [{ id: "total", type: "metric" as const, props: { label: "Total", value: 10, sourceIds: [] } }],
 };
 const binding = {
-  id: "calculate-budget", toolName: "business__calculate", toolVersion: 1,
+  id: "calculate-budget", toolName: "business__calculate", toolVersion: "1.0.0",
   outputSchema, artifactKind: "budget.summary", artifactVersion: 1,
   inputSchema: outputSchema, toRunInput: (output: { total: number }) => output,
   toArtifactDraft: (output: { total: number }) => ({ kind: "budget.summary", version: 1, data: output, sourceIds: [], evidenceIds: [], provenance: { capabilityId: "tool.business.calculate", capabilityVersion: 1 } }),
