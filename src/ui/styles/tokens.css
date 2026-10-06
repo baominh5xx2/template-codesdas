@@ -1,0 +1,121 @@
+/*
+ * Design tokens ported from the Visit Norway design system handoff (design/visit-norway-design/tokens).
+ * Typeface: Manrope (as used on vietcombank.com.vn), bundled locally; it covers Vietnamese.
+ */
+:root {
+  --vn-blue: #004de8;
+  --vn-blue-700: #003cb8;
+  --vn-blue-800: #002e8c;
+  --vn-blue-100: #e3ecfd;
+  --vn-navy: #06132a;
+  --vn-navy-800: #0d1f3f;
+  --vn-navy-700: #1a2c4e;
+  --vn-ice: #a2d4ec;
+  --vn-ice-200: #cfe8f4;
+  --vn-ice-50: #eef7fb;
+  --vn-white: #ffffff;
+  --vn-grey-50: #f5f7fa;
+  --vn-grey-100: #ebeff4;
+  --vn-grey-200: #dce2ea;
+  --vn-grey-400: #9aa4b5;
+  --vn-grey-600: #5b6679;
+  --vn-grey-800: #2e3a50;
+  --vn-flag-red: #ba0c2f;
+  --vn-aurora: #2bb673;
+  --vn-autumn: #d9822b;
+
+  --text-strong: var(--vn-navy);
+  --text-body: var(--vn-navy-700);
+  --text-muted: var(--vn-grey-600);
+  --text-inverse: var(--vn-white);
+  --text-link: var(--vn-blue);
+  --surface-page: var(--vn-white);
+  --surface-subtle: var(--vn-grey-50);
+  --surface-ice: var(--vn-ice-50);
+  --surface-dark: var(--vn-navy);
+  --surface-card: var(--vn-white);
+  --border-subtle: var(--vn-grey-200);
+  --border-strong: var(--vn-navy);
+  --action-primary: var(--vn-blue);
+  --action-primary-hover: var(--vn-blue-700);
+  --action-primary-press: var(--vn-blue-800);
+  --focus-ring: var(--vn-blue);
+  --status-danger: var(--vn-flag-red);
+  --status-success: var(--vn-aurora);
+  --status-warning: var(--vn-autumn);
+  --status-danger-surface: #fbe9ed;
+  --status-success-surface: #e5f6ee;
+  --status-warning-surface: #fbf0e4;
+  --overlay-scrim: linear-gradient(180deg, rgba(6, 19, 42, 0) 40%, rgba(6, 19, 42, 0.75) 100%);
+  --overlay-scrim-top: linear-gradient(180deg, rgba(6, 19, 42, 0.55) 0%, rgba(6, 19, 42, 0) 30%);
+
+  --chart-1: var(--vn-blue);
+  --chart-2: var(--vn-navy);
+  --chart-3: var(--vn-ice);
+  --chart-4: var(--vn-autumn);
+  --chart-5: var(--vn-aurora);
+  --chart-6: var(--vn-grey-400);
+
+  --shadow-1: 0 1px 2px rgba(6, 19, 42, 0.08);
+  --shadow-2: 0 6px 20px rgba(6, 19, 42, 0.12);
+  --shadow-3: 0 18px 48px rgba(6, 19, 42, 0.22);
+  --blur-glass: saturate(140%) blur(14px);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-slow: 500ms;
+  --dur-image: 700ms;
+
+  --radius-s: 4px;
+  --radius-m: 8px;
+  --radius-l: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+  --radius-card: 8px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+  --page-max: 1600px;
+  --content-max: 760px;
+  --gutter: clamp(20px, 4.5vw, 80px);
+  --header-h: 72px;
+  --grid-gap: 40px;
+  --section-y: clamp(64px, 7vw, 104px);
+  --page-inset: max(var(--gutter), calc((100% - var(--page-max)) / 2));
+  /* Same inset measured against the viewport, for full-bleed overlays (map panel). */
+  --viewport-inset: max(var(--gutter), calc((100vw - var(--page-max)) / 2));
+
+  --font-sans: var(--font-manrope, "Manrope"), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --font-display: var(--font-sans);
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-black: 800;
+  --fs-display-xl: clamp(48px, 8vw, 112px);
+  --fs-display-l: clamp(40px, 5.5vw, 72px);
+  --fs-h1: clamp(30px, 2.7vw, 38px);
+  --fs-h2: clamp(26px, 2.2vw, 32px);
+  --fs-h3: 24px;
+  --fs-h4: 20px;
+  --fs-body-l: 20px;
+  --fs-body: 17px;
+  --fs-body-s: 15px;
+  --fs-caption: 13px;
+  --fs-overline: 12px;
+  --lh-tight: 1.25;
+  --lh-heading: 1.25;
+  --lh-body: 1.55;
+  --ls-display: -0.01em;
+  --ls-heading: -0.015em;
+  --ls-overline: 0.08em;
+}
