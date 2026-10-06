@@ -54,6 +54,27 @@ describe("business protocol transcript", () => {
     expect(assistant.toolCalls?.[0].runId).toBe("run");
   });
 
+  it("keeps call/argument projection pending until backend dispatch status arrives", () => {
+    const calls = protocol.slice(0, 2);
+    const status = (value: "pending" | "running" | "completed") => new Map([["call", {
+      ...scope, toolCallId: "call", exposedName: "business__calculate_budget", status: value,
+    }]]);
+    const callStatus = (messages: ChatTranscriptMessage[]) => {
+      const assistant = messages.find((m) => m.id === "a");
+      return assistant?.role === "assistant" ? assistant.toolCalls?.[0].status : undefined;
+    };
+    let transcript = projectProtocolTranscript(calls, scope, [], descriptors);
+    expect(callStatus(transcript)).toBe("pending");
+    const unrelated = new Map([["call", { ...scope, toolCallId: "call", exposedName: "business__other", status: "running" as const }]]);
+    expect(callStatus(projectProtocolTranscript(calls, scope, transcript, descriptors, unrelated))).toBe("pending");
+    transcript = projectProtocolTranscript(calls, scope, transcript, descriptors, status("pending"));
+    expect(callStatus(transcript)).toBe("pending");
+    transcript = projectProtocolTranscript(calls, scope, transcript, descriptors, status("running"));
+    expect(callStatus(transcript)).toBe("running");
+    transcript = projectProtocolTranscript(protocol, scope, transcript, descriptors, status("completed"));
+    expect(callStatus(transcript)).toBe("completed");
+  });
+
   it("keeps successful pairs for the next turn and excludes tool JSON from text bubbles", async () => {
     const h = createControlledChatPort(); let id = 0;
     const c = createChatController({ port: h.port, uuid: () => `id-${++id}`, available: true });

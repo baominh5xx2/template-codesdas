@@ -2,7 +2,7 @@ import type { useAgent, useCopilotKit } from "@copilotkit/react-core/v2";
 import type { AgentSubscriber, Message } from "@ag-ui/client";
 import type { ChatClientPort, ChatRunRequest, ChatRunSink } from "@/ui/chat/controller";
 import type { JsonValue } from "@/contracts/common";
-import { settleToolCalls, type BusinessToolDescriptor, type BusinessToolStatusEvent, type ChatTranscriptMessage, type ChatToolCall } from "@/contracts/chat-tools";
+import { settleToolCalls, type BusinessToolDescriptor, type BusinessToolStatus, type BusinessToolStatusEvent, type ChatTranscriptMessage, type ChatToolCall } from "@/contracts/chat-tools";
 
 export type CopilotChatBindings = {
   agent: ReturnType<typeof useAgent>["agent"];
@@ -23,6 +23,35 @@ function jsonData(content: string): JsonValue | undefined {
     if (data.status === "stopped" && data.reason === "stop_requested") return;
     return data as JsonValue;
   } catch { return; }
+}
+
+function projectedCallStatus(old: ChatToolCall | undefined, event: BusinessToolStatusEvent | undefined): BusinessToolStatus {
+  if (old && (old.status === "completed" || old.status === "failed" || old.status === "interrupted")) return old.status;
+  if (event?.status === "failed" || event?.status === "interrupted") return event.status;
+  if (event?.status === "running") return "running";
+  // A completed status alone is metadata; a matching result establishes success.
+  return old?.status ?? "pending";
+}
+
+function readDescriptor(value: Record<string, unknown>): BusinessToolDescriptor | undefined {
+  if (typeof value.toolName !== "string" || typeof value.exposedName !== "string" || typeof value.toolVersion !== "string") return;
+  if (!/^business__[a-z][a-z0-9_]*$/.test(value.exposedName) || value.exposedName !== `business__${value.toolName}` || !/^\d+\.\d+\.\d+$/.test(value.toolVersion)) return;
+  return { exposedName: value.exposedName, toolName: value.toolName, toolVersion: value.toolVersion };
+}
+
+function readToolStatus(value: Record<string, unknown>, request: ChatRunRequest, descriptors: ReadonlyMap<string, BusinessToolDescriptor>): BusinessToolStatusEvent | undefined {
+  if (value.threadId !== request.threadId || value.runId !== request.runId || typeof value.toolCallId !== "string" || typeof value.exposedName !== "string" || !descriptors.has(value.exposedName)) return;
+  if (value.status !== "pending" && value.status !== "running" && value.status !== "completed" && value.status !== "failed" && value.status !== "interrupted") return;
+  return {
+    threadId: value.threadId, runId: value.runId, toolCallId: value.toolCallId,
+    exposedName: value.exposedName, status: value.status,
+    ...(value.errorCode === "tool_failed" || value.errorCode === "cancelled" ? { errorCode: value.errorCode } : {}),
+  };
+}
+
+function acceptToolStatus(previous: BusinessToolStatusEvent | undefined, next: BusinessToolStatusEvent): boolean {
+  if (!previous || previous.status === "pending") return true;
+  return previous.status === "running" && next.status !== "pending";
 }
 
 /** Protocol data here has already passed the server's business validation boundary.
@@ -46,12 +75,15 @@ export function projectProtocolTranscript(
         const old = oldCalls.get(tool.id);
         const descriptor = old ?? descriptors.get(tool.function.name);
         if (!descriptor || descriptor.exposedName !== tool.function.name) continue;
-        const status = statuses.get(tool.id);
+        const candidate = statuses.get(tool.id);
+        const status = candidate?.exposedName === tool.function.name
+          && candidate.runId === (old?.runId ?? scope.runId)
+          && candidate.threadId === (old?.threadId ?? scope.threadId) ? candidate : undefined;
         const input = jsonData(tool.function.arguments);
         const call: ChatToolCall = {
           ...descriptor, id: tool.id, type: "function", function: { ...tool.function },
           threadId: old?.threadId ?? scope.threadId, runId: old?.runId ?? scope.runId,
-          status: status?.status === "failed" || status?.status === "interrupted" ? status.status : old?.status === "completed" ? "completed" : status?.status === "pending" ? "pending" : "running",
+          status: projectedCallStatus(old, status),
           ...(input !== undefined ? { input } : {}), ...(status?.errorCode ? { errorCode: status.errorCode } : {}),
         };
         calls.set(call.id, call); toolCalls.push(call);
@@ -109,12 +141,13 @@ export function createCopilotChatClient(bindings: CopilotChatBindings): ChatClie
           if (terminalEmitted || userAborted) return;
           if (p.event.type === "CUSTOM") {
             const value = p.event.value && typeof p.event.value === "object" ? p.event.value as Record<string, unknown> : {};
-            if (p.event.name === "business_tool_descriptor" && typeof value.toolName === "string" && typeof value.exposedName === "string" && /^business__[a-z][a-z0-9_]*$/.test(value.exposedName) && value.exposedName === `business__${value.toolName}` && typeof value.toolVersion === "string" && /^\d+\.\d+\.\d+$/.test(value.toolVersion)) {
-              descriptors.set(value.exposedName, { exposedName: value.exposedName, toolName: value.toolName, toolVersion: value.toolVersion });
+            if (p.event.name === "business_tool_descriptor") {
+              const descriptor = readDescriptor(value);
+              if (descriptor) descriptors.set(descriptor.exposedName, descriptor);
             }
-            if (p.event.name === "business_tool_status" && value.threadId === request.threadId && value.runId === request.runId && typeof value.toolCallId === "string" && typeof value.exposedName === "string" && descriptors.has(value.exposedName) && (value.status === "pending" || value.status === "running" || value.status === "completed" || value.status === "failed" || value.status === "interrupted")) {
-              const old = statuses.get(value.toolCallId);
-              if (!old || old.status === "pending" || old.status === "running" && value.status !== "pending") statuses.set(value.toolCallId, { threadId: value.threadId, runId: value.runId, toolCallId: value.toolCallId, exposedName: value.exposedName, status: value.status, ...(value.errorCode === "tool_failed" || value.errorCode === "cancelled" ? { errorCode: value.errorCode } : {}) });
+            if (p.event.name === "business_tool_status") {
+              const next = readToolStatus(value, request, descriptors);
+              if (next && acceptToolStatus(statuses.get(next.toolCallId), next)) statuses.set(next.toolCallId, next);
             }
           }
           emitMessages(p.messages);
