@@ -6,6 +6,7 @@ import { TemplateWorkspace } from "@/problem-templates/workspaces.client";
 import { renderMarkdown } from "@/ui/markdown";
 import { ArticleCard, FeatureBanner, Hero, Img, LinkList, OfferCard, PartnerCard, Section, SectionHeading, TileCard, VideoCard } from "@/ui/kit";
 import { Carousel } from "@/ui/kit/client";
+import { Counter } from "@/ui/kit/Counter";
 import { MapSection } from "@/ui/kit/MapSection";
 import { ScrollExpand } from "@/ui/kit/ScrollExpand";
 import { Accordion } from "@/ui/primitives/Accordion";
@@ -98,7 +99,7 @@ function StatsSection({ section }: { section: Of<"stats"> }) {
   return <Band section={{ ...section, tone: section.tone ?? "navy" }}>
     <div className="vn-stat-row">{section.items.map(item => <div key={item.label} className="vn-metric">
       <span className="vn-metric__label">{item.label}</span>
-      <span className="vn-metric__value">{item.value}{item.unit ? <span className="vn-metric__unit">{item.unit}</span> : null}</span>
+      <span className="vn-metric__value"><Counter value={item.value} />{item.unit ? <span className="vn-metric__unit">{item.unit}</span> : null}</span>
       {item.note ? <span className="vn-caption" style={{ color: "inherit", opacity: 0.8 }}>{item.note}</span> : null}
     </div>)}</div>
   </Band>;

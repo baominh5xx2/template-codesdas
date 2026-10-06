@@ -1,0 +1,14 @@
+/* Rolling-digit counter (adapted from React Bits "Counter"). Inherits font, size and colour. */
+.vn-counter { position: relative; display: inline-flex; }
+.vn-counter__track { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums; }
+.vn-counter__digit {
+  position: relative;
+  display: inline-block;
+  width: 1ch;
+  height: 1.1em;
+  overflow: hidden;
+  /* Fade the faces above and below so the roll reads as a single line. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%);
+}
+.vn-counter__face { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.vn-counter__static { white-space: pre; }
