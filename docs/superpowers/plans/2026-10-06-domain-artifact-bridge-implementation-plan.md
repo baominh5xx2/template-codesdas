@@ -91,7 +91,7 @@
 - [ ] Re-run focused tests and `bun run check`.
 - [ ] Commit as `feat(artifacts): define atomic domain result publication`.
 
-### Task 4: Add a real budget pack and compact acceptance variant
+### Task 4: Match C03 tool versions and add budget pack acceptance variants
 
 **Files:**
 - Create: `src/domains/examples/budget-review/schemas.ts`
@@ -100,16 +100,24 @@
 - Create: `src/domains/examples/budget-review/presenter.ts`
 - Create: `src/domains/examples/budget-compact/index.server.ts`
 - Create: `src/domains/examples/budget-compact/manifest.client.ts`
-- Create: `tests/contracts/budget-domain-packs.test.ts`
+- Modify: `src/core/domains/definition.ts`
+- Modify: `src/core/domains/validation.ts`
+- Modify: `src/core/domains/resolution.ts`
+- Modify: `src/domains/_template/index.server.ts`
+- Modify: `tests/contracts/domain-pack.test.ts`
+- Modify: `tests/contracts/domain-resolution.test.ts`
 - Modify: `src/domains/catalog.server.ts`
-- Modify: `src/domains/catalog.client.ts`
+- Create: `tests/contracts/budget-domain-packs.test.ts`
 
 **Interfaces:**
+- C03 `BusinessTool.version` is an exact semver string; `DomainToolReference.version` and `DomainResultBinding.toolVersion` must match exact strings such as `"1.0.0"`. Domain pack version and artifact schema version remain positive integers.
 - Both packs reference the stable C03 exposed tool `business__calculate_budget@1.0.0` and shared `budget.summary@1` schema; they do not define handlers or call an MCP client.
+- `budget.summary@1` is a strict object matching the real calculate-budget output: `currency` is three uppercase letters, `totalMinor` is a nonnegative safe integer, `remainingMinor` is a safe integer, `overBudget` is boolean, and `itemCount` is an integer from 0 through 100.
+- Export `createDomainCatalog(registeredTools: ReadonlyMap<string, DomainToolReference>)`; it explicitly validates and returns the two budget packs alongside existing example definitions. It must throw when the exact calculate-budget version is missing and must not publish a fake enabled pack. Existing legacy `domains` export stays compatible until C03 composition calls this factory.
 - Budget Review presenter returns two metric blocks and an over-budget warning only when `overBudget` is true. Budget Compact returns a Markdown summary. Both use real validated tool output and empty source/evidence arrays.
 - Catalog registration is explicit and validates against the C03 tool catalog at composition time; it does not silently advertise an unavailable tool.
 
-- [ ] Test both pack identities, shared tool/artifact contracts, distinct prompts/presenters, exact budget metrics, valid over-budget warning, and no invented evidence.
+- [ ] Test both pack identities, exact semver tool reference, shared strict artifact schema, distinct prompts/presenters, exact budget metrics, valid over-budget warning, no invented evidence, successful catalog composition with the real version, and rejection when the tool version is absent or different.
 - [ ] Run the focused pack test and observe missing exports/behavior.
 - [ ] Implement the schemas, server definitions, client-safe manifests, pure presenters, and explicit catalog wiring using the C03 contract consumed by the existing integration plan.
 - [ ] Re-run focused pack tests, `bun run domain:validate`, `bun run check`, and relevant C03 compatibility tests when its changes are available in the shared base.
