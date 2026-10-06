@@ -6,6 +6,9 @@
 # Dependencies and builds
 node_modules/
 .next/
+.next-e2e-*/
+test-results/
+playwright-report/
 dist/
 coverage/
 *.tsbuildinfo

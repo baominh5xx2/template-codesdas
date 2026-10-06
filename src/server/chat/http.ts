@@ -12,7 +12,10 @@ import type { RunAgentInput } from "@ag-ui/client";
 import { createChatModel } from "@/adapters/llm/chat-model";
 import { createChatRuntime } from "@/adapters/agents/chat-runtime";
 
-const runtimeRequire = createRequire(import.meta.resolve("@copilotkit/runtime/v2"));
+// Resolve from the installed runtime's dependency tree. Next/Turbopack does
+// not preserve import.meta.resolve in bundled route handlers.
+const packageRequire = createRequire(`${process.cwd()}/package.json`);
+const runtimeRequire = createRequire(packageRequire.resolve("@copilotkit/runtime/v2"));
 const { RunAgentInputSchema } = runtimeRequire("@ag-ui/core/schemas");
 
 export function createChatRequestHandler(

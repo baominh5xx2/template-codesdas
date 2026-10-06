@@ -13,6 +13,7 @@ export type ChatProviderFixture = {
   baseUrl: string;
   requests: CapturedRequest[];
   setScenario(scenario: ChatProviderScenario, rejectStatus?: 401 | 429 | 500): void;
+  setResponse(content: string, chunkSize?: number, delayMs?: number): void;
   close(): Promise<void>;
 };
 
@@ -31,6 +32,9 @@ export async function createChatProviderFixture(
   const requests: CapturedRequest[] = [];
   const sockets = new Set<Socket>();
   const activeTimers = new Set<NodeJS.Timeout>();
+  let responseContent = "Xin chào! Tôi có thể giúp gì cho bạn?";
+  let responseChunkSize = 10_000;
+  let responseDelayMs = 0;
 
   const server = http.createServer(async (req, res) => {
     let aborted = false;
@@ -126,21 +130,31 @@ export async function createChatProviderFixture(
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
       });
-      res.write(
-        `data: ${JSON.stringify({
-          id: "chatcmpl-test",
-          object: "chat.completion.chunk",
-          created: Math.floor(Date.now() / 1000),
-          model: "test-model",
-          choices: [
-            {
-              index: 0,
-              delta: { role: "assistant", content: "Xin chào! Tôi có thể giúp gì cho bạn?" },
-              finish_reason: null,
-            },
-          ],
-        })}\n\n`
-      );
+      for (let offset = 0; offset < responseContent.length; offset += responseChunkSize) {
+        if (res.destroyed) return;
+        res.write(
+          `data: ${JSON.stringify({
+            id: "chatcmpl-test",
+            object: "chat.completion.chunk",
+            created: Math.floor(Date.now() / 1000),
+            model: "test-model",
+            choices: [
+              {
+                index: 0,
+                delta: { role: "assistant", content: responseContent.slice(offset, offset + responseChunkSize) },
+                finish_reason: null,
+              },
+            ],
+          })}\n\n`
+        );
+        if (responseDelayMs) {
+          await new Promise<void>((resolve) => {
+            const timer = setTimeout(() => { activeTimers.delete(timer); resolve(); }, responseDelayMs);
+            activeTimers.add(timer);
+          });
+        }
+      }
+      if (res.destroyed) return;
       res.write(
         `data: ${JSON.stringify({
           id: "chatcmpl-test",
@@ -187,6 +201,11 @@ export async function createChatProviderFixture(
     setScenario(scenario: ChatProviderScenario, rejectStatus?: 401 | 429 | 500) {
       currentScenario = scenario;
       if (rejectStatus) currentRejectStatus = rejectStatus;
+    },
+    setResponse(content, chunkSize = 10_000, delayMs = 0) {
+      responseContent = content;
+      responseChunkSize = Math.max(1, chunkSize);
+      responseDelayMs = Math.max(0, delayMs);
     },
     async close() {
       for (const timer of activeTimers) {

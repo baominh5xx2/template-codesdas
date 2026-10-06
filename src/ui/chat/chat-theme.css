@@ -155,12 +155,21 @@
 }
 
 .chat-assistant-message pre {
+  /* Streamdown sets an inline transparent background on highlighted blocks. */
+  background-color: var(--chat-surface) !important;
   max-width: 100%;
   padding: 16px;
   border: 1px solid var(--chat-border);
   border-radius: 8px;
   overflow-x: auto;
   white-space: pre;
+}
+
+/* Shiki can replace inline token colors after its asynchronous highlighting. */
+.chat-assistant-message pre code,
+.chat-assistant-message pre code span {
+  color: var(--chat-text) !important;
+  background-color: transparent !important;
 }
 
 .chat-assistant-message table {

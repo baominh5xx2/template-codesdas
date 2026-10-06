@@ -1,8 +1,8 @@
 # Chat UI — ChatGPT layout, white theme
 
-Ngày: **2026-10-05**, cập nhật **2026-10-06**. Trạng thái: **user đã cho chuyển sang writing-plans; UI plan đã viết; chưa triển khai UI**.
+Ngày: **2026-10-05**, cập nhật **2026-10-06**. Trạng thái: **UI đã triển khai; 24 browser acceptance checks đã pass với SDK/runtime thật và controlled provider**. Bàn phím phần mềm trên thiết bị thật và browser zoom 200% còn cần manual QA; mobile emulation/visualViewport resize không thay thế hai checks này.
 
-User chọn bố cục chat như ảnh ChatGPT đính kèm và **theme trắng**. Đây là visual/interaction spec cho [Core PRD](../../platform-build-spec.md), [C01 spec](2026-10-05-chat-foundation-design.md) và [C01 plan](../plans/2026-10-05-chat-foundation-implementation-plan.md). Thay thế quyết định theme theo browser light/dark trước đó. Mình chỉ viết spec/plan; user tự triển khai code.
+User chọn bố cục chat như ảnh ChatGPT đính kèm và **theme trắng**. Đây là visual/interaction spec cho [Core PRD](../../platform-build-spec.md), [C01 spec](2026-10-05-chat-foundation-design.md) và [C01 plan](../plans/2026-10-05-chat-foundation-implementation-plan.md). Thay thế quyết định theme theo browser light/dark trước đó. UI hiện có tại `/`; commands, harness và evidence limits nằm ở [docs index](../../README.md#chạy-browser-acceptance).
 
 ## 1. Hướng thiết kế
 
@@ -79,7 +79,7 @@ Khung sidebar không làm C01 phụ thuộc Postgres. Có thể sửa draft khi 
 - Ready: placeholder **`Nhập tin nhắn…`**, Send **`Gửi`**; chữ người dùng căn phải, assistant đọc theo cột trái.
 - Running: Stop **`Dừng`** thay Send; phản hồi xuất hiện dần, không animate lại toàn bộ message mỗi token. Copy thuộc message action, giữ `Sao chép` accessible label.
 - Unavailable/failed: một notice **`Chưa kết nối`** đặt ngay trên composer, có **`Thử lại`** theo C01 policy. Không có notice thứ hai trên sidebar/header, không lưu notice thành message.
-- Interrupted: giữ partial theo C01, không tự hiện notice lỗi; manual Retry dùng checkpoint/IDs đã chốt. Visual spec không đổi runtime/controller semantics.
+- Interrupted: giữ partial theo C01 và composer bình thường, không tự hiện notice lỗi. C01 chỉ tạo retry checkpoint cho failed run; sau Stop người dùng gửi turn mới. Visual spec không đổi runtime/controller semantics.
 - Scroll: đang ở cuối thì theo stream; cuộn lên thì giữ vị trí, nút về cuối có accessible label. Không kéo focus theo tokens.
 - Desktop toggle thu gọn sidebar và mở rộng main; cột nội dung vẫn căn giữa. Mobile drawer là dialog có label, focus trap, Escape/backdrop để đóng và trả focus về nút mở; chọn New chat đóng drawer.
 - Enter gửi, Shift+Enter xuống dòng, IME không gửi giữa composition. Composer có programmatic label, không dùng placeholder làm label duy nhất.
@@ -87,7 +87,7 @@ Khung sidebar không làm C01 phụ thuộc Postgres. Có thể sửa draft khi 
 
 ## 7. Handoff và nghiệm thu khi user triển khai
 
-[White UI implementation plan](../plans/2026-10-05-chat-white-ui-implementation-plan.md) chia 5 tasks. UI Tasks 1–4 là phần chi tiết thay C01 Task 4; UI Task 5 mở rộng checks C01 Task 5, không tạo backlog trùng. C02 sở hữu dữ liệu/actions history; file này chỉ khóa visual direction, không thay thế technical spec C02. User tự code, mình chỉ viết spec/plan.
+[White UI implementation plan](../plans/2026-10-05-chat-white-ui-implementation-plan.md) chia 5 tasks. UI Tasks 1–4 là phần chi tiết thay C01 Task 4; UI Task 5 mở rộng checks C01 Task 5. C02 sở hữu dữ liệu/actions history; file này khóa visual direction, không thay thế technical spec C02. Automated checks đã chạy trên Chromium; các manual limits ghi ở trạng thái đầu file.
 
 - 390×844, 768×1024, 1440×900 và 1920×1080: đúng sidebar/drawer/cột chat/composer, không x overflow.
 - Khi browser emulate dark preference: giao diện vẫn trắng, chữ/bubble/code/composer vẫn đọc được.

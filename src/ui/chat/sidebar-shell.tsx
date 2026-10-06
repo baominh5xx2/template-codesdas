@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { MouseEvent, ReactElement, SyntheticEvent } from "react";
+import type { KeyboardEvent, MouseEvent, ReactElement, SyntheticEvent } from "react";
 import { useDesktopViewport } from "./use-desktop-viewport";
 
 export type SidebarShellProps = {
@@ -55,6 +55,20 @@ export function SidebarShell({ open, onClose, onNewChat, pending }: SidebarShell
     onClose();
   }
 
+  function handleTab(event: KeyboardEvent<HTMLDialogElement>) {
+    if (event.key !== "Tab") return;
+    const controls = event.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first?.focus();
+    }
+  }
+
   const content = (
     <>
       <div className="chat-sidebar-header">
@@ -84,7 +98,7 @@ export function SidebarShell({ open, onClose, onNewChat, pending }: SidebarShell
     <aside ref={asideRef} className="chat-sidebar" hidden={!open}>{content}</aside>
   ) : (
     <dialog ref={dialogRef} className="chat-mobile-dialog" aria-label="Điều hướng hội thoại"
-      onClick={handleBackdrop} onCancel={handleCancel}>
+      onClick={handleBackdrop} onCancel={handleCancel} onKeyDown={handleTab}>
       <div className="chat-sidebar-content">{content}</div>
     </dialog>
   );
